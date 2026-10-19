@@ -9,7 +9,7 @@ import { invitations, weddings, type Invitation, type Wedding } from "../db/sche
 import { isUnlocked } from "../domain/status";
 import { AppError } from "../errors";
 
-/** Access levels from PROJECT_SPEC §4a, plus BLUEPRINT's not_approved state. */
+/** Access levels from PROJECT_SPEC §4a. */
 export type AccessLevel = "public" | "invited" | "declined" | "not_approved" | "revoked" | "approved";
 
 export type Access =
@@ -42,11 +42,25 @@ function levelFor(invitation: Invitation): Exclude<AccessLevel, "public"> {
   return "invited";
 }
 
-export type ApprovedAccess = { invitation: Invitation; wedding: Wedding };
+declare const approved: unique symbol;
+
+/**
+ * Proof that the approval gate passed. Only this module can create one, and
+ * functions returning locked content require it as a parameter, so calling
+ * them without passing the gate is a compile error, not just a runtime one.
+ */
+export type ApprovedAccess = { readonly invitation: Invitation; readonly wedding: Wedding; readonly [approved]: true };
+
+/** Narrows an access result already fetched in this request (avoids a second lookup). */
+export function approvedFrom(access: Access): ApprovedAccess | null {
+  return access.level === "approved"
+    ? ({ invitation: access.invitation, wedding: access.wedding } as ApprovedAccess)
+    : null;
+}
 
 /** Throws FORBIDDEN (403, §6) unless the token belongs to an approved invitation. */
 export async function requireApproved(db: Db, token: string | null | undefined): Promise<ApprovedAccess> {
-  const access = await getAccess(db, token);
-  if (access.level !== "approved") throw new AppError("FORBIDDEN", "This content is available once your attendance is confirmed.");
-  return { invitation: access.invitation, wedding: access.wedding };
+  const proof = approvedFrom(await getAccess(db, token));
+  if (!proof) throw new AppError("FORBIDDEN", "This content is available once your attendance is confirmed.");
+  return proof;
 }

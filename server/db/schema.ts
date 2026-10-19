@@ -193,6 +193,8 @@ export const invitations = pgTable(
     statusBeforeRevoke: invitationStatus("status_before_revoke"),
     source: invitationSource("source").notNull().default("admin"),
     responseMessage: text("response_message"),
+    // Hash of the last submitted RSVP: an identical resubmission is a no-op (BR-9, E1).
+    responseFingerprint: text("response_fingerprint"),
     notes: text("notes"),
     inviteTokenVersion: integer("invite_token_version").notNull().default(1),
     inviteTokenHash: text("invite_token_hash").notNull().unique(),

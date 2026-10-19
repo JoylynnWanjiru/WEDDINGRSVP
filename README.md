@@ -94,6 +94,10 @@ Running cost: **KSh 0**.
 │  │  └─ rate-limit.ts
 │  ├─ services/                 # one per BLUEPRINT §14 module
 │  │  ├─ access.ts              # ⚠ the approval gate: requireApproved()
+│  │  ├─ content.ts             # approved-only content (needs proof from the gate)
+│  │  ├─ invitation-page.ts     # guest page data per access level, view tracking
+│  │  ├─ rsvp.ts                # submit / change a response
+│  │  ├─ requests.ts            # public "request an invitation"
 │  │  ├─ activity.ts            # audit log
 │  │  ├─ checkin.ts             # race-safe arrivals (never over-admit)
 │  │  └─ messaging.ts           # email queue, daily cap
@@ -154,6 +158,7 @@ Tests run against PGlite (Postgres in memory), so they need no account, network 
 | `GMAIL_USER` | Gmail address that sends invitations |
 | `GMAIL_APP_PASSWORD` | Gmail app password |
 | `CRON_SECRET` | Protects `/api/cron/*` |
+| `WEDDING_SLUG` | Optional. Which wedding the public pages show; defaults to `our-wedding` (the seeded one) |
 
 Never commit `.env.local`. Add the same variables in **Vercel → Project → Settings → Environment Variables**.
 

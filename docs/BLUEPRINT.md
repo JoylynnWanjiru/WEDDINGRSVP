@@ -2,7 +2,7 @@
 
 > Companion to [`PROJECT_SPEC.md`](PROJECT_SPEC.md) (stack, colours, pages, folder structure).
 > This blueprint defines **behaviour**: who acts, how an invitation moves, the rules, and the edge cases.
-> Prepared 19 October 2026 · Updated 19 October 2026 (decisions D1–D7, §16) · Wedding date 12 December 2026 · Items marked **[ASSUMPTION]** need confirming.
+> Prepared 19 October 2026 · Updated 19 October 2026 (decisions D1–D10, §16) · Wedding date 12 December 2026 · Items marked **[ASSUMPTION]** need confirming.
 
 ---
 
@@ -416,3 +416,6 @@ Choices that refine or change earlier drafts of this blueprint, with their reaso
 | D5 | **Changing a secret ends its sessions.** Admin sessions carry a fingerprint of `ADMIN_PASSWORD_HASH`; usher sessions carry `usher_session_version`, bumped on PIN change and by "Sign out all ushers". | Signed sessions otherwise stay valid until they expire (7 days admin, 18 hours usher), even after a password reset or a lost phone. | E24, E26, §13 |
 | D6 | **v1 planner = couple.** The planner shares the admin login (A5) and has the same rights. | A shared login can't tell the two apart, so the earlier "planner can't delete data" restriction was unenforceable. Accidental deletion is guarded instead by the purge's typed confirmation, and the purge also runs on schedule (BR-23). v2 adds a separate planner login with a role. | §4, spec §8 roles |
 | D7 | **"Send now" drains the email queue; the daily cron is a safety net.** "Send now" sends in small batches (each well inside the function time limit) until the queue is empty or the BR-17 cap is reached. The cap counts per Kenya calendar day. | On the free Vercel plan cron runs once a day, so 50 emails per cron run would have meant about 10 days to invite 500 guests, past the 17–31 October sending window. | BR-17, E9, spec §10, §14 |
+| D8 | **Answering No keeps only the primary guest.** Named extras are removed (they can be re-entered with a new Yes), and party size returns to 1. The name on the card (`invitations.full_name`, set by the couple) is separate from the primary party member's name (typed by the guest), so a guest can't rename the invitation itself. | Keeps headcount and dietary totals right without counting people who aren't coming. A renamed primary guest still triggers BR-8 re-approval, because it is a different name at the gate. | §5a, BR-8 |
+| D9 | **A wedding's events are the kinds of venue it has** (ceremony, reception, traditional). A Yes covers all of them unless the guest picks some; a Yes to none is refused. | One source of truth for "which events exist": adding a reception venue in settings adds the reception to every RSVP form. | Spec §7 RSVP form, §8 |
+| D10 | **The request form needs a name plus a phone or email, and always gives the same reply.** It never says whether the person is already invited. | Stops the form being used to find out who is on the guest list; without contact details the couple couldn't reply. | U11, §5b, E19 |

@@ -17,4 +17,6 @@ export const config = {
   },
   adminPasswordHash: () => required("ADMIN_PASSWORD_HASH"),
   cronSecret: () => required("CRON_SECRET"),
+  /** v1 serves one wedding; the public teaser and request form use this slug. */
+  weddingSlug: () => process.env.WEDDING_SLUG || "our-wedding",
 };
