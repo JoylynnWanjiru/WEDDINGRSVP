@@ -2,7 +2,7 @@
 
 > Companion to [`PROJECT_SPEC.md`](PROJECT_SPEC.md) (stack, colours, pages, folder structure).
 > This blueprint defines **behaviour**: who acts, how an invitation moves, the rules, and the edge cases.
-> Prepared 19 October 2026 · Wedding date 12 December 2026 · Items marked **[ASSUMPTION]** need confirming.
+> Prepared 19 October 2026 · Updated 19 October 2026 (decisions D1–D7, §16) · Wedding date 12 December 2026 · Items marked **[ASSUMPTION]** need confirming.
 
 ---
 
@@ -64,7 +64,7 @@ Plus a small **real-time** slice: gate check-in on the wedding day, where speed 
 | U8 | **Approved guest** receives and can reopen a gate pass with a QR code, so they can enter on the day. |
 | U9 | **Usher** can scan a pass and instantly see "admit X people" or "refuse", so the gate is fast and controlled. |
 | U10 | **Couple** can see live totals (approved headcount, dietary counts, arrivals), so catering and seating are planned on real numbers. |
-| U11 | **Member of the public** can request an invitation, so people who were missed can ask without the couple publishing any details. |
+| U11 | **Member of the public** can request an invitation, so people who were missed can ask without the couple publishing any details. A request is not an invitation: accepting it creates one (§5b). |
 | U12 | **Couple** can edit wedding content (programme, venues, FAQ, dress code, story) without changing code. |
 
 ### Nice-to-have (v1 if time allows)
@@ -88,7 +88,7 @@ Plus a small **real-time** slice: gate check-in on the wedding day, where speed 
 | **Invited guest** | Personal invite token | View their own card; respond; edit their response until the deadline | See event details or a pass before approval; see other guests |
 | **Approved guest** | Personal token + status approved | Everything an invited guest can, plus full event details, location, gate pass, day-of page | See other guests; change their own approval |
 | **Couple (admin)** | Admin password session | Everything: guests, approvals, revocations, content, settings, exports, data deletion | — |
-| **Planner** | Admin session (shared or separate login) **[ASSUMPTION: same login as couple in v1]** | Same as couple except change admin password or delete all data | — |
+| **Planner** | v1: the same admin login as the couple (A5) | v1: same as the couple, because a shared login can't tell them apart (D6). v2: separate login, everything except changing the admin password or deleting all data | — |
 | **Usher** | Shared gate PIN | Open scanner; scan; search a name at the gate; record arrivals | See phone numbers, emails, guest list outside the scanner, settings |
 | **System (scheduler)** | Cron secret | Send queued emails; send reminders; switch site to "thank you" after the wedding | Approve or revoke anyone |
 
@@ -100,62 +100,78 @@ Plus a small **real-time** slice: gate check-in on the wedding day, where speed 
 
 The central object is an **invitation** (one per household/party), not an individual person.
 
+**Statuses describe where the guest is in the process. Delivery facts** (email sent, WhatsApp shared, email opened, pass emailed, pass viewed) **are timestamps on the invitation, never statuses** (D2). The code lives in `server/domain/status.ts`.
+
+### 5a. Invitation lifecycle
+
 ```
-                         ┌──────────── couple rejects ───────────► REQUEST_REJECTED (end)
-REQUESTED (public form) ─┤
-                         └──── couple approves request ──┐
-                                                         ▼
-                          DRAFT ──send──► SENT ──open link──► VIEWED
-                                            │                    │
-                                            └────────┬───────────┘
-                                                     │ guest responds
-                                   ┌─────────────────┴─────────────────┐
-                                   ▼                                   ▼
-                          AWAITING_APPROVAL (said Yes)            DECLINED (said No)
-                                   │         │                         │
-                      couple approves   couple declines        guest changes to Yes
-                                   │         │                 (before deadline) ──► AWAITING_APPROVAL
-                                   ▼         ▼
-                               APPROVED   NOT_APPROVED (end, can be reopened by couple)
-                                   │
-                         gate pass issued (automatic on approval)
-                                   ▼
-                              PASS_ISSUED ──scan──► PARTIALLY_ARRIVED ──scan──► ARRIVED
+  couple adds guest / CSV import / accepts a request (§5b)
+                         ▼
+                       DRAFT ──send──► SENT ──open link──► VIEWED
+                         │               │                    │
+                         └───────────────┴─────────┬──────────┘
+                                                   │ guest responds
+                                 ┌─────────────────┴─────────────────┐
+                                 ▼                                   ▼
+                        AWAITING_APPROVAL (said Yes)            DECLINED (said No)
+                                 │         │                         │
+                    couple approves   couple declines        guest changes to Yes
+                                 │         │                 (before deadline) ──► AWAITING_APPROVAL
+                                 ▼         ▼
+       pass exists from here ► APPROVED   NOT_APPROVED (couple can reopen → AWAITING_APPROVAL)
+                                 │
+                                 └──scan──► PARTIALLY_ARRIVED ──scan──► ARRIVED
 
   From ANY state except ARRIVED: couple revokes ──► REVOKED (couple can restore → previous state)
 ```
 
-### Transitions
-
 | From → To | Triggered by | Captured |
 |---|---|---|
-| — → REQUESTED | Public visitor submits request form | name, phone, email, message, timestamp, IP hash |
-| REQUESTED → DRAFT | Couple approves request | admin, timestamp; seat allowance set |
-| REQUESTED → REQUEST_REJECTED | Couple rejects request | admin, timestamp, optional reason (internal) |
-| — → DRAFT | Couple adds guest / CSV import | admin, source, seat allowance |
+| — → DRAFT | Couple adds guest, imports CSV, or accepts a request | admin, source, seat allowance |
 | DRAFT → SENT | Couple sends email or taps "Send on WhatsApp" | channel, timestamp (per channel) |
-| SENT → VIEWED | Guest opens personal link (card animation shown) | first & last viewed time, view count |
+| DRAFT/SENT → VIEWED | Guest opens personal link (card animation shown) | first & last viewed time, view count |
 | *(side event)* email opened | Tracking pixel loads | timestamp — **does not change state** (unreliable) |
-| SENT/VIEWED → AWAITING_APPROVAL | Guest submits "Yes" | party members, dietary, events, timestamp |
-| SENT/VIEWED → DECLINED | Guest submits "No" | timestamp, optional message |
+| DRAFT/SENT/VIEWED → AWAITING_APPROVAL | Guest submits "Yes" | party members, dietary, events, timestamp |
+| DRAFT/SENT/VIEWED → DECLINED | Guest submits "No" | timestamp, optional message |
 | DECLINED → AWAITING_APPROVAL | Guest changes to "Yes" before deadline | new party, timestamp |
-| AWAITING_APPROVAL → APPROVED | Couple approves | admin, timestamp; pass token issued; approval email queued |
+| AWAITING_APPROVAL → AWAITING_APPROVAL | Guest edits their party, dietary or events before the couple decides | old vs new party, timestamp |
+| AWAITING_APPROVAL → DECLINED | Guest changes to "No" before the couple decides | timestamp, optional message |
+| AWAITING_APPROVAL → APPROVED | Couple approves | admin, timestamp; **pass becomes available immediately**; approval email queued |
+| *(side event)* pass emailed | Approval email accepted by Gmail | `pass_emailed_at` — **does not change state** |
 | AWAITING_APPROVAL → NOT_APPROVED | Couple declines attendance | admin, timestamp, optional message to guest |
-| APPROVED → AWAITING_APPROVAL | Guest **adds** a person to their party | old vs new party; pass version bumped |
+| NOT_APPROVED → AWAITING_APPROVAL | Couple reopens | admin, timestamp |
+| APPROVED → AWAITING_APPROVAL | Guest **adds** a person to their party (BR-8) | old vs new party; pass version bumped |
 | APPROVED → DECLINED | Guest changes to "No" | timestamp; pass version bumped |
-| APPROVED → PASS_ISSUED | System, right after approval email is sent | send timestamp |
-| PASS_ISSUED → PARTIALLY_ARRIVED / ARRIVED | Usher scans and admits N people | usher device, count admitted, timestamp |
+| APPROVED → PARTIALLY_ARRIVED / ARRIVED | Usher scans and admits N people | usher device, count admitted, timestamp |
+| PARTIALLY_ARRIVED → ARRIVED | Usher admits the rest | usher device, count admitted, timestamp |
 | any (except ARRIVED) → REVOKED | Couple revokes | admin, timestamp, reason (internal); pass version bumped |
 | REVOKED → previous state | Couple restores | admin, timestamp; new pass version if previously approved |
 
-Approval is **never automatic**. **[ASSUMPTION: confirm]**
+Approval is **never automatic** (A1).
+
+### 5b. Request lifecycle (public "request an invitation" form)
+
+Requests are kept in their own table, separate from invitations (D3). A request has **no personal link** and appears in no guest totals.
+
+```
+PENDING ──couple accepts──► ACCEPTED (creates a DRAFT invitation; final)
+   │
+   └──couple rejects──► REJECTED ──couple reopens──► PENDING
+```
+
+| From → To | Triggered by | Captured |
+|---|---|---|
+| — → PENDING | Public visitor submits the form | name, phone, email, message, timestamp, **IP hash** (never the raw IP) |
+| PENDING → ACCEPTED | Couple accepts | admin, timestamp, new invitation id, seat allowance. If the phone already belongs to an invitation, the couple sees that guest instead (E13) |
+| PENDING → REJECTED | Couple rejects | admin, timestamp, optional internal note |
+| REJECTED → PENDING | Couple reopens | admin, timestamp |
 
 ---
 
 ## 6. Business rules (testable)
 
 ### Access
-- **BR-1** Event details (story, photos, programme, venues, coordinates, dress code, FAQ, contacts, day-of page, pass) are returned **only** for invitations in APPROVED, PASS_ISSUED, PARTIALLY_ARRIVED or ARRIVED.
+- **BR-1** Event details (story, photos, programme, venues, coordinates, dress code, FAQ, contacts, day-of page, pass) are returned **only** for invitations in APPROVED, PARTIALLY_ARRIVED or ARRIVED, whether or not the pass email was delivered.
 - **BR-2** Every other state, and every request without a valid token, receives none of that data — not in HTML, not in API responses, not in emails.
 - **BR-3** Access is evaluated on **every request** from the current database state; nothing is cached per guest in the browser that grants access.
 - **BR-4** An invalid, unknown or malformed token behaves exactly like "no token" (public teaser), without revealing whether the token ever existed.
@@ -164,7 +180,7 @@ Approval is **never automatic**. **[ASSUMPTION: confirm]**
 - **BR-5** Party size = 1 (primary guest) + named extras; extras ≤ seat allowance. Submissions exceeding it are rejected with a clear message.
 - **BR-6** Every party member needs a full name; adult/child flag; dietary choice (default "none").
 - **BR-7** Responses and edits are accepted until the RSVP deadline (Africa/Nairobi time). After it, the form is read-only for guests; admins can still edit. **[ASSUMPTION: deadline 14 November 2026, four weeks before]**
-- **BR-8** Adding a person after approval returns the invitation to AWAITING_APPROVAL. Removing a person or changing dietary details keeps it APPROVED and updates the pass immediately.
+- **BR-8** Adding a person after approval returns the invitation to AWAITING_APPROVAL. Removing a person or changing dietary details keeps it APPROVED and updates the pass immediately. **Replacing** one named person with another counts as adding (a different person would arrive at the gate). Names are compared ignoring case and extra spaces.
 - **BR-9** Submitting the same response twice (double-tap, retry) produces one record, not two.
 
 ### Approval & capacity
@@ -173,19 +189,19 @@ Approval is **never automatic**. **[ASSUMPTION: confirm]**
 - **BR-12** Reducing a seat allowance below a guest's current party size is blocked until the admin removes named people (the admin chooses who).
 
 ### Gate
-- **BR-13** A scan admits only if: signature valid, pass version current, invitation not revoked, state is PASS_ISSUED or PARTIALLY_ARRIVED, and arrived count < party size.
+- **BR-13** A scan admits only if: signature valid, pass version current, invitation not revoked, state is APPROVED or PARTIALLY_ARRIVED, and arrived count < party size. Whether the pass was ever emailed is irrelevant at the gate (D2).
 - **BR-14** Arrived count can never exceed party size, even with two ushers scanning the same pass at the same moment.
 - **BR-15** A scan of a fully arrived pass shows "Already admitted — N of N at HH:MM" and the usher who admitted them.
 - **BR-16** Ushers can admit fewer than the full party ("2 of 3 now"); the rest can be admitted later on the same pass.
 
 ### Messaging
-- **BR-17** The system never sends more than **400 emails per calendar day** (safety margin below Gmail's ~500). Extra sends queue for the next day. **[ASSUMPTION]**
+- **BR-17** The system never sends more than **400 emails per calendar day, Africa/Nairobi time** (safety margin below Gmail's ~500). Extra sends queue for the next day. How the queue is drained: D7. **[ASSUMPTION]**
 - **BR-18** No email to a guest who isn't approved contains venue, coordinates, programme detail or a pass.
 - **BR-19** Reminders go only to SENT/VIEWED (no response) guests, at most once every 3 days, stopping at the deadline. **[ASSUMPTION]**
 
 ### Data
 - **BR-20** Phone numbers are stored in international format (`+2547XXXXXXXX`); `07…`, `7…` and `254…` inputs are normalised.
-- **BR-21** Two invitations can't share the same normalised phone number within one wedding; adding a duplicate shows the existing guest instead.
+- **BR-21** Two invitations can't share the same normalised phone number within one wedding; adding a duplicate shows the existing guest instead. **Requests are exempt**: a request may share a phone with another request or an invitation, so a spam request can never block a real guest (D3).
 - **BR-22** Guests are never hard-deleted during the event — removal is REVOKED. Hard deletion happens only in the post-wedding purge.
 - **BR-23** All guest personal data is deleted **30 days after the wedding** unless the couple exports and extends. **[ASSUMPTION]**
 
@@ -205,9 +221,9 @@ Approval is **never automatic**. **[ASSUMPTION: confirm]**
 | E8 | **Programme or venue changes** after approval emails went out | Website always shows the latest version. Emails link to the live page rather than relying on the email text. Admin can send a "details updated" message to all approved guests (N5). |
 | E9 | **Gmail daily limit** reached mid-batch | Remaining emails stay queued and send next day; dashboard shows "X queued". Admin can switch those guests to WhatsApp sharing. |
 | E10 | **Gmail app password revoked** or Google blocks sign-in | Sends fail; queue marks them failed with the error; dashboard shows a red banner. Nothing is marked "sent" unless Gmail accepted it. |
-| E11 | **Wrong or bouncing email address** | Bounces arrive in the couple's Gmail inbox (can't be read automatically for free). Admin can mark "bounced" and resend via WhatsApp. |
+| E11 | **Wrong or bouncing email address** | Bounces arrive in the couple's Gmail inbox (can't be read automatically for free). Admin can mark "bounced" (stored as `email_bounced_at`; no more emails are queued to that address until it is corrected) and resend via WhatsApp. |
 | E12 | **Email "opened" but guest says they didn't see it** (or vice versa) | Opens are shown as a hint only (Apple Mail preloads images; some clients block them). "Viewed" (card opened on the site) is the record of receipt. |
-| E13 | **Same person invited twice** (e.g. by bride's and groom's sides), or a **public request** from someone already invited | Duplicate phone is detected (BR-21); admin sees "already invited by…" and can merge. |
+| E13 | **Same person invited twice** (e.g. by bride's and groom's sides), or a **public request** from someone already invited | Duplicate invitation phone is detected (BR-21); admin sees "already invited by…" and can merge. A request from an invited phone is flagged "already invited" in the request queue; accepting it opens the existing guest instead of creating a second invitation. |
 | E14 | Guest **responds after the deadline** | Form is read-only with "Please contact the couple"; admin can still record their response. |
 | E15 | Guest outside Kenya (**different timezone**) | Countdown, programme and deadline always display in Africa/Nairobi time, labelled "EAT". |
 | E16 | **Database asleep** (Neon free tier idles) on the first request | First load takes about a second longer. On the wedding morning, open the admin once before gates open to wake it. |
@@ -218,8 +234,10 @@ Approval is **never automatic**. **[ASSUMPTION: confirm]**
 | E21 | Two admins **edit the same guest** at once | Save checks `updated_at`; the second save gets "This guest was changed — reload" instead of silently overwriting. |
 | E22 | Couple **revokes by mistake** | Restore returns the previous state; if they were approved, a fresh pass is issued (old screenshots stay invalid). |
 | E23 | **After the wedding** | Site switches to a thank-you page; passes stop working; data purge runs on schedule (BR-23). |
-| E24 | Admin **forgets the password** | Reset by changing the password hash in Vercel's environment settings and redeploying. Documented in README. |
+| E24 | Admin **forgets the password**, or it may have leaked | Reset by changing the password hash in Vercel's environment settings and redeploying. **Every existing admin session ends immediately** (D5). Documented in README. |
 | E25 | **Children** in a party | Counted separately (adults / children) in totals and the catering export. |
+| E26 | An **usher's phone is lost or stolen** on the day, or the PIN leaks | Admin changes the PIN or taps "Sign out all ushers": every scanner session ends immediately (D5). Ushers log in again with the new PIN. |
+| E27 | **The couple opens a guest's link** to check it | Not counted as a view: opens while signed in as admin don't change VIEWED, view counts or timestamps, because "viewed" is the proof of receipt (U3). The admin also has a separate "Preview as this guest" view. |
 
 ### One-way actions (can't be undone)
 - Emails and WhatsApp messages, once sent.
@@ -236,10 +254,11 @@ Full field list is in the spec (§11). Fields that **enforce correctness**:
 | Entity | Key fields | Constraints / why |
 |---|---|---|
 | `weddings` | id, date, timezone, rsvp_deadline, capacity, theme | One row in v1; every other table references it (future multi-couple). |
-| `invitations` (called `guests` in the spec) | id, wedding_id, **status**, seat_allowance, **phone (E.164)**, **invite_token_hash**, **pass_version**, arrived_count, all timestamps, `updated_at` | Unique (wedding_id, phone); unique token hash; `arrived_count ≤ party_size`; status is an enum of §5 states only. |
+| `invitations` | id, wedding_id, **status**, seat_allowance, **phone (E.164)**, **invite_token_hash**, **pass_version**, party_size, arrived_count, delivery timestamps (`email_sent_at`, `whatsapp_shared_at`, `email_opened_at`, `pass_emailed_at`, …), `updated_at` | Unique (wedding_id, phone); unique token hash; `arrived_count ≤ party_size`; status is an enum of §5a states only. |
+| `invitation_requests` | id, wedding_id, name, phone, email, message, status (§5b), ip_hash, invitation_id (once accepted) | Phone deliberately **not** unique (D3); never has a personal link. |
 | `party_members` | id, invitation_id, name, is_child, dietary, is_primary | Exactly one primary per invitation; count − 1 ≤ seat_allowance (checked on save). |
 | `rsvp_events` | invitation_id, event, attending | Unique (invitation_id, event). |
-| `venues`, `programme_items`, `faq_items`, `dress_code`, `contacts`, `photos` | wedding_id, content, sort_order, visibility | Content only; all served through the approval check. |
+| `venues`, `programme_items`, `faq_items`, `dress_code`, `contacts`, `photos` | wedding_id, content, sort_order | Content only; all served through the approval check. No per-item "public" flag, which would contradict BR-1. |
 | `email_queue` | invitation_id, template, status, attempts, error, sent_at | Daily send counter derived from `sent_at`. |
 | `check_ins` | invitation_id, count, usher_device, method (scan/manual), at | Append-only log behind `arrived_count`. |
 | `activity_log` | actor, action, invitation_id, meta, at | Append-only audit trail of every state change. |
@@ -327,7 +346,7 @@ No external system calls into this app, so there is **no public API contract** t
 
 | Concern | Approach |
 |---|---|
-| **Authentication** | Guests: personal token (no login). Admin: password → signed cookie. Ushers: PIN → short-lived signed cookie per device. Cron: secret header. |
+| **Authentication** | Guests: personal token (no login, D1). Admin: password → signed cookie (7 days). Ushers: PIN → signed cookie per named device (18 hours). Cron: secret header. Password and PIN are hashed with scrypt at OWASP cost (D4). Changing the password or PIN ends every existing session (D5). |
 | **Authorization** | One function, `requireApproved(token)`, guards every route/action that returns locked content; `requireAdmin()` and `requireUsher()` guard their areas. No other code path returns locked data. |
 | **Audit trail** | Every transition in §5 and every check-in is written to `activity_log` / `check_ins`, append-only. |
 | **Validation** | All input validated on the server (Zod), regardless of what the browser checked. |
@@ -352,7 +371,7 @@ Built by one person, but split into modules so each can be finished and tested o
 
 **Key seams to agree once and not change casually:**
 - The **status enum** and allowed transitions (§5).
-- The **token format** (invite token vs pass token, pass version).
+- The **token format** (invite token vs pass token, pass version; see D1).
 - The **`requireApproved` contract** — input token, output invitation or "not allowed".
 - The **email queue record** shape.
 
@@ -381,3 +400,19 @@ Built by one person, but split into modules so each can be finished and tested o
 - [ ] Contrast, tap targets and reduced-motion checked.
 - [ ] Post-wedding purge tested on a copy of the data.
 - [ ] All assumptions in §11 confirmed or replaced.
+
+---
+
+## 16. Decisions log
+
+Choices that refine or change earlier drafts of this blueprint, with their reasons. Add new decisions here rather than silently editing rules.
+
+| # | Decision | Why | Affects |
+|---|---|---|---|
+| D1 | **Invite tokens are derived**: `HMAC(TOKEN_SECRET, invitation id + link version)`, 32 bytes, base64url. Only the SHA-256 hash is stored. Bumping the link version rotates one guest's link. | Unguessable and never stored in readable form, yet the admin can copy any guest's link again at any time (needed for WhatsApp re-sends). **Consequence: `TOKEN_SECRET` must never change once invitations go out**, or every link and pass breaks. v2 (many couples, long-lived) should move to random tokens plus an encrypted copy, which removes that dependency. | §13, §14 token seam, README |
+| D2 | **No PASS_ISSUED status.** Approval issues the pass; `pass_emailed_at` and `pass_first_viewed_at` record delivery. | The earlier design moved to PASS_ISSUED only after the email was sent, so an approved guest whose email failed, or who got the link only on WhatsApp, would have been refused at the gate. Status = place in the process; delivery = timestamps. | §5a, BR-1, BR-13 |
+| D3 | **Public requests live in their own table** (`invitation_requests`, §5b), not as REQUESTED invitations. | Untrusted input stays out of the guest list and totals; a request has no personal link; and a spam request using a real guest's phone can no longer block that guest's invitation (BR-21). | U11, §5b, BR-21, E13, §8 |
+| D4 | **Passwords and PINs use scrypt at OWASP cost** (N=2¹⁷, r=8, p=1), with the parameters stored in each hash. | OWASP ranks Argon2id first and scrypt as an accepted alternative; scrypt is built into Node (no native dependency on Vercel). Storing parameters lets the cost be raised later without breaking existing hashes. | §13 |
+| D5 | **Changing a secret ends its sessions.** Admin sessions carry a fingerprint of `ADMIN_PASSWORD_HASH`; usher sessions carry `usher_session_version`, bumped on PIN change and by "Sign out all ushers". | Signed sessions otherwise stay valid until they expire (7 days admin, 18 hours usher), even after a password reset or a lost phone. | E24, E26, §13 |
+| D6 | **v1 planner = couple.** The planner shares the admin login (A5) and has the same rights. | A shared login can't tell the two apart, so the earlier "planner can't delete data" restriction was unenforceable. Accidental deletion is guarded instead by the purge's typed confirmation, and the purge also runs on schedule (BR-23). v2 adds a separate planner login with a role. | §4, spec §8 roles |
+| D7 | **"Send now" drains the email queue; the daily cron is a safety net.** "Send now" sends in small batches (each well inside the function time limit) until the queue is empty or the BR-17 cap is reached. The cap counts per Kenya calendar day. | On the free Vercel plan cron runs once a day, so 50 emails per cron run would have meant about 10 days to invite 500 guests, past the 17–31 October sending window. | BR-17, E9, spec §10, §14 |

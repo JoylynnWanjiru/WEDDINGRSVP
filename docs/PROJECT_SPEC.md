@@ -157,6 +157,7 @@ Access is decided **on the server on every request** from the guest's personal t
 | **Invited** | Has a personal link; awaiting response or awaiting approval | Card with **their own name**, RSVP form with their seat allowance, their current status ("Thank you — your response is with the couple for confirmation") | Everything else above |
 | **Approved** | Couple has **approved** their attendance | Everything: story, full programme, **venue & live location**, dress code, good-to-know, FAQ, contacts, **gate pass**, **day-of page** | Other guests' details |
 | **Declined** | Guest said no | Thank-you message; can change to "Yes" before the deadline (goes back to awaiting approval) | Everything else |
+| **Not approved** | Couple declined this guest's attendance | Polite neutral message ("The couple is unable to confirm your attendance — please contact them"); cannot respond again unless the couple reopens it | Everything else; no pass |
 | **Revoked** | Couple withdrew the invitation | Neutral "This invitation is no longer active" page | Everything; gate pass fails at the scanner |
 | **Admin** | Couple / planner only (password) | Dashboard, guest list, settings | — guests never see the admin |
 | **Usher** | Gate staff (PIN) | Scanner result: name + party size only | Guest list, contact details, settings |
@@ -185,7 +186,7 @@ Any approved-only route opened by a guest who isn't approved redirects to `/i/[t
 1. **Envelope** — burgundy envelope, gold dove seal, "For our dear guest".
 2. **Names & date** + countdown.
 3. **Private celebration note** — "This is a private celebration. If you've been invited, please open the personal link sent to you."
-4. **Request an invitation** — name, phone, email, short message. Creates a `requested` record for the couple to review (see §7).
+4. **Request an invitation** — name, phone, email, short message. Creates a request for the couple to review (BLUEPRINT §5b).
 5. **Footer** — names and date only.
 
 ### Sections — personal invitation (`/i/[token]`)
@@ -262,28 +263,9 @@ Day-of page extras:
 
 ### Invitation statuses
 
-```
-requested (public form) ──approve request──┐
-                                           ▼
-draft → sent → opened (email) → viewed (card) → responded:
-      → attending (awaiting approval) ──couple approves──→ approved → pass_issued → checked_in
-      → declined
-any status → revoked
-```
+> **Source of truth: [BLUEPRINT §5](BLUEPRINT.md#5-lifecycle--the-invitation)** for statuses and transitions, and **[§6](BLUEPRINT.md#6-business-rules-testable)** for the rules. They are not repeated here, so the two documents can't drift apart.
 
-Only `approved`, `pass_issued` and `checked_in` unlock the full site, live location and gate pass.
-
-| Status | Meaning |
-|---|---|
-| `draft` | Added to the list, not yet sent |
-| `sent` | Email sent and/or WhatsApp link shared (timestamp each channel) |
-| `email_opened` | Email tracking pixel loaded (unreliable on its own — Apple Mail preloads images; Gmail caches) |
-| `viewed` | Guest opened their personal link and the card animation played — **this is the proof of receipt** |
-| `attending` / `declined` | Guest responded |
-| `approved` | Couple approved the attendance — **required** step, never automatic. Unlocks everything |
-| `pass_issued` | Gate pass emailed |
-| `checked_in` | Scanned at the gate |
-| `revoked` | Invitation withdrawn; link and pass stop working |
+In short: `approved`, `partially_arrived` and `arrived` unlock the full site, live location and gate pass. Delivery facts (email sent, WhatsApp shared, email opened, pass emailed) are timestamps, not statuses. "Viewed" (the guest opened their personal link) is the proof of receipt.
 
 ### RSVP form fields
 
@@ -297,13 +279,10 @@ Only `approved`, `pass_issued` and `checked_in` unlock the full site, live locat
 
 ### Rules
 
-- Guests can't exceed their seat allowance.
-- The **public "request invitation" form** creates a `requested` record that the couple must approve before a personal link is sent — so a forwarded link can't produce a gate pass.
-- Saying "Yes" moves the guest to **awaiting approval**; nothing unlocks until the couple approves.
-- If an approved guest **adds people** to their party, the change goes back to awaiting approval; removing people or editing dietary needs does not.
-- Personal links belong to one invitation: if a link is forwarded, the other person only sees the original guest's name and status, and can't get a pass of their own.
-- RSVP deadline: after it passes, the form shows "Please contact the couple" and locks changes.
-- Every action is logged in `activity_log` (who, what, when).
+See [BLUEPRINT §6](BLUEPRINT.md#6-business-rules-testable) (BR-1 to BR-23) and the edge cases in [§7](BLUEPRINT.md#7-edge-cases--gotchas). Page-level consequences:
+
+- The public "request an invitation" form creates a **request**, not an invitation. Accepting it creates the invitation and its personal link (BLUEPRINT §5b).
+- After the RSVP deadline the form shows "Please contact the couple" and is read-only.
 
 ---
 
@@ -330,7 +309,7 @@ The admin area is **only for the couple and planner**. Guests never see it.
 ### Settings
 - Couple names, date, ceremony time, RSVP deadline, timezone.
 - Venues (name, address, lat/lng, landmarks, parking).
-- Programme items (time, title, detail, visibility: public / confirmed only).
+- Programme items (time, title, detail, venue). The whole programme is approved-only (BLUEPRINT BR-1), so items have no visibility setting.
 - Dress code text + colour swatches.
 - FAQ items.
 - Story text + photos.
@@ -341,14 +320,14 @@ The admin area is **only for the couple and planner**. Guests never see it.
 | Role | Access |
 |---|---|
 | Admin (couple) | Everything |
-| Planner | Everything except deleting the wedding / changing admin password |
+| Planner | v1: same login and rights as the couple (BLUEPRINT D6). v2: separate login, everything except deleting data / changing the admin password |
 | Usher | `/scan` only, with a shared PIN |
 
 ---
 
 ## 9. Gate pass & check-in
 
-- Gate pass token = signed JWT (`jose`) containing `guestId`, `weddingId`, `passVersion`. **No personal data inside.**
+- Gate pass token = signed JWT (`jose`) containing `invitationId`, `weddingId`, `passVersion`. **No personal data inside.** The pass exists from the moment the couple approves; emailing it is tracked separately (BLUEPRINT D2).
 - QR encodes `https://<site>/scan/v/<token>`.
 - Pass page/email shows: guest name, party size ("Wanjiru + 2"), date, gate opening time, QR, "Screenshots are fine — your pass is checked live."
 - **Scanner (`/scan`)**:
@@ -375,7 +354,7 @@ The admin area is **only for the couple and planner**. Guests never see it.
 | Reminder: day before | Cron, day before (**approved guests only**) | Pass, gate time, directions, weather tip |
 | Revoked | Admin revokes (optional, can be silent) | Polite notice |
 
-Sending limits: Gmail personal ≈ 500 recipients/day. The app queues sends and processes them in batches (e.g. 50 per run) to stay well inside.
+Sending limits: Gmail personal ≈ 500 recipients/day; the app caps itself at 400 (BR-17). Every send goes through the queue. The admin's **"Send now"** is the main way to send: it works through the queue in small batches until it is empty or the daily cap is reached. The daily cron is only a safety net (BLUEPRINT D7).
 
 ### WhatsApp (free, manual send)
 
@@ -394,46 +373,11 @@ Clicking "Send on WhatsApp" marks `whatsapp_shared_at` (proof the link was sent;
 
 ## 11. Data model (Neon Postgres via Drizzle)
 
-All tables include `wedding_id` (for future multi-couple use) and `created_at` / `updated_at`.
+> **Source of truth: the code, [`server/db/schema.ts`](../server/db/schema.ts).** Entities and the constraints that enforce correctness are summarised in [BLUEPRINT §8](BLUEPRINT.md#8-data-model-sketch).
 
-```
-weddings
-  id, slug, bride_name, groom_name, wedding_date, ceremony_start_at,
-  timezone ('Africa/Nairobi'), rsvp_deadline, venue_capacity,
-  theme (jsonb: colour tokens, fonts), story_text, hashtag,
-  whatsapp_template, contribution_info (jsonb, optional)
+Tables: `weddings`, `admin_settings`, `venues`, `programme_items`, `faq_items`, `dress_code`, `contacts`, `photos`, **`invitations`** (one per household; earlier drafts called it `guests`), `invitation_requests` (public requests, kept separate until accepted), `party_members`, `rsvp_events`, `check_ins`, `email_queue`, `activity_log`, `rate_limits`.
 
-venues
-  id, wedding_id, kind ('ceremony' | 'reception' | 'traditional'),
-  name, address, landmarks, lat, lng, parking_notes, map_image_url
-
-programme_items
-  id, wedding_id, venue_id?, starts_at, title, detail,
-  visibility ('public' | 'confirmed'), sort_order
-
-faq_items          id, wedding_id, question, answer, sort_order
-dress_code         id, wedding_id, text, swatches (jsonb [{name, hex}])
-contacts           id, wedding_id, role, name, phone
-photos             id, wedding_id, section, src, alt, sort_order
-
-guests  (one row per invitation / household)
-  id, wedding_id, full_name, email, phone, group, side,
-  seat_allowance, invite_token_hash, pass_version,
-  status, source ('admin' | 'request'),
-  email_sent_at, whatsapp_shared_at, email_opened_at,
-  first_viewed_at, last_viewed_at, view_count,
-  responded_at, approved_at, pass_issued_at, revoked_at, notes
-
-party_members  (the invitee + named extras)
-  id, guest_id, full_name, is_child, dietary, dietary_notes,
-  is_primary, checked_in_at
-
-rsvp_events     id, guest_id, event ('ceremony' | 'reception' | ...), attending
-email_queue     id, wedding_id, guest_id, template, status, attempts, sent_at, error
-activity_log    id, wedding_id, actor ('admin' | 'guest' | 'usher' | 'system'),
-                guest_id?, action, meta (jsonb), at
-admin_settings  id, wedding_id, usher_pin_hash
-```
+Top-level tables carry `wedding_id` for future multi-couple use. Child tables (`party_members`, `rsvp_events`) reach it through their invitation.
 
 Storage estimate for 500 guests: well under 10 MB — far inside Neon's 1 GB free.
 
@@ -441,10 +385,10 @@ Storage estimate for 500 guests: well under 10 MB — far inside Neon's 1 GB fre
 
 ## 12. Security & privacy
 
-- Invite tokens: long random IDs (e.g. 32 bytes, URL-safe); only a **hash** is stored in the DB.
+- Invite tokens: 32 bytes, URL-safe, unguessable; only a **hash** is stored in the DB. How they are made, and why `TOKEN_SECRET` must never change once invitations go out: BLUEPRINT D1.
 - Gate pass: signed JWT, checked live; `passVersion` invalidates old passes.
-- Admin: password stored as an env var hash; session in a signed, HTTP-only, `SameSite=Lax` cookie; rate-limit login attempts.
-- Usher PIN: hashed; scanner endpoints only return name + party size.
+- Admin: password stored as an env var hash (scrypt, BLUEPRINT D4); session in a signed, HTTP-only, `SameSite=Lax` cookie; rate-limit login attempts. Changing the password ends every session (D5).
+- Usher PIN: hashed; scanner endpoints only return name + party size. Changing the PIN, or "sign out all ushers", ends every usher session (D5).
 - **Approval gate in one place:** a single server helper (`requireApproved(token)`) used by every page, server action and API route that returns locked content (story, programme, venue, dress code, FAQ, contacts, pass, day-of). Locked data is fetched only after it passes, so it never reaches the browser of an unapproved visitor.
 - Gate-pass tokens are only issued at approval and are checked live at the gate.
 - Story and venue photos are served through the same gate (or use unguessable file names), not as plain public images.
@@ -456,59 +400,17 @@ Storage estimate for 500 guests: well under 10 MB — far inside Neon's 1 GB fre
 
 ## 13. Project structure
 
-```
-wedding-rsvp/
-├─ app/
-│  ├─ (public)/page.tsx                 # landing
-│  ├─ i/[token]/page.tsx                # personal invitation
-│  ├─ i/[token]/pass/page.tsx           # gate pass
-│  ├─ i/[token]/day/page.tsx            # day-of page
-│  ├─ admin/(auth)/login/page.tsx
-│  ├─ admin/page.tsx                    # dashboard
-│  ├─ admin/guests/page.tsx
-│  ├─ admin/guests/[id]/page.tsx
-│  ├─ admin/settings/page.tsx
-│  ├─ scan/page.tsx                     # usher scanner
-│  ├─ api/track/open/[id]/route.ts      # email pixel
-│  ├─ api/scan/verify/route.ts
-│  ├─ api/cron/reminders/route.ts
-│  ├─ api/cron/send-queue/route.ts
-│  └─ layout.tsx
-├─ components/
-│  ├─ envelope/Envelope.tsx             # opening animation + dove seal
-│  ├─ Countdown.tsx
-│  ├─ Programme.tsx
-│  ├─ VenueCard.tsx
-│  ├─ DressCode.tsx
-│  ├─ Faq.tsx
-│  ├─ RsvpForm.tsx
-│  ├─ GatePass.tsx
-│  └─ admin/…
-├─ emails/                              # React Email templates
-├─ db/
-│  ├─ schema.ts                         # Drizzle tables
-│  ├─ index.ts                          # Neon client
-│  └─ seed.ts                           # wedding details, programme, FAQ
-├─ lib/
-│  ├─ tokens.ts                         # jose sign/verify, token hashing
-│  ├─ mailer.ts                         # Nodemailer Gmail transport
-│  ├─ whatsapp.ts                       # wa.me link builder
-│  ├─ maps.ts                           # Google Maps URL builders
-│  ├─ auth.ts                           # admin session
-│  └─ theme.ts                          # colour tokens
-├─ public/images/…                      # pre-compressed .webp
-├─ drizzle.config.ts
-├─ vercel.json                          # cron schedules
-└─ .env.example
-```
+> **Source of truth: the [README's project structure](../README.md#project-structure).**
+
+The code is built **backend first**: all logic lives in `server/` as plain TypeScript, tested directly (Vitest + PGlite), and `app/` pages, server actions and API routes are thin wrappers that call it. Pages and components are built after the backend is complete.
 
 ### Environment variables (`.env.example`)
 
 ```
 DATABASE_URL=            # Neon connection string
 APP_URL=                 # https://<project>.vercel.app
-TOKEN_SECRET=            # long random string for jose
-ADMIN_PASSWORD_HASH=     # bcrypt/argon2 hash
+TOKEN_SECRET=            # ≥32 random chars; never change after invites go out (BLUEPRINT D1)
+ADMIN_PASSWORD_HASH=     # scrypt hash from scripts/hash-password.ts
 GMAIL_USER=              # sending Gmail address
 GMAIL_APP_PASSWORD=      # Gmail app password (needs 2-Step Verification)
 CRON_SECRET=             # protects cron routes
@@ -520,8 +422,8 @@ CRON_SECRET=             # protects cron routes
 
 | Limit | Guard |
 |---|---|
-| Gmail ≈ 500 recipients/day | Email queue, batch of ≤50 per cron run, daily counter shown in admin |
-| Vercel cron = daily on Hobby | Reminders and queue processing run once daily; "Send now" button in admin for immediate sends |
+| Gmail ≈ 500 recipients/day | Email queue, cap of 400 per Kenya calendar day, daily counter shown in admin (BR-17) |
+| Vercel cron = daily on Hobby | "Send now" in admin drains the queue in small batches, each well inside the function time limit; the daily cron is a safety net (D7). Number of cron jobs allowed per project: check when deploying; the three jobs can be merged into one if needed |
 | Vercel function time 60 s | Keep each request small; batch emails in the queue |
 | 5,000 image transformations/month | Pre-compress images to `.webp`; use `unoptimized` for large backgrounds |
 | Neon compute sleeps when idle | First request after idle takes ~1 s — acceptable; warm it up on the wedding morning by opening the admin |

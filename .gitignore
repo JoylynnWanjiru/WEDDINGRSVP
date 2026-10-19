@@ -52,6 +52,7 @@ service-account*.json
 *.xlsx
 *.xls
 *.sql
+!server/db/migrations/*.sql
 *.dump
 *.backup
 /exports/

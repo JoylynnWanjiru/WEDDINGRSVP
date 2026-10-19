@@ -7,7 +7,16 @@ Two documents define this project. Read the relevant sections before building a 
 - `docs/PROJECT_SPEC.md`: **what to build with**. Stack, theme and colours, pages and routes, data fields, free-tier limits, build phases.
 - `docs/BLUEPRINT.md`: **how it must behave**. Actors, the invitation lifecycle (§5), business rules BR-1 to BR-23 (§6), edge cases E1 to E25 (§7), definition of done (§15).
 
-Where they disagree, **the blueprint wins on behaviour**: status names and transitions, rules and edge cases. The spec wins on stack, styling and layout.
+Where they disagree, **the blueprint wins on behaviour**: status names and transitions, rules and edge cases. The spec wins on stack, styling and layout. Each fact lives in one document only; the other links to it.
+
+When a design choice changes or refines a rule, record it in the blueprint's **Decisions log (§16)** as D6, D7, … and update the affected sections. Never silently edit a rule. Cite decisions in code like rules (`// D2`).
+
+## How the code is built: backend first
+
+- All logic lives in `server/` as plain TypeScript with no React or Next.js imports. Services take a `db: Db` argument so tests can pass in a PGlite database.
+- Every rule (BR-x) and edge case (E-x) gets a test in `tests/` before it is considered done. Run `npm test`.
+- `app/` pages, server actions and API routes stay thin: parse input, call a service, map `AppError.status` to the response.
+- Schema changes: edit `server/db/schema.ts`, then `npm run db:generate`, and commit the generated migration.
 
 ## Never commit
 
@@ -17,8 +26,8 @@ Where they disagree, **the blueprint wins on behaviour**: status names and trans
 
 ## Non-negotiables
 
-- Locked content (story, photos, programme, venues, coordinates, dress code, FAQ, contacts, pass, day-of) is fetched only after `requireApproved(token)` in `lib/access.ts` passes (BR-1 to BR-4). This applies to pages, server actions, API routes and emails.
-- Invitation status changes only through `lib/status.ts`, and every change is written to `activity_log`.
+- Locked content (story, photos, programme, venues, coordinates, dress code, FAQ, contacts, pass, day-of) is fetched only after `requireApproved(token)` in `server/services/access.ts` passes (BR-1 to BR-4). This applies to pages, server actions, API routes and emails.
+- Invitation status changes only through `server/domain/status.ts`, and every change is written to `activity_log`.
 - Server actions call `requireAdmin()` / `requireUsher()` themselves. A layout does not protect them.
 - Nothing couple-specific is hard-coded in components. It comes from the database or seed.
 - All input is validated on the server with Zod.
