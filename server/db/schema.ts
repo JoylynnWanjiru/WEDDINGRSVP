@@ -204,6 +204,7 @@ export const invitations = pgTable(
     emailSentAt: tz("email_sent_at"),
     whatsappSharedAt: tz("whatsapp_shared_at"),
     emailOpenedAt: tz("email_opened_at"),
+    emailBouncedAt: tz("email_bounced_at"), // E11: no emails until the address changes
     firstViewedAt: tz("first_viewed_at"),
     lastViewedAt: tz("last_viewed_at"),
     viewCount: integer("view_count").notNull().default(0),
@@ -314,6 +315,7 @@ export const emailQueue = pgTable(
     status: emailStatus("status").notNull().default("queued"),
     attempts: integer("attempts").notNull().default(0),
     lastError: text("last_error"),
+    messageId: text("message_id"), // Gmail's id once accepted
     dedupeKey: text("dedupe_key").unique(),
     scheduledFor: tz("scheduled_for").notNull().defaultNow(),
     sentAt: tz("sent_at"),

@@ -107,8 +107,11 @@ Running cost: **KSh 0**.
 │  │  ├─ purge.ts               # delete all guest data (BR-23)
 │  │  ├─ activity.ts            # audit log
 │  │  ├─ checkin.ts             # race-safe arrivals (never over-admit)
-│  │  └─ messaging.ts           # email queue, daily cap
-│  ├─ integrations/             # mailer.ts (Gmail), qr.ts
+│  │  ├─ messaging.ts           # email queue: claim, send, retry, daily cap, bounces
+│  │  ├─ compose.ts             # builds each email from current data (or cancels it)
+│  │  ├─ reminders.ts, whatsapp.ts, cron.ts
+│  ├─ emails/templates.ts       # email subject/HTML/text (escaped)
+│  ├─ integrations/             # mailer.ts (Gmail via Nodemailer), qr.ts
 │  ├─ utils/                    # whatsapp.ts, maps.ts, csv.ts, dates.ts
 │  ├─ validation/schemas.ts     # Zod schemas
 │  ├─ config.ts, errors.ts

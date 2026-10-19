@@ -157,6 +157,8 @@ export async function updateInvitation(db: Db, ctx: AdminCtx, invitationId: stri
     const set = Object.fromEntries(
       Object.entries({ ...patch, phone }).filter(([, v]) => v !== undefined),
     ) as Partial<typeof invitations.$inferInsert>;
+    // E11: a corrected address can receive email again.
+    if (patch.email !== undefined && patch.email !== inv.email) set.emailBouncedAt = null;
     const [updated] = await tx.update(invitations).set(set).where(eq(invitations.id, inv.id)).returning();
     await logActivity(tx, {
       ...adminLog(ctx),

@@ -15,7 +15,8 @@ When a design choice changes or refines a rule, record it in the blueprint's **D
 
 - All logic lives in `server/` as plain TypeScript with no React or Next.js imports. Services take a `db: Db` argument so tests can pass in a PGlite database.
 - Every rule (BR-x) and edge case (E-x) gets a test in `tests/` before it is considered done. Run `npm test`.
-- `app/` pages, server actions and API routes stay thin: parse input, call a service, map `AppError.status` to the response.
+- `app/` pages, server actions and API routes stay thin: parse input, call a service, map `AppError.status` to the response (`server/http.ts`).
+- Route handlers read the request (headers, params, body) **before** any `try/catch`. With Cache Components, Next.js leaves prerendering by throwing when the request is first read; catching that breaks it.
 - Schema changes: edit `server/db/schema.ts`, then `npm run db:generate`, and commit the generated migration.
 
 ## Never commit

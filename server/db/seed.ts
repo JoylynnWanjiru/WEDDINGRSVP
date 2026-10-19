@@ -2,6 +2,7 @@
 // PROJECT_SPEC §5. Couple names and venues are placeholders until the content
 // checklist (§16) is filled in; edit them in admin settings later.
 
+import { DEFAULT_WHATSAPP_TEMPLATE } from "../utils/whatsapp";
 import type { Db } from "./client";
 import { adminSettings, contacts, dressCode, faqItems, programmeItems, venues, weddings } from "./schema";
 
@@ -42,9 +43,7 @@ export async function seedWedding(db: Db, slug = "our-wedding") {
         gatesOpenAt: eat("2026-12-12T11:30"), // A12
         rsvpDeadline: eat("2026-11-14T23:59:59"), // A3
         venueCapacity: 300,
-        whatsappTemplate:
-          "Hello {firstName}! 💌\n{brideName} & {groomName} warmly invite you to our wedding on {date}.\n" +
-          "Open your personal invitation and RSVP here: {personalLink}\nKindly respond by {rsvpDeadline}.",
+        whatsappTemplate: DEFAULT_WHATSAPP_TEMPLATE,
       })
       .returning();
 

@@ -17,6 +17,8 @@ export const config = {
   },
   adminPasswordHash: () => required("ADMIN_PASSWORD_HASH"),
   cronSecret: () => required("CRON_SECRET"),
+  gmailUser: () => required("GMAIL_USER"),
+  gmailAppPassword: () => required("GMAIL_APP_PASSWORD"),
   /** v1 serves one wedding; the public teaser and request form use this slug. */
   weddingSlug: () => process.env.WEDDING_SLUG || "our-wedding",
 };
