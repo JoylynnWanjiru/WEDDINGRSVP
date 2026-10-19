@@ -1,0 +1,35 @@
+@import "tailwindcss";
+
+/* Theme tokens (docs/PROJECT_SPEC.md §3). Mirrored in lib/theme.ts. */
+:root {
+  --wine-night: #28030a;
+  --wine: #3d0f19;
+  --burgundy: #5e1f2d;
+  --mulberry: #662a39;
+  --gold: #c9ab66;
+  --gold-antique: #9c6934;
+  --gold-deep: #8a5a26; /* gold TEXT on light backgrounds */
+  --pearl: #e2d7d1;
+  --ivory: #faf6f2;
+  --white: #ffffff;
+}
+
+@theme inline {
+  --color-wine-night: var(--wine-night);
+  --color-wine: var(--wine);
+  --color-burgundy: var(--burgundy);
+  --color-mulberry: var(--mulberry);
+  --color-gold: var(--gold);
+  --color-gold-antique: var(--gold-antique);
+  --color-gold-deep: var(--gold-deep);
+  --color-pearl: var(--pearl);
+  --color-ivory: var(--ivory);
+  --font-display: var(--font-cormorant);
+  --font-sans: var(--font-jost);
+}
+
+body {
+  background: var(--wine);
+  color: var(--white);
+  font-family: var(--font-jost), system-ui, sans-serif;
+}
