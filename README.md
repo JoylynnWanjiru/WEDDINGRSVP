@@ -128,7 +128,7 @@ Running cost: **KSh 0**.
 
 ## Getting started
 
-**Prerequisites:** Node.js 20+, a free [Neon](https://neon.tech) database, and a Gmail account with 2-Step Verification (for an app password).
+**Prerequisites:** Node.js 24+ (it ships npm 11; npm 10 rejects this lock file), a free [Neon](https://neon.tech) database, and a Gmail account with 2-Step Verification (for an app password).
 
 ```bash
 git clone https://github.com/JoylynnWamjiru/WEDDINGRSVP.git
