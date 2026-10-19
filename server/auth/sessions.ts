@@ -110,17 +110,19 @@ export async function loginUsher(db: Db, weddingId: string, pin: string, device:
   return signJwt("usher", name, { w: weddingId, sv: row.usherSessionVersion }, USHER_SESSION_TTL);
 }
 
-export async function requireUsher(
-  db: Db,
-  sessionToken: string | undefined | null,
-): Promise<{ device: string; weddingId: string }> {
+declare const usherBrand: unique symbol;
+
+/** Proof of a valid usher session; gate services require it (like AdminSession). */
+export type UsherSession = { readonly device: string; readonly weddingId: string; readonly [usherBrand]: true };
+
+export async function requireUsher(db: Db, sessionToken: string | undefined | null): Promise<UsherSession> {
   const payload = sessionToken ? await verifyJwt(sessionToken, "usher") : null;
   if (payload?.sub && typeof payload.w === "string") {
     const [row] = await db
       .select({ version: adminSettings.usherSessionVersion })
       .from(adminSettings)
       .where(eq(adminSettings.weddingId, payload.w));
-    if (row && payload.sv === row.version) return { device: payload.sub, weddingId: payload.w };
+    if (row && payload.sv === row.version) return { device: payload.sub, weddingId: payload.w } as UsherSession;
   }
   throw new AppError("UNAUTHORIZED", "Please enter the gate PIN.");
 }

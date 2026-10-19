@@ -66,7 +66,7 @@ Running cost: **KSh 0**.
 │  │  └─ v/[token]/page.tsx     # URL inside the QR code
 │  ├─ api/
 │  │  ├─ track/open/[id]/       # email open pixel
-│  │  ├─ scan/verify|roster|sync/
+│  │  ├─ scan/login|verify|admit|search|roster|sync/   # usher scanner API
 │  │  ├─ export/[kind]/         # CSV exports
 │  │  └─ cron/reminders|send-queue|post-wedding/
 │  ├─ layout.tsx                # fonts, metadata
@@ -104,9 +104,12 @@ Running cost: **KSh 0**.
 │  │  │  ├─ requests.ts         # review public requests
 │  │  │  ├─ guests.ts           # add, CSV import, edit, links, list, detail, preview
 │  │  │  ├─ dashboard.ts, exports.ts, settings.ts
+│  │  │  ├─ gate.ts             # usher PIN, sign out ushers, correct arrivals
 │  │  ├─ purge.ts               # delete all guest data (BR-23)
 │  │  ├─ activity.ts            # audit log
-│  │  ├─ checkin.ts             # race-safe arrivals (never over-admit)
+│  │  ├─ gate.ts                # pass + QR, verify scan, admit, name search, offline roster/sync
+│  │  ├─ gate-login.ts          # usher PIN login
+│  │  ├─ day-of.ts              # programme with "happening now / next"
 │  │  ├─ messaging.ts           # email queue: claim, send, retry, daily cap, bounces
 │  │  ├─ compose.ts             # builds each email from current data (or cancels it)
 │  │  ├─ reminders.ts, whatsapp.ts, cron.ts

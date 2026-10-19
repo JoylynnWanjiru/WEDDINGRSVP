@@ -10,6 +10,8 @@ export type OutgoingEmail = {
   subject: string;
   html: string;
   text: string;
+  /** Inline images referenced from the HTML as cid:<cid> (Gmail blocks data: URIs). */
+  attachments?: { filename: string; content: Buffer; cid: string; contentType: string }[];
 };
 
 export interface Mailer {
@@ -56,6 +58,7 @@ export function createGmailMailer(): Mailer {
           subject: email.subject,
           html: email.html,
           text: email.text,
+          attachments: email.attachments,
         });
         return { messageId: info.messageId };
       } catch (err) {

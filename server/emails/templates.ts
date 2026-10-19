@@ -32,6 +32,9 @@ function layout(c: CoupleInfo, body: string, extra = ""): string {
 const button = (href: string, label: string) =>
   `<p style="text-align:center;margin:28px 0"><a href="${esc(href)}" style="background:#C9AB66;color:#3D0F19;text-decoration:none;padding:14px 28px;font-family:Arial,sans-serif;font-weight:bold;letter-spacing:1px;display:inline-block">${esc(label)}</a></p>`;
 
+const qrImage = (cid?: string) =>
+  cid ? `<p style="text-align:center;margin:8px 0 20px"><img src="cid:${esc(cid)}" width="220" height="220" alt="Your gate pass QR code" style="border:8px solid #FFFFFF;outline:1px solid #E2D7D1"></p>` : "";
+
 const p = (s: string) => `<p style="margin:0 0 14px">${s}</p>`;
 
 // --- templates ---
@@ -110,6 +113,7 @@ export function approvalPassEmail(d: {
   pageLink: string;
   gatesOpenAt: Date;
   content: ApprovedContent;
+  qrCid?: string;
 }): Rendered {
   const subject = `Your attendance is confirmed: ${couple(d.couple)}`;
   const details = detailsBlock(d.content);
@@ -118,6 +122,7 @@ export function approvalPassEmail(d: {
     d.couple,
     p(`Dear ${esc(d.firstName)},`) +
       p(`We're delighted to confirm ${esc(party)}. Gates open at <strong>${esc(formatTime(d.gatesOpenAt))}</strong>.`) +
+      qrImage(d.qrCid) +
       button(d.passLink, "VIEW YOUR GATE PASS") +
       p(`<span style="font-size:13px;color:#8A5A26">Show the QR code at the gate. Screenshots are fine; your pass is checked live.</span>`) +
       details.html +
@@ -139,13 +144,14 @@ export function reminderNoResponseEmail(d: { couple: CoupleInfo; firstName: stri
   return { subject, html, text };
 }
 
-export function dayBeforeEmail(d: { couple: CoupleInfo; firstName: string; passLink: string; pageLink: string; gatesOpenAt: Date; content: ApprovedContent }): Rendered {
+export function dayBeforeEmail(d: { couple: CoupleInfo; firstName: string; passLink: string; pageLink: string; gatesOpenAt: Date; content: ApprovedContent; qrCid?: string }): Rendered {
   const subject = `See you tomorrow: ${couple(d.couple)}`;
   const details = detailsBlock({ ...d.content, programme: d.content.programme.slice(0, 3) });
   const html = layout(
     d.couple,
     p(`Dear ${esc(d.firstName)},`) +
       p(`We can't wait to celebrate with you tomorrow. Gates open at <strong>${esc(formatTime(d.gatesOpenAt))}</strong>.`) +
+      qrImage(d.qrCid) +
       button(d.passLink, "OPEN YOUR GATE PASS") +
       details.html +
       button(d.pageLink, "DAY-OF DETAILS"),

@@ -21,12 +21,15 @@ import {
   type CoupleInfo,
   type Rendered,
 } from "../emails/templates";
+import type { OutgoingEmail } from "../integrations/mailer";
+import { qrPng } from "../integrations/qr";
 import { approvedFrom } from "./access";
 import { getApprovedContent } from "./content";
+import { passTokenFor, scanUrl } from "./gate";
 
 type QueueRow = typeof emailQueue.$inferSelect;
 
-export type Composed = { send: Rendered & { to: string; fromName: string } } | { cancel: string };
+export type Composed = { send: Rendered & { to: string; fromName: string; attachments?: OutgoingEmail["attachments"] } } | { cancel: string };
 
 // --- open-tracking pixel token: queue id + keyed signature, so ids can't be guessed (E12) ---
 
@@ -91,13 +94,19 @@ export async function composeEmail(db: Db, row: QueueRow, inv: Invitation, weddi
       const content = await getApprovedContent(db, approved);
       const passLink = `${link}/pass`;
       if (row.template === "details_updated") return { send: { ...base, ...detailsUpdatedEmail({ couple: c, firstName, pageLink: link }) } };
+
+      // The QR for the current pass version, as an inline attachment (D14).
+      const qr = { filename: "gate-pass.png", cid: "gate-pass-qr", contentType: "image/png", content: await qrPng(scanUrl(await passTokenFor(inv))) };
+      const withQr = { ...base, attachments: [qr] };
       if (row.template === "reminder_day_before") {
-        return { send: { ...base, ...dayBeforeEmail({ couple: c, firstName, passLink, pageLink: `${link}/day`, gatesOpenAt: wedding.gatesOpenAt, content }) } };
+        return {
+          send: { ...withQr, ...dayBeforeEmail({ couple: c, firstName, passLink, pageLink: `${link}/day`, gatesOpenAt: wedding.gatesOpenAt, content, qrCid: qr.cid }) },
+        };
       }
       return {
         send: {
-          ...base,
-          ...approvalPassEmail({ couple: c, firstName, partySize: inv.partySize, passLink, pageLink: link, gatesOpenAt: wedding.gatesOpenAt, content }),
+          ...withQr,
+          ...approvalPassEmail({ couple: c, firstName, partySize: inv.partySize, passLink, pageLink: link, gatesOpenAt: wedding.gatesOpenAt, content, qrCid: qr.cid }),
         },
       };
     }

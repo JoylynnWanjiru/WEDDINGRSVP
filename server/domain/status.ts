@@ -46,6 +46,7 @@ export type StatusAction =
   | { type: "decline_attendance" }
   | { type: "reopen" }
   | { type: "admit"; arrivedAfter: number; partySize: number }
+  | { type: "correct_arrivals"; arrivedAfter: number; partySize: number }
   | { type: "revoke" }
   | { type: "restore"; previous: InvitationStatus | null };
 
@@ -91,6 +92,12 @@ export function nextStatus(from: InvitationStatus, action: StatusAction): Invita
     case "admit":
       // BR-13
       if (from !== "approved" && from !== "partially_arrived") return invalid(from, action.type);
+      return action.arrivedAfter >= action.partySize ? "arrived" : "partially_arrived";
+
+    case "correct_arrivals":
+      // §7: an admin fixes a mis-tap at the gate; check_ins keeps the original entries.
+      if (!["approved", "partially_arrived", "arrived"].includes(from)) return invalid(from, action.type);
+      if (action.arrivedAfter <= 0) return "approved";
       return action.arrivedAfter >= action.partySize ? "arrived" : "partially_arrived";
 
     case "revoke":

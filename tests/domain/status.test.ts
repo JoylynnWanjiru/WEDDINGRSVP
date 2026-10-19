@@ -79,6 +79,13 @@ describe("§5a invitation lifecycle", () => {
     expect(allowedFrom({ type: "admit", arrivedAfter: 1, partySize: 1 })).toEqual(["approved", "partially_arrived"]);
   });
 
+  it("§7: an admin can correct arrivals for approved / arriving guests only", () => {
+    expect(nextStatus("arrived", { type: "correct_arrivals", arrivedAfter: 2, partySize: 3 })).toBe("partially_arrived");
+    expect(nextStatus("partially_arrived", { type: "correct_arrivals", arrivedAfter: 0, partySize: 3 })).toBe("approved");
+    expect(nextStatus("approved", { type: "correct_arrivals", arrivedAfter: 3, partySize: 3 })).toBe("arrived");
+    expect(allowedFrom({ type: "correct_arrivals", arrivedAfter: 0, partySize: 1 })).toEqual(["approved", "partially_arrived", "arrived"]);
+  });
+
   it("revoke from any state except arrived; restore returns the previous state (E22)", () => {
     expect(allowedFrom({ type: "revoke" })).toEqual(all.filter((s) => s !== "arrived" && s !== "revoked"));
     expect(nextStatus("revoked", { type: "restore", previous: "approved" })).toBe("approved");
