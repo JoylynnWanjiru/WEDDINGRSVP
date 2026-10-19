@@ -22,6 +22,7 @@ export type RsvpResult = {
   unchanged: boolean;
 };
 
+/** The guest responds through their personal link. */
 export async function submitRsvp(
   db: Db,
   token: string | null | undefined,
@@ -33,19 +34,33 @@ export async function submitRsvp(
 
   const access = await getAccess(db, token);
   if (access.level === "public") throw new AppError("FORBIDDEN", "This invitation link isn't valid.");
-  const { wedding } = access;
 
-  // BR-7 / E14: guests can't respond after the deadline (admins record late responses in Module 4).
-  if (!isRsvpOpen(wedding.rsvpDeadline, now)) {
+  // BR-7 / E14: guests can't respond after the deadline; admins can (applyRsvp with checkDeadline false).
+  if (!isRsvpOpen(access.wedding.rsvpDeadline, now)) {
     throw new AppError("DEADLINE_PASSED", "The RSVP deadline has passed. Please contact the couple.");
   }
 
+  return applyRsvp(db, access.invitation.id, input, { actor: "guest", now });
+}
+
+/**
+ * Shared core for guest and admin responses. Callers have already checked who
+ * may respond and the deadline; the lifecycle and party rules are enforced here.
+ */
+export async function applyRsvp(
+  db: Db,
+  invitationId: string,
+  input: RsvpInput,
+  ctx: { actor: "guest" | "admin"; actorLabel?: string; now: Date },
+): Promise<RsvpResult> {
+  const { now } = ctx;
   const phone = normalizeOptionalPhone(input.phone);
   const fingerprint = fingerprintOf(input, phone);
 
   return db.transaction(async (tx) => {
     // Lock the invitation so concurrent submissions (E1) apply one after another.
-    const [inv] = await tx.select().from(invitations).where(eq(invitations.id, access.invitation.id)).for("update");
+    const [inv] = await tx.select().from(invitations).where(eq(invitations.id, invitationId)).for("update");
+    if (!inv) throw new AppError("NOT_FOUND", "Invitation not found.");
     assertCanRespond(inv.status);
 
     // BR-9: an identical resubmission (double tap, retry) changes nothing and sends nothing.
@@ -125,7 +140,8 @@ export async function submitRsvp(
 
     await logActivity(tx, {
       weddingId: inv.weddingId,
-      actor: "guest",
+      actor: ctx.actor,
+      actorLabel: ctx.actorLabel,
       invitationId: inv.id,
       action: input.attending ? "rsvp_yes" : "rsvp_no",
       meta: { from: inv.status, to, partySize: members.length, passVersionBumped: passVersion !== inv.passVersion },

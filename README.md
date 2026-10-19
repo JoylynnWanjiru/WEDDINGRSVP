@@ -98,6 +98,13 @@ Running cost: **KSh 0**.
 │  │  ├─ invitation-page.ts     # guest page data per access level, view tracking
 │  │  ├─ rsvp.ts                # submit / change a response
 │  │  ├─ requests.ts            # public "request an invitation"
+│  │  ├─ transitions.ts         # status change + log in one step (admin, gate)
+│  │  ├─ admin/                 # every function needs an AdminCtx (proof of login)
+│  │  │  ├─ approvals.ts        # approve / decline / revoke / restore, capacity check
+│  │  │  ├─ requests.ts         # review public requests
+│  │  │  ├─ guests.ts           # add, CSV import, edit, links, list, detail, preview
+│  │  │  ├─ dashboard.ts, exports.ts, settings.ts
+│  │  ├─ purge.ts               # delete all guest data (BR-23)
 │  │  ├─ activity.ts            # audit log
 │  │  ├─ checkin.ts             # race-safe arrivals (never over-admit)
 │  │  └─ messaging.ts           # email queue, daily cap

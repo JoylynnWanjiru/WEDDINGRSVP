@@ -62,6 +62,124 @@ export const requestInput = z
 
 export type RequestInput = z.infer<typeof requestInput>;
 
+// --- admin ---
+
+export const SIDES = ["bride", "groom", "both"] as const;
+
+const seatAllowance = z.coerce.number().int().min(0, "Seat allowance can't be negative.").max(20);
+const nullableText = (max: number) =>
+  z
+    .string()
+    .trim()
+    .max(max)
+    .nullable()
+    .optional()
+    .transform((v) => (v === undefined ? undefined : v || null));
+
+export const invitationInput = z.object({
+  fullName,
+  phone: optionalText(30),
+  email: optionalEmail,
+  group: optionalText(60),
+  side: z.enum(SIDES).optional(),
+  seatAllowance: seatAllowance.optional(),
+  notes: optionalText(1000),
+});
+
+/** Edit form: every field optional; null clears it. */
+export const invitationPatch = z.object({
+  fullName: fullName.optional(),
+  phone: nullableText(30),
+  email: nullableText(200).refine((v) => v == null || z.email().safeParse(v).success, {
+    message: "Please enter a valid email address.",
+  }),
+  group: nullableText(60),
+  side: z.enum(SIDES).nullable().optional(),
+  seatAllowance: seatAllowance.optional(),
+  notes: nullableText(1000),
+});
+
+const isoDate = z.coerce.date({ message: "Please enter a valid date and time." });
+
+export const weddingPatch = z
+  .object({
+    brideName: fullName,
+    groomName: fullName,
+    monogram: nullableText(10),
+    weddingDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Use the format YYYY-MM-DD."),
+    ceremonyStartAt: isoDate,
+    gatesOpenAt: isoDate,
+    rsvpDeadline: isoDate,
+    venueCapacity: z.coerce.number().int().min(1).max(100_000).nullable(),
+    storyText: nullableText(10_000),
+    hashtag: nullableText(60),
+    whatsappTemplate: nullableText(1000),
+    contributionInfo: z.record(z.string(), z.string().max(200)).nullable(),
+    defaultSeatAllowance: seatAllowance,
+    dailyEmailCap: z.coerce.number().int().min(0).max(450, "Stay below Gmail's ~500/day limit (BR-17)."),
+    reminderIntervalDays: z.coerce.number().int().min(1).max(30),
+    purgeAfterDays: z.coerce.number().int().min(1).max(365),
+    requirePhoneCheck: z.boolean(),
+    publicRequestsEnabled: z.boolean(),
+  })
+  .partial();
+
+const sortOrder = z.coerce.number().int().min(0).max(10_000).default(0);
+const id = z.uuid().optional();
+
+export const venueInput = z.object({
+  id,
+  kind: z.enum(EVENT_KINDS),
+  name: z.string().trim().min(1).max(200),
+  address: nullableText(500),
+  landmarks: nullableText(1000),
+  lat: z.coerce.number().min(-90).max(90).nullable().optional(),
+  lng: z.coerce.number().min(-180).max(180).nullable().optional(),
+  parkingNotes: nullableText(1000),
+  mapImageUrl: nullableText(500),
+  sortOrder,
+});
+
+export const programmeInput = z.object({
+  id,
+  venueId: z.uuid().nullable().optional(),
+  startsAt: isoDate,
+  title: z.string().trim().min(1).max(200),
+  detail: nullableText(1000),
+  sortOrder,
+});
+
+export const faqInput = z.object({
+  id,
+  question: z.string().trim().min(1).max(300),
+  answer: z.string().trim().min(1).max(3000),
+  sortOrder,
+});
+
+export const contactInput = z.object({
+  id,
+  role: z.string().trim().min(1).max(60),
+  name: z.string().trim().min(1).max(120),
+  phone: nullableText(30),
+  sortOrder,
+});
+
+export const dressCodeInput = z.object({
+  text: z.string().trim().min(1).max(3000),
+  swatches: z
+    .array(z.object({ name: z.string().trim().min(1).max(40), hex: z.string().regex(/^#[0-9a-fA-F]{6}$/, "Use a colour like #5E1F2D.") }))
+    .max(12),
+});
+
+export const photoInput = z.object({
+  id,
+  section: z.string().trim().min(1).max(40),
+  // Local /public paths or https URLs only.
+  src: z.string().trim().max(500).regex(/^(\/[^\s]*|https:\/\/[^\s]+)$/, "Use a /path or an https:// link."),
+  alt: z.string().trim().max(200).default(""),
+  sortOrder,
+});
+
 /** Parses or throws VALIDATION with field-level messages for the form. */
 export function parseInput<T extends z.ZodType>(schema: T, raw: unknown): z.output<T> {
   const result = schema.safeParse(raw);

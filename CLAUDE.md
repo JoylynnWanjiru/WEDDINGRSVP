@@ -27,8 +27,8 @@ When a design choice changes or refines a rule, record it in the blueprint's **D
 ## Non-negotiables
 
 - Locked content (story, photos, programme, venues, coordinates, dress code, FAQ, contacts, pass, day-of) is fetched only after `requireApproved(token)` in `server/services/access.ts` passes (BR-1 to BR-4). This applies to pages, server actions, API routes and emails.
-- Invitation status changes only through `server/domain/status.ts`, and every change is written to `activity_log`.
-- Server actions call `requireAdmin()` / `requireUsher()` themselves. A layout does not protect them.
+- Every invitation status change gets its new status from `nextStatus()` in `server/domain/status.ts` and is written to `activity_log` in the same transaction. Admin and gate actions use `applyTransition()` in `server/services/transitions.ts`.
+- Admin services take an `AdminCtx` (from `getAdminContext()`, which calls `requireAdmin()`) and scope every query to `ctx.weddingId`. Server actions must build it themselves: a layout does not protect them.
 - Nothing couple-specific is hard-coded in components. It comes from the database or seed.
 - All input is validated on the server with Zod.
 - Use the theme tokens in `app/globals.css`. Gold `#C9AB66` is never text on ivory; use `gold-deep` instead.

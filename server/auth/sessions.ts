@@ -59,13 +59,22 @@ export async function loginAdmin(password: string): Promise<string | null> {
   return signJwt("admin", "admin", { pf: fingerprint(stored) }, ADMIN_SESSION_TTL);
 }
 
+declare const adminBrand: unique symbol;
+
+/**
+ * Proof of a valid admin session. Only requireAdmin() creates one, and every
+ * admin service requires it, so calling one without checking the session is a
+ * compile error (BR-10).
+ */
+export type AdminSession = { readonly label: string; readonly [adminBrand]: true };
+
 /** E24: changing ADMIN_PASSWORD_HASH ends every existing admin session. */
-export async function requireAdmin(sessionToken: string | undefined | null): Promise<{ label: string }> {
+export async function requireAdmin(sessionToken: string | undefined | null): Promise<AdminSession> {
   const payload = sessionToken ? await verifyJwt(sessionToken, "admin") : null;
   if (!payload || payload.pf !== fingerprint(config.adminPasswordHash())) {
     throw new AppError("UNAUTHORIZED", "Please sign in.");
   }
-  return { label: "admin" };
+  return { label: "admin" } as AdminSession;
 }
 
 // --- ushers (A6: one shared PIN, each device named, e.g. "Gate 1") ---
