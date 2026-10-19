@@ -9,6 +9,12 @@ Two documents define this project. Read the relevant sections before building a 
 
 Where they disagree, **the blueprint wins on behaviour**: status names and transitions, rules and edge cases. The spec wins on stack, styling and layout.
 
+## Never commit
+
+- Secrets of any kind: `.env.local`, API keys, Gmail app password, `DATABASE_URL`, `TOKEN_SECRET`, password hashes, PINs. They go in `.env.local` locally and in Vercel environment variables in production. `.env.example` holds empty placeholders only.
+- Real guest data: names, phones, emails, guest-list CSVs, exports, database dumps. Seed data and tests use obviously fake values (`0700000000`, `@example.com`).
+- Before every commit, review `git diff --cached` for the above. CI runs gitleaks on every push.
+
 ## Non-negotiables
 
 - Locked content (story, photos, programme, venues, coordinates, dress code, FAQ, contacts, pass, day-of) is fetched only after `requireApproved(token)` in `lib/access.ts` passes (BR-1 to BR-4). This applies to pages, server actions, API routes and emails.

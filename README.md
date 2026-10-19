@@ -143,6 +143,8 @@ npm run dev                    # http://localhost:3000
 
 Never commit `.env.local`. Add the same variables in **Vercel → Project → Settings → Environment Variables**.
 
+> **Security:** secrets and real guest data never go in the repo. `.gitignore` blocks env files, keys, guest-list CSVs (except the template), spreadsheets and database dumps, and CI scans every push with [gitleaks](https://github.com/gitleaks/gitleaks). If a secret is ever committed, **rotate it immediately**. Deleting the commit is not enough.
+
 ### Scripts
 
 | Command | Does |

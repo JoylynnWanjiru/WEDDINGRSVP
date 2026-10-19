@@ -37,6 +37,26 @@ yarn-error.log*
 # vercel
 .vercel
 
+# secrets and keys: never commit
+*.key
+*.p12
+*.pfx
+*.crt
+credentials*.json
+service-account*.json
+/secrets/
+
+# guest personal data: real guest lists, exports and DB dumps stay local
+*.csv
+!public/templates/*.csv
+*.xlsx
+*.xls
+*.sql
+*.dump
+*.backup
+/exports/
+/data/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
