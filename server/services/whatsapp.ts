@@ -5,24 +5,16 @@
 import { and, eq } from "drizzle-orm";
 import { inviteLink } from "../auth/tokens";
 import type { Db } from "../db/client";
-import { invitations, weddings } from "../db/schema";
+import { invitations, weddings, type Invitation, type Wedding } from "../db/schema";
 import { AppError } from "../errors";
 import { formatDate, formatDateTime } from "../utils/dates";
 import { DEFAULT_WHATSAPP_TEMPLATE, fillTemplate, whatsappUrl } from "../utils/whatsapp";
 import { adminActor, type AdminCtx } from "./admin/context";
 import { applyTransition, lockInvitation } from "./transitions";
 
-export async function getWhatsappShare(db: Db, ctx: AdminCtx, invitationId: string): Promise<{ url: string; message: string }> {
-  const [row] = await db
-    .select({ inv: invitations, wedding: weddings })
-    .from(invitations)
-    .innerJoin(weddings, eq(invitations.weddingId, weddings.id))
-    .where(and(eq(invitations.id, invitationId), eq(invitations.weddingId, ctx.weddingId)));
-  if (!row) throw new AppError("NOT_FOUND", "Guest not found.");
-  const { inv, wedding } = row;
-  if (!inv.phone) throw new AppError("VALIDATION", "This guest has no phone number.");
-  if (inv.status === "revoked") throw new AppError("CONFLICT", "This invitation is revoked.");
-
+/** The wa.me link and message for one guest, or null if they can't be sent one. */
+export function buildWhatsappShare(inv: Invitation, wedding: Wedding): { url: string; message: string } | null {
+  if (!inv.phone || inv.status === "revoked") return null;
   const message = fillTemplate(wedding.whatsappTemplate || DEFAULT_WHATSAPP_TEMPLATE, {
     firstName: inv.fullName.trim().split(/\s+/)[0],
     brideName: wedding.brideName,
@@ -32,6 +24,18 @@ export async function getWhatsappShare(db: Db, ctx: AdminCtx, invitationId: stri
     rsvpDeadline: formatDateTime(wedding.rsvpDeadline),
   });
   return { url: whatsappUrl(inv.phone, message), message };
+}
+
+export async function getWhatsappShare(db: Db, ctx: AdminCtx, invitationId: string): Promise<{ url: string; message: string }> {
+  const [row] = await db
+    .select({ inv: invitations, wedding: weddings })
+    .from(invitations)
+    .innerJoin(weddings, eq(invitations.weddingId, weddings.id))
+    .where(and(eq(invitations.id, invitationId), eq(invitations.weddingId, ctx.weddingId)));
+  if (!row) throw new AppError("NOT_FOUND", "Guest not found.");
+  if (!row.inv.phone) throw new AppError("VALIDATION", "This guest has no phone number.");
+  if (row.inv.status === "revoked") throw new AppError("CONFLICT", "This invitation is revoked.");
+  return buildWhatsappShare(row.inv, row.wedding)!;
 }
 
 /** Records whatsapp_shared_at and moves a draft to SENT (§5a). */

@@ -14,6 +14,7 @@ import { invitationInput, invitationPatch, parseInput, rsvpInput } from "../../v
 import { logActivity } from "../activity";
 import { getInvitationPage } from "../invitation-page";
 import { applyRsvp } from "../rsvp";
+import { buildWhatsappShare } from "../whatsapp";
 import { lockInvitation } from "../transitions";
 import { adminLog, loadWedding, type AdminCtx } from "./context";
 
@@ -215,11 +216,25 @@ export async function listInvitations(db: Db, ctx: AdminCtx, filter: GuestFilter
     where.push(or(ilike(invitations.fullName, q), ilike(invitations.email, q), phoneQ ? eq(invitations.phone, phoneQ) : ilike(invitations.phone, q)));
   }
 
-  const rows = await db.select().from(invitations).where(and(...where)).orderBy(asc(invitations.fullName));
+  const [rows, wedding] = await Promise.all([
+    db.select().from(invitations).where(and(...where)).orderBy(asc(invitations.fullName)),
+    loadWedding(db, ctx),
+  ]);
   return rows
     .filter((r) => !filter.notViewed || (!r.firstViewedAt && r.status !== "draft" && r.status !== "revoked"))
     .filter((r) => !filter.noResponse || (!r.respondedAt && r.status !== "revoked"))
-    .map(listRow);
+    .map((r) => ({
+      ...listRow(r),
+      // Ready-to-use links for the Copy and WhatsApp buttons in the list (admin only).
+      link: inviteLink(r.id, r.inviteTokenVersion),
+      whatsappUrl: buildWhatsappShare(r, wedding)?.url ?? null,
+    }));
+}
+
+/** The groups in use, for the list filter. */
+export async function listGroups(db: Db, ctx: AdminCtx): Promise<string[]> {
+  const rows = await db.selectDistinct({ group: invitations.group }).from(invitations).where(eq(invitations.weddingId, ctx.weddingId));
+  return rows.map((r) => r.group).filter((g): g is string => !!g).sort((a, b) => a.localeCompare(b));
 }
 
 const listRow = (r: Invitation) => ({
@@ -234,6 +249,7 @@ const listRow = (r: Invitation) => ({
   partySize: r.partySize,
   arrivedCount: r.arrivedCount,
   emailSentAt: r.emailSentAt,
+  emailBouncedAt: r.emailBouncedAt,
   whatsappSharedAt: r.whatsappSharedAt,
   firstViewedAt: r.firstViewedAt,
   respondedAt: r.respondedAt,
@@ -248,7 +264,7 @@ export async function getInvitationDetail(db: Db, ctx: AdminCtx, invitationId: s
     .from(invitations)
     .where(and(eq(invitations.id, invitationId), eq(invitations.weddingId, ctx.weddingId)));
   if (!inv) throw new AppError("NOT_FOUND", "Guest not found.");
-  const [party, events, timeline] = await Promise.all([
+  const [party, events, timeline, wedding] = await Promise.all([
     db.select().from(partyMembers).where(eq(partyMembers.invitationId, inv.id)).orderBy(asc(partyMembers.sortOrder)),
     db.select().from(rsvpEvents).where(eq(rsvpEvents.invitationId, inv.id)),
     db
@@ -256,6 +272,7 @@ export async function getInvitationDetail(db: Db, ctx: AdminCtx, invitationId: s
       .from(activityLog)
       .where(eq(activityLog.invitationId, inv.id))
       .orderBy(desc(activityLog.at)),
+    loadWedding(db, ctx),
   ]);
   return {
     ...listRow(inv),
@@ -268,6 +285,7 @@ export async function getInvitationDetail(db: Db, ctx: AdminCtx, invitationId: s
     approvedAt: inv.approvedAt,
     revokedAt: inv.revokedAt,
     link: inviteLink(inv.id, inv.inviteTokenVersion),
+    whatsapp: buildWhatsappShare(inv, wedding),
     party: party.map((m) => ({ fullName: m.fullName, isChild: m.isChild, dietary: m.dietary, dietaryNotes: m.dietaryNotes, isPrimary: m.isPrimary })),
     events: events.map((e) => ({ event: e.event, attending: e.attending })),
     timeline,
