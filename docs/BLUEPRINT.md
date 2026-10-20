@@ -2,7 +2,7 @@
 
 > Companion to [`PROJECT_SPEC.md`](PROJECT_SPEC.md) (stack, colours, pages, folder structure).
 > This blueprint defines **behaviour**: who acts, how an invitation moves, the rules, and the edge cases.
-> Prepared 19 October 2026 · Updated 20 October 2026 (decisions D1–D22, §16) · Wedding date 12 December 2026 · Items marked **[ASSUMPTION]** need confirming.
+> Prepared 19 October 2026 · Updated 20 October 2026 (decisions D1–D23, §16) · Wedding date **Saturday 19 December 2026** (confirmed 20 Oct 2026) · Items marked **[ASSUMPTION]** need confirming.
 
 ---
 
@@ -180,7 +180,7 @@ PENDING ──couple accepts──► ACCEPTED (creates a DRAFT invitation; fina
 ### RSVP
 - **BR-5** Party size = 1 (primary guest) + named extras; extras ≤ seat allowance. Submissions exceeding it are rejected with a clear message.
 - **BR-6** Every party member needs a full name; adult/child flag; dietary choice (default "none").
-- **BR-7** Responses and edits are accepted until the RSVP deadline (Africa/Nairobi time). After it, the form is read-only for guests; admins can still edit. **[ASSUMPTION: deadline 14 November 2026, four weeks before]**
+- **BR-7** Responses and edits are accepted until the RSVP deadline (Africa/Nairobi time). After it, the form is read-only for guests; admins can still edit. (deadline **5 December 2026**, 11:59 pm EAT, confirmed by the couple)
 - **BR-8** Adding a person after approval returns the invitation to AWAITING_APPROVAL. Removing a person or changing dietary details keeps it APPROVED and updates the pass immediately. **Replacing** one named person with another counts as adding (a different person would arrive at the gate). Names are compared ignoring case and extra spaces.
 - **BR-9** Submitting the same response twice (double-tap, retry) produces one record, not two.
 
@@ -305,7 +305,7 @@ No external system calls into this app, so there is **no public API contract** t
 - One codebase: **TypeScript + Next.js**, hosted on **Vercel Hobby**; **Neon Postgres**; **Gmail SMTP**; **WhatsApp share links** (see spec §2).
 - **KSh 0** running cost.
 - Vercel Hobby is **personal / non-commercial** — fine for this wedding; reselling requires Pro.
-- **Timeline:** invitations should go out between **17 and 31 October 2026** (6–8 weeks before 12 December). Phases 0–3 of the spec's build order come first.
+- **Timeline:** invitations should go out between **24 October and 7 November 2026** (6–8 weeks before 19 December). Phases 0–3 of the spec's build order come first.
 - Built by one developer.
 - Theme: burgundy, gold and white (spec §3).
 
@@ -315,8 +315,8 @@ No external system calls into this app, so there is **no public API contract** t
 |---|---|
 | A1 | Every "Yes" needs the couple's approval — never automatic. |
 | A2 | One invitation = one household/party; default seat allowance **0 extras** unless set. |
-| A3 | RSVP deadline **14 November 2026**. |
-| A4 | Ceremony and reception **[same venue / different venues?]** — the system supports both. |
+| A3 | RSVP deadline **5 December 2026**, 11:59 pm EAT (confirmed). |
+| A4 | Ceremony and reception at the **same venue** (confirmed). The system still supports separate venues. |
 | A5 | Couple and planner share **one admin login** in v1. |
 | A6 | Ushers share **one gate PIN**; each scanner device is named (e.g. "Gate 1"). |
 | A7 | Over-capacity approval = **warning, not block**. |
@@ -432,3 +432,4 @@ Choices that refine or change earlier drafts of this blueprint, with their reaso
 | D20 | **Gate controls for the couple.** Change the usher PIN or "sign out all ushers" (both end every scanner session, D5). Correct the arrived count with a reason: the original check-in rows are kept and the correction is logged (§7 one-way actions). | A lost phone on the day (E26) and a mis-tapped count both need a fix that leaves an audit trail. | E26, §7 |
 | D21 | **Public invitation requests are off by default.** The public page shows only the envelope, names, date, countdown and the private-celebration note. Turning `publicRequestsEnabled` on in settings brings the form back; everything behind it (D3, D10, E19) stays built and tested. | The couple's decision (20 Oct 2026): the reference site has no request option, and a minimal public page fits the privacy rule (§4a). Missed guests contact the couple directly. | A11, U11, spec §4 |
 | D22 | **One page per guest.** `/i/[token]` holds everything, with a sticky section navigation bar (Invitation · Our story · The day · Details · Gate pass · RSVP) like the reference site; each guest sees only the items for sections they're allowed to see. For approved guests the gate pass (QR) is a section near the top, and on the wedding day a live "happening now / next" banner leads the page. The old `/pass` and `/day` addresses redirect (HTTP 307) to those sections, and email buttons link to them. "Pass first viewed" is recorded when an approved guest taps the seal, a real person rather than a link preview. | The couple's decision (20 Oct 2026): separate pages make guests hunt for the right link, especially at the gate. One link from invitation to RSVP to gate is simpler. | Spec §4 routes, U7, U8, N2 |
+| D23 | **Changing the wedding date moves the programme with it**, by the same number of days and at the same times, in one transaction. Settings also accept a pasted Google Maps link for the venue pin: short links are followed only to Google hosts over HTTPS, never to arbitrary URLs. | Programme items store full dates, so a date change would otherwise leave the order of the day on the old day. The pin helper saves typing coordinates without letting the server be used to fetch other sites (SSRF). | U12, spec §5, §6 |

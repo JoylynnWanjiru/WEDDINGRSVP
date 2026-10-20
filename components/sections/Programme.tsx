@@ -6,6 +6,8 @@ import { Section } from "./Section";
 
 export function Programme({ items }: { items: ApprovedContent["programme"] }) {
   if (!items.length) return null;
+  // Name the venue on each item only when the day moves between venues.
+  const manyVenues = new Set(items.map((i) => i.venue).filter(Boolean)).size > 1;
   return (
     <Section id="programme" eyebrow="The day" title="Order of the day">
       <ol className="relative mx-auto max-w-md border-l border-gold/60 pl-6">
@@ -15,7 +17,7 @@ export function Programme({ items }: { items: ApprovedContent["programme"] }) {
             <p className="label text-[0.65rem] text-gold-deep">{formatTime(item.startsAt).replace(" EAT", "")}</p>
             <p className="font-display text-xl">{item.title}</p>
             {item.detail ? <p className="text-sm text-wine/75">{item.detail}</p> : null}
-            {item.venue ? <p className="text-xs text-wine/60">{item.venue}</p> : null}
+            {manyVenues && item.venue ? <p className="text-xs text-wine/60">{item.venue}</p> : null}
           </li>
         ))}
       </ol>

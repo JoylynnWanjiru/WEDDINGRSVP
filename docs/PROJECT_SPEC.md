@@ -477,7 +477,7 @@ CRON_SECRET=             # protects cron routes
 - [ ] Send test invites to friends; full dry run of revoke → scan fails
 - [ ] Access test: public, invited, "Yes" but not approved, approved, declined, revoked — confirm each sees only what §4a allows, including by calling the API routes directly
 - [ ] Accessibility pass (contrast, tap targets ≥44 px, keyboard)
-- [ ] Send invitations **6–8 weeks** before the wedding (between 17 and 31 October for 12 December — that window is open now, so prioritise Phases 0–3; WhatsApp-shared links can go out before email is finished)
+- [ ] Send invitations **6–8 weeks** before the wedding (between **24 October and 7 November** for 19 December; WhatsApp-shared links can go out before email is finished)
 
 ---
 

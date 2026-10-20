@@ -23,6 +23,7 @@ export async function getApprovedContent(db: Db, access: ApprovedAccess) {
   const venueName = new Map(venueRows.map((v) => [v.id, v.name]));
 
   return {
+    storyTitle: wedding.storyTitle,
     story: wedding.storyText,
     gatesOpenAt: wedding.gatesOpenAt,
     contributionInfo: wedding.contributionInfo,

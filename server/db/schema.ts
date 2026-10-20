@@ -65,6 +65,7 @@ export const weddings = pgTable("weddings", {
   timezone: text("timezone").notNull().default("Africa/Nairobi"),
   rsvpDeadline: tz("rsvp_deadline").notNull(),
   venueCapacity: integer("venue_capacity"),
+  storyTitle: text("story_title"),
   storyText: text("story_text"),
   hashtag: text("hashtag"),
   theme: jsonb("theme").$type<Record<string, string>>(),

@@ -111,6 +111,7 @@ export const weddingPatch = z
     gatesOpenAt: isoDate,
     rsvpDeadline: isoDate,
     venueCapacity: z.coerce.number().int().min(1).max(100_000).nullable(),
+    storyTitle: nullableText(80),
     storyText: nullableText(10_000),
     hashtag: nullableText(60),
     whatsappTemplate: nullableText(1000),

@@ -130,7 +130,7 @@ async function Invitation({ params }: { params: PageProps<"/i/[token]">["params"
       {approved && pass ? (
         <>
           <GatePass pass={pass} />
-          <Story story={approved.story} photos={approved.photos} />
+          <Story title={approved.storyTitle} story={approved.story} photos={approved.photos} />
           <Programme items={approved.programme} />
           <div id="details" className="flex w-full scroll-mt-14 flex-col gap-10">
             <Venues venues={approved.venues} />

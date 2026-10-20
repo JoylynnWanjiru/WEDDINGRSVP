@@ -14,7 +14,8 @@ export function Venues({ venues }: { venues: ApprovedContent["venues"] }) {
       <div className="space-y-8">
         {venues.map((v, i) => (
           <article key={i} className="text-center">
-            <p className="label text-[0.65rem] text-gold-deep">{KIND[v.kind] ?? v.kind}</p>
+            {/* One venue hosts the whole day (A4): say so, rather than just "Ceremony". */}
+            <p className="label text-[0.65rem] text-gold-deep">{venues.length === 1 ? "Ceremony & reception" : (KIND[v.kind] ?? v.kind)}</p>
             <h3 className="mt-1 font-display text-2xl">{v.name}</h3>
             {v.address ? <p className="mt-1">{v.address}</p> : null}
             {v.mapImageUrl ? (

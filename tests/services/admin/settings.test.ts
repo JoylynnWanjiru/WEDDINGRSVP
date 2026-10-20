@@ -6,6 +6,7 @@ import type { Db } from "@/server/db/client";
 import { contacts, dressCode, programmeItems, venues, weddings } from "@/server/db/schema";
 import {
   deleteVenue,
+  getSettings,
   saveContact,
   saveFaqItem,
   savePhoto,
@@ -37,6 +38,36 @@ describe("wedding details", () => {
     const [w] = await db.select().from(weddings).where(eq(weddings.id, wedding.id));
     expect(w).toMatchObject({ brideName: "Amani", groomName: "Baraka", dailyEmailCap: 300 });
     expect(w.rsvpDeadline.toISOString()).toBe("2026-11-20T20:59:59.000Z");
+  });
+
+  it("keeps the line break in the story title; an empty title clears it", async () => {
+    const { wedding, ctx } = await setup();
+    await updateWeddingDetails(db, ctx, { storyTitle: "  Two hearts,\none home ", storyText: "We met." });
+    const [w] = await db.select().from(weddings).where(eq(weddings.id, wedding.id));
+    expect(w).toMatchObject({ storyTitle: "Two hearts,\none home", storyText: "We met." });
+    await updateWeddingDetails(db, ctx, { storyTitle: null });
+    const [cleared] = await db.select().from(weddings).where(eq(weddings.id, wedding.id));
+    expect(cleared.storyTitle).toBeNull();
+  });
+
+  it("D23: moving the wedding date moves the whole programme with it, same times", async () => {
+    const { wedding, ctx } = await setup();
+    const before = await db.select().from(programmeItems).where(eq(programmeItems.weddingId, wedding.id));
+    expect(await updateWeddingDetails(db, ctx, { weddingDate: "2026-12-19" })).toEqual({ programmeShiftedDays: 7 });
+    const after = await db.select().from(programmeItems).where(eq(programmeItems.weddingId, wedding.id));
+    const byId = new Map(before.map((p) => [p.id, p.startsAt.getTime()]));
+    for (const p of after) expect(p.startsAt.getTime() - byId.get(p.id)!).toBe(7 * 86_400_000);
+    // Other edits don't move anything.
+    expect(await updateWeddingDetails(db, ctx, { brideName: "Neema" })).toEqual({ programmeShiftedDays: 0 });
+  });
+
+  it("getSettings returns everything the page needs", async () => {
+    const { ctx } = await setup();
+    const s = await getSettings(db, ctx);
+    expect(s.programme).toHaveLength(19);
+    expect(s.venues).toHaveLength(1);
+    expect(s.dressCode?.swatches.length).toBeGreaterThan(0);
+    expect(s.usherPinSet).toBe(false);
   });
 
   it("refuses an email cap at Gmail's limit, a bad date, and gates opening after the ceremony", async () => {

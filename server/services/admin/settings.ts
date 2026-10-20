@@ -2,10 +2,10 @@
 // is hard-coded: the site reads all of this from here. Every write is scoped to
 // ctx.weddingId, so another wedding's row id behaves as NOT_FOUND.
 
-import { and, eq } from "drizzle-orm";
+import { and, asc, eq, sql } from "drizzle-orm";
 import type { PgColumn, PgTable } from "drizzle-orm/pg-core";
 import type { Db } from "../../db/client";
-import { contacts, dressCode, faqItems, photos, programmeItems, venues, weddings } from "../../db/schema";
+import { adminSettings, contacts, dressCode, faqItems, photos, programmeItems, venues, weddings } from "../../db/schema";
 import { normalizePhone } from "../../domain/phone";
 import { AppError } from "../../errors";
 import {
@@ -24,14 +24,46 @@ import { adminLog, type AdminCtx } from "./context";
 const logged = (db: Db, ctx: AdminCtx, section: string, op: string) =>
   logActivity(db, { ...adminLog(ctx), action: "content_updated", meta: { section, op } });
 
-export async function updateWeddingDetails(db: Db, ctx: AdminCtx, raw: unknown) {
+/**
+ * D23: changing the wedding date moves the whole programme by the same number of days
+ * (same times), so the order of the day never stays behind on the old date.
+ */
+export async function updateWeddingDetails(db: Db, ctx: AdminCtx, raw: unknown): Promise<{ programmeShiftedDays: number }> {
   const patch = parseInput(weddingPatch, raw);
-  if (!Object.keys(patch).length) return;
+  if (!Object.keys(patch).length) return { programmeShiftedDays: 0 };
   if (patch.gatesOpenAt && patch.ceremonyStartAt && patch.gatesOpenAt > patch.ceremonyStartAt) {
     throw new AppError("VALIDATION", "Gates should open before the ceremony starts.");
   }
-  await db.update(weddings).set(patch).where(eq(weddings.id, ctx.weddingId));
-  await logged(db, ctx, "wedding", "update");
+  return db.transaction(async (tx) => {
+    const [current] = await tx.select({ weddingDate: weddings.weddingDate }).from(weddings).where(eq(weddings.id, ctx.weddingId)).for("update");
+    const days = patch.weddingDate ? Math.round((Date.parse(patch.weddingDate) - Date.parse(current.weddingDate)) / 86_400_000) : 0;
+    await tx.update(weddings).set(patch).where(eq(weddings.id, ctx.weddingId));
+    if (days) {
+      await tx
+        .update(programmeItems)
+        .set({ startsAt: sql`${programmeItems.startsAt} + make_interval(days => ${days})` })
+        .where(eq(programmeItems.weddingId, ctx.weddingId));
+    }
+    await logActivity(tx, { ...adminLog(ctx), action: "content_updated", meta: { section: "wedding", op: "update", programmeShiftedDays: days || undefined } });
+    return { programmeShiftedDays: days };
+  });
+}
+
+/** Everything the settings page shows, in one call. */
+export async function getSettings(db: Db, ctx: AdminCtx) {
+  const w = ctx.weddingId;
+  const [[wedding], venueRows, programme, faq, [dress], contactRows, photoRows, [admin]] = await Promise.all([
+    db.select().from(weddings).where(eq(weddings.id, w)),
+    db.select().from(venues).where(eq(venues.weddingId, w)).orderBy(asc(venues.sortOrder)),
+    db.select().from(programmeItems).where(eq(programmeItems.weddingId, w)).orderBy(asc(programmeItems.startsAt), asc(programmeItems.sortOrder)),
+    db.select().from(faqItems).where(eq(faqItems.weddingId, w)).orderBy(asc(faqItems.sortOrder)),
+    db.select().from(dressCode).where(eq(dressCode.weddingId, w)),
+    db.select().from(contacts).where(eq(contacts.weddingId, w)).orderBy(asc(contacts.sortOrder)),
+    db.select().from(photos).where(eq(photos.weddingId, w)).orderBy(asc(photos.sortOrder)),
+    db.select({ hasPin: sql<boolean>`${adminSettings.usherPinHash} is not null` }).from(adminSettings).where(eq(adminSettings.weddingId, w)),
+  ]);
+  if (!wedding) throw new AppError("NOT_FOUND", "Wedding not found.");
+  return { wedding, venues: venueRows, programme, faq, dressCode: dress ?? null, contacts: contactRows, photos: photoRows, usherPinSet: !!admin?.hasPin };
 }
 
 type ScopedTable = PgTable & { id: PgColumn; weddingId: PgColumn };
