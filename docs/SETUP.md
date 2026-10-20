@@ -76,7 +76,14 @@ Paste each value after the `=`, with no spaces and no quotes:
 | `CRON_SECRET=` | run `npm run secret` **again** and paste the new output |
 | `ADMIN_PASSWORD_HASH=` | run `npm run hash-password`, type your admin password twice (it stays hidden), and paste the line it prints |
 
-Leave the Gmail lines empty until step 2. Save the file.
+Leave the Gmail lines empty until step 2. Save the file, then check it:
+
+```powershell
+npm run env:check
+```
+
+It checks the *format* of every value (missing pieces, stray spaces, quotes, a name
+pasted twice) and prints only ✓ / ✗. Values are never shown, so the output is safe to share.
 
 > ⚠️ **`TOKEN_SECRET` is permanent once invitations go out.** Every guest's personal
 > link and gate pass is derived from it (BLUEPRINT D1). Changing it later breaks them all.

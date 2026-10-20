@@ -189,6 +189,12 @@ Never commit `.env.local`. Add the same variables in **Vercel → Project → Se
 | `npm run db:generate` | Create a migration after changing `server/db/schema.ts` |
 | `npm run db:migrate` | Apply migrations to `DATABASE_URL` |
 | `npm run db:seed` | Seed one wedding with placeholder content |
+| `npm run db:check` | End-to-end check on the real database (cleans up after itself) |
+| `npm run env:check` | Checks `.env.local` formatting; never prints values |
+| `npm run email:test -- you@example.com` | Sends one test email through Gmail |
+| `npm run secret` / `npm run hash-password` | Generate `TOKEN_SECRET`/`CRON_SECRET` / `ADMIN_PASSWORD_HASH` |
+
+Setting up Neon and Gmail step by step: [`docs/SETUP.md`](docs/SETUP.md).
 
 ---
 
