@@ -76,7 +76,7 @@ export const weddings = pgTable("weddings", {
   reminderIntervalDays: integer("reminder_interval_days").notNull().default(3), // A9, BR-19
   purgeAfterDays: integer("purge_after_days").notNull().default(30), // A10, BR-23
   requirePhoneCheck: boolean("require_phone_check").notNull().default(false), // A8, E2
-  publicRequestsEnabled: boolean("public_requests_enabled").notNull().default(true), // A11
+  publicRequestsEnabled: boolean("public_requests_enabled").notNull().default(false), // A11: off by default (D21)
   purgedAt: tz("purged_at"),
   ...timestamps,
 });

@@ -20,6 +20,8 @@ const nextIp = () => `203.0.113.${++ip}`;
 
 async function setup() {
   const wedding = await createWedding(db);
+  // Requests are off by default (A11, D21); these tests are about the form when the couple turns it on.
+  await db.update(weddings).set({ publicRequestsEnabled: true }).where(eq(weddings.id, wedding.id));
   const ctx = { weddingSlug: wedding.slug, clientId: nextIp() };
   const requests = () => db.select().from(invitationRequests).where(eq(invitationRequests.weddingId, wedding.id));
   return { wedding, ctx, requests };
@@ -70,6 +72,14 @@ describe("requestInvitation", () => {
       requestInvitation(db, { fullName: "One too many", email: "p4@example.com" }, { ...ctx, now }),
     ).rejects.toMatchObject({ code: "RATE_LIMITED" });
     expect(await requests()).toHaveLength(3);
+  });
+
+  it("A11/D21: a new wedding starts with requests off, and they are refused", async () => {
+    const wedding = await createWedding(db);
+    expect(wedding.publicRequestsEnabled).toBe(false);
+    await expect(
+      requestInvitation(db, { fullName: "Early", email: "early@example.com" }, { weddingSlug: wedding.slug, clientId: nextIp() }),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
   });
 
   it("A11: refused when the couple has turned requests off", async () => {

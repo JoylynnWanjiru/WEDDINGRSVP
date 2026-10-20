@@ -2,7 +2,7 @@
 
 > Companion to [`PROJECT_SPEC.md`](PROJECT_SPEC.md) (stack, colours, pages, folder structure).
 > This blueprint defines **behaviour**: who acts, how an invitation moves, the rules, and the edge cases.
-> Prepared 19 October 2026 · Updated 19 October 2026 (decisions D1–D20, §16) · Wedding date 12 December 2026 · Items marked **[ASSUMPTION]** need confirming.
+> Prepared 19 October 2026 · Updated 20 October 2026 (decisions D1–D21, §16) · Wedding date 12 December 2026 · Items marked **[ASSUMPTION]** need confirming.
 
 ---
 
@@ -323,7 +323,7 @@ No external system calls into this app, so there is **no public API contract** t
 | A8 | Forwarded-link phone verification **off** by default. |
 | A9 | Daily email cap **400**; reminders every **3 days** until the deadline. |
 | A10 | Guest data deleted **30 days after** the wedding. |
-| A11 | The public "request an invitation" form is **on**. |
+| A11 | The public "request an invitation" form is **off** (changed 20 Oct 2026, D21). The couple can turn it on in settings. |
 | A12 | Gates open **11:30 AM**; ceremony **1:00 PM** (from the reference site). |
 | A13 | Offline gate scanning (N3) is **nice-to-have**; a printed approved list is the guaranteed backup. |
 
@@ -430,3 +430,4 @@ Choices that refine or change earlier drafts of this blueprint, with their reaso
 | D18 | **What the gate checks, and what the usher sees.** A scan is checked live: signature, this wedding, current pass version, not revoked, approved or partially arrived, people left to admit, and not after the wedding (passes stop at the end of the day after the wedding, so the after-midnight send-off still works, E23). The usher sees name and party size only. Forged passes, other weddings' passes and garbage all show the same "invalid". An old pass version shows "outdated: ask the guest to open their latest pass". Admitting locks the invitation row, and the database refuses `arrived > party size` as a backstop (BR-14). The approval and day-before emails carry the QR as an inline image (D14). | Live checks make revocation instant (BR-3); identical "invalid" results reveal nothing; two safeguards make over-admission impossible. | BR-13 to BR-16, E3, E5, E6, E22, E23 |
 | D19 | **Offline gate.** The scanner caches the approved roster (names, party sizes, pass versions) and shows when it last synced (E4). Offline it matches a scanned pass by invitation id and pass version against the roster; it can't check the signature without the server's secret, so the online check stays authoritative. Offline check-ins upload with a client reference and apply exactly once. Since those people are already inside, conflicts (revoked meanwhile, more than the party size) are applied as far as possible and logged for the couple rather than dropped. | A dead signal at the gate mustn't stop the wedding (E17); a retried upload mustn't double-count; the couple needs to see anything odd. Known limit: a rejected offline entry isn't stored, so re-uploading it logs the conflict again. | N3, E4, E17 |
 | D20 | **Gate controls for the couple.** Change the usher PIN or "sign out all ushers" (both end every scanner session, D5). Correct the arrived count with a reason: the original check-in rows are kept and the correction is logged (§7 one-way actions). | A lost phone on the day (E26) and a mis-tapped count both need a fix that leaves an audit trail. | E26, §7 |
+| D21 | **Public invitation requests are off by default.** The public page shows only the envelope, names, date, countdown and the private-celebration note. Turning `publicRequestsEnabled` on in settings brings the form back; everything behind it (D3, D10, E19) stays built and tested. | The couple's decision (20 Oct 2026): the reference site has no request option, and a minimal public page fits the privacy rule (§4a). Missed guests contact the couple directly. | A11, U11, spec §4 |

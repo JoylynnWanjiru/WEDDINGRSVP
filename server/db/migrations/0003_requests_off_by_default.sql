@@ -1,0 +1,1 @@
+ALTER TABLE "weddings" ALTER COLUMN "public_requests_enabled" SET DEFAULT false;

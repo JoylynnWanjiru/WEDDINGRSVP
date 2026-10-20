@@ -186,7 +186,7 @@ Any approved-only route opened by a guest who isn't approved redirects to `/i/[t
 1. **Envelope** — burgundy envelope, gold dove seal, "For our dear guest".
 2. **Names & date** + countdown.
 3. **Private celebration note** — "This is a private celebration. If you've been invited, please open the personal link sent to you."
-4. **Request an invitation** — name, phone, email, short message. Creates a request for the couple to review (BLUEPRINT §5b).
+4. **Request an invitation** (*off by default*, BLUEPRINT D21; the couple can turn it on in settings) — name, phone, email, short message. Creates a request for the couple to review (BLUEPRINT §5b).
 5. **Footer** — names and date only.
 
 ### Sections — personal invitation (`/i/[token]`)

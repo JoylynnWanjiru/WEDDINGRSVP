@@ -8,7 +8,7 @@
   --mulberry: #662a39;
   --gold: #c9ab66;
   --gold-antique: #9c6934;
-  --gold-deep: #8a5a26; /* gold TEXT on light backgrounds */
+  --gold-deep: #8a5a26; /* gold TEXT on light backgrounds (5.5:1 on ivory) */
   --pearl: #e2d7d1;
   --ivory: #faf6f2;
   --white: #ffffff;
@@ -28,8 +28,131 @@
   --font-sans: var(--font-jost);
 }
 
+html {
+  color-scheme: dark;
+  -webkit-text-size-adjust: 100%;
+}
+
 body {
-  background: var(--wine);
+  background-color: var(--wine);
+  /* Subtle depth, no image download (spec §14: stay inside free image limits). */
+  background-image:
+    radial-gradient(ellipse 80% 60% at 50% 0%, rgb(102 42 57 / 0.55), transparent 70%),
+    radial-gradient(ellipse 60% 50% at 50% 100%, rgb(40 3 10 / 0.8), transparent 70%);
+  background-attachment: fixed;
   color: var(--white);
   font-family: var(--font-jost), system-ui, sans-serif;
+}
+
+/* Letter-spaced small caps for labels (spec §3 typography). */
+.label {
+  font-family: var(--font-jost), system-ui, sans-serif;
+  font-size: 0.75rem;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+}
+
+/* Visible keyboard focus everywhere (spec §15 accessibility pass). */
+:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 3px;
+}
+
+/* --- Envelope (components/envelope/Envelope.tsx) --- */
+
+.envelope {
+  position: relative;
+  width: min(92vw, 26rem);
+  aspect-ratio: 4 / 3;
+  margin-inline: auto;
+  perspective: 1200px;
+}
+
+.envelope__back,
+.envelope__front,
+.envelope__flap {
+  position: absolute;
+  inset: 0;
+  border-radius: 6px;
+}
+
+.envelope__back {
+  background: linear-gradient(160deg, var(--burgundy), var(--mulberry));
+  box-shadow: 0 30px 60px -20px rgb(0 0 0 / 0.7);
+}
+
+/* Side and bottom pockets: three triangles meeting at the centre. */
+.envelope__front {
+  z-index: 3;
+  background:
+    linear-gradient(to top right, var(--mulberry) 50%, transparent 50.5%) left bottom / 51% 100% no-repeat,
+    linear-gradient(to top left, var(--mulberry) 50%, transparent 50.5%) right bottom / 51% 100% no-repeat,
+    linear-gradient(to top, var(--burgundy) 0%, #55192a 100%) center bottom / 100% 55% no-repeat;
+  clip-path: polygon(0 0, 50% 52%, 100% 0, 100% 100%, 0 100%);
+  pointer-events: none;
+}
+
+.envelope__flap {
+  z-index: 4;
+  height: 58%;
+  background: linear-gradient(180deg, #6e2d3d, var(--mulberry));
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+  transform-origin: top center;
+  transition: transform 700ms cubic-bezier(0.65, 0, 0.35, 1), z-index 0s 350ms;
+  filter: drop-shadow(0 4px 6px rgb(0 0 0 / 0.35));
+}
+
+.envelope__card {
+  position: absolute;
+  z-index: 2;
+  left: 6%;
+  right: 6%;
+  top: 8%;
+  bottom: 6%;
+  border-radius: 4px;
+  background: var(--ivory);
+  color: var(--wine);
+  box-shadow: 0 10px 30px -12px rgb(0 0 0 / 0.5);
+  transition: transform 800ms cubic-bezier(0.22, 1, 0.36, 1) 450ms;
+}
+
+.envelope__seal {
+  position: absolute;
+  z-index: 5;
+  left: 50%;
+  top: 58%;
+  width: 26%;
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: opacity 300ms ease, transform 300ms ease;
+}
+
+.envelope__seal:hover {
+  transform: translate(-50%, -50%) scale(1.04);
+}
+
+.envelope[data-open="true"] .envelope__flap {
+  transform: rotateX(180deg);
+  z-index: 1;
+}
+
+.envelope[data-open="true"] .envelope__seal {
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, -50%) scale(0.85);
+}
+
+.envelope[data-open="true"] .envelope__card {
+  transform: translateY(-62%);
+  z-index: 6;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .envelope__flap,
+  .envelope__card,
+  .envelope__seal {
+    transition: none;
+  }
 }
