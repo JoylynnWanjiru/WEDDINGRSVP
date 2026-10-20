@@ -19,6 +19,7 @@
     "db:check": "tsx --env-file-if-exists=.env.local scripts/check-db.ts",
     "email:test": "tsx --env-file-if-exists=.env.local scripts/send-test-email.ts",
     "env:check": "tsx scripts/check-env.ts",
+    "test-guests": "tsx --env-file-if-exists=.env.local scripts/test-guests.ts",
     "hash-password": "tsx scripts/hash-password.ts",
     "secret": "tsx scripts/generate-secret.ts"
   },

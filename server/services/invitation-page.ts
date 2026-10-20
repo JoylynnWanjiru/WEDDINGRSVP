@@ -3,7 +3,7 @@
 
 import { asc, eq, sql } from "drizzle-orm";
 import type { Db } from "../db/client";
-import { invitations, partyMembers, rsvpEvents, weddings, type Invitation, type Wedding } from "../db/schema";
+import { invitations, partyMembers, rsvpEvents, venues, weddings, type Invitation, type Wedding } from "../db/schema";
 import { isRsvpOpen } from "../domain/rules";
 import { nextStatus } from "../domain/status";
 import { AppError } from "../errors";
@@ -52,6 +52,9 @@ type GuestView = {
   partySize: number;
   awaitingApproval: boolean;
   arrivedCount: number;
+  /** Whether the couple already has these. The values themselves are never sent (E2: forwarded links). */
+  hasEmail: boolean;
+  hasPhone: boolean;
 };
 
 type RsvpView = {
@@ -61,6 +64,8 @@ type RsvpView = {
   message: string | null;
   deadline: Date;
   open: boolean;
+  /** The events this wedding has (D9): the RSVP form offers these. */
+  weddingEvents: ("ceremony" | "reception" | "traditional")[];
 };
 
 export async function getInvitationPage(
@@ -76,9 +81,10 @@ export async function getInvitationPage(
   const teaser = teaserOf(wedding);
   if (access.level === "not_approved") return { level: "not_approved", teaser, guest: { firstName: firstName(inv) } };
 
-  const [members, events] = await Promise.all([
+  const [members, events, venueKinds] = await Promise.all([
     db.select().from(partyMembers).where(eq(partyMembers.invitationId, inv.id)).orderBy(asc(partyMembers.sortOrder)),
     db.select().from(rsvpEvents).where(eq(rsvpEvents.invitationId, inv.id)),
+    db.select({ kind: venues.kind }).from(venues).where(eq(venues.weddingId, wedding.id)).orderBy(asc(venues.sortOrder)),
   ]);
 
   const page = {
@@ -91,6 +97,8 @@ export async function getInvitationPage(
       partySize: inv.partySize,
       awaitingApproval: inv.status === "awaiting_approval",
       arrivedCount: inv.arrivedCount,
+      hasEmail: !!inv.email,
+      hasPhone: !!inv.phone,
     },
     rsvp: {
       attending: inv.respondedAt ? inv.status !== "declined" : null,
@@ -105,6 +113,7 @@ export async function getInvitationPage(
       message: inv.responseMessage,
       deadline: wedding.rsvpDeadline,
       open: isRsvpOpen(wedding.rsvpDeadline, opts.now),
+      weddingEvents: [...new Set(venueKinds.map((v) => v.kind))],
     },
   };
 

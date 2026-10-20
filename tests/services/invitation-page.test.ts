@@ -56,6 +56,16 @@ describe("§4a: what each access level receives", () => {
     }
   });
 
+  it("E2: says whether contact details are on file, but never sends them (forwarded links)", async () => {
+    const wedding = await createWedding(db);
+    const { token } = await createInvitation(db, wedding.id, { status: "sent", phone: "+254700000971", email: "private@example.com" });
+    const page = await getInvitationPage(db, token, { now: NOW });
+    if (page.level !== "invited") throw new Error("unreachable");
+    expect(page.guest).toMatchObject({ hasEmail: true, hasPhone: true });
+    expect(JSON.stringify(page)).not.toMatch(/254700000971|private@example\.com/);
+    expect(page.rsvp.weddingEvents).toEqual(["ceremony"]); // D9: from the wedding's venues
+  });
+
   it("declined gets their card and form (to change to Yes), no locked content", async () => {
     const wedding = await createWedding(db);
     const { token } = await createInvitation(db, wedding.id, { status: "declined", respondedAt: NOW });
