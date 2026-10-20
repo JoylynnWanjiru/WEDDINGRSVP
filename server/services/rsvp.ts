@@ -154,6 +154,7 @@ export async function applyRsvp(
         invitationId: inv.id,
         template: "rsvp_received",
         dedupeKey: `rsvp_received:${inv.id}:${fingerprint}`,
+        scheduledFor: now,
       });
     }
 

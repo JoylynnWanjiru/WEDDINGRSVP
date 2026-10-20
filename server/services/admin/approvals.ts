@@ -31,6 +31,7 @@ export async function approveInvitation(
   opts: { confirmOverCapacity?: boolean; now?: Date } = {},
 ): Promise<{ status: InvitationStatus; overflow: number }> {
   const wedding = await loadWedding(db, ctx);
+  const now = opts.now ?? new Date();
   return db.transaction(async (tx) => {
     const inv = await lockInvitation(tx, ctx.weddingId, invitationId);
     if (inv.status !== "awaiting_approval") {
@@ -45,7 +46,7 @@ export async function approveInvitation(
       );
     }
     const status = await applyTransition(tx, inv, { type: "approve" }, adminActor(ctx), {
-      set: { approvedAt: opts.now ?? new Date() },
+      set: { approvedAt: now },
       meta: { partySize: inv.partySize, overCapacityBy: overflow || undefined },
     });
     if (inv.email) {
@@ -54,6 +55,7 @@ export async function approveInvitation(
         invitationId: inv.id,
         template: "approval_pass",
         dedupeKey: `approval_pass:${inv.id}:${inv.passVersion}`,
+        scheduledFor: now,
       });
     }
     return { status, overflow };
@@ -85,14 +87,15 @@ export async function revokeInvitation(
   invitationId: string,
   opts: { reason?: string; notifyGuest?: boolean; now?: Date } = {},
 ) {
+  const now = opts.now ?? new Date();
   return db.transaction(async (tx) => {
     const inv = await lockInvitation(tx, ctx.weddingId, invitationId);
     const status = await applyTransition(tx, inv, { type: "revoke" }, adminActor(ctx), {
-      set: { statusBeforeRevoke: inv.status, revokedAt: opts.now ?? new Date(), passVersion: inv.passVersion + 1 },
+      set: { statusBeforeRevoke: inv.status, revokedAt: now, passVersion: inv.passVersion + 1 },
       meta: { reason: opts.reason },
     });
     if (opts.notifyGuest && inv.email) {
-      await enqueueEmail(tx, { weddingId: inv.weddingId, invitationId: inv.id, template: "revoked" });
+      await enqueueEmail(tx, { weddingId: inv.weddingId, invitationId: inv.id, template: "revoked", scheduledFor: now });
     }
     return status;
   });

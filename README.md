@@ -167,7 +167,7 @@ Tests run against PGlite (Postgres in memory), so they need no account, network 
 | `DATABASE_URL` | Neon connection string |
 | `APP_URL` | Public site URL, e.g. `https://<project>.vercel.app` |
 | `TOKEN_SECRET` | At least 32 random characters. Personal links and passes are derived from it, so **changing it invalidates every link and pass already sent** |
-| `ADMIN_PASSWORD_HASH` | Output of `npx tsx scripts/hash-password.ts <password>` |
+| `ADMIN_PASSWORD_HASH` | Output of `npm run hash-password` (asks for the password without showing it) |
 | `GMAIL_USER` | Gmail address that sends invitations |
 | `GMAIL_APP_PASSWORD` | Gmail app password |
 | `CRON_SECRET` | Protects `/api/cron/*` |
@@ -198,10 +198,11 @@ Never commit `.env.local`. Add the same variables in **Vercel → Project → Se
 2. Import the repo in Vercel (Hobby plan) and add the environment variables.
 3. Every push to `main` deploys to production. Pull requests get preview URLs.
 4. The cron jobs in `vercel.json` run once a day (the Hobby plan limit).
+5. Functions run in London (`"regions": ["lhr1"]` in `vercel.json`), next to the Neon database in AWS Europe West 2. Keep the two in the same region.
 
 ### Forgot the admin password?
 
-Run `npx tsx scripts/hash-password.ts <new-password>`, replace `ADMIN_PASSWORD_HASH` in Vercel's environment variables, and redeploy.
+Run `npm run hash-password`, replace `ADMIN_PASSWORD_HASH` in Vercel's environment variables, and redeploy.
 
 ### Guest list import
 

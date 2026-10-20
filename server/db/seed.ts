@@ -91,10 +91,29 @@ export async function seedWedding(db: Db, slug = "our-wedding") {
   });
 }
 
-// `npm run db:seed` runs this file directly against DATABASE_URL.
+// `npm run db:seed` runs this file directly against DATABASE_URL. Safe to run twice.
+// Wrapped in a function: tsx runs .ts as CommonJS here, so no top-level await.
 if (process.argv[1]?.replace(/\\/g, "/").endsWith("server/db/seed.ts")) {
-  const { getDb } = await import("./client");
-  const wedding = await seedWedding(getDb());
-  console.log(`Seeded wedding ${wedding.slug} (${wedding.id})`);
-  process.exit(0);
+  void (async () => {
+    if (!process.env.DATABASE_URL) {
+      console.error("DATABASE_URL is not set. Add it to .env.local (see docs/SETUP.md, step 1).");
+      process.exit(1);
+    }
+    const [{ getDb }, { config }, { eq }] = await Promise.all([import("./client"), import("../config"), import("drizzle-orm")]);
+    const db = getDb();
+    const slug = config.weddingSlug();
+    const [existing] = await db.select({ id: weddings.id }).from(weddings).where(eq(weddings.slug, slug));
+    if (existing) {
+      console.log(`✓ Wedding "${slug}" is already seeded. Nothing to do.`);
+      process.exit(0);
+    }
+    try {
+      await seedWedding(db, slug);
+      console.log(`✓ Seeded wedding "${slug}" with placeholder content. Edit it later in admin settings.`);
+      process.exit(0);
+    } catch (err) {
+      console.error(`✗ Seeding failed: ${(err as Error).message}`);
+      process.exit(1);
+    }
+  })();
 }

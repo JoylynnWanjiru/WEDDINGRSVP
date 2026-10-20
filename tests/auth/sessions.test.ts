@@ -24,7 +24,8 @@ afterAll(() => close());
 describe("D4: secret hashing", () => {
   it("uses OWASP scrypt cost and stores the parameters in the hash", async () => {
     const stored = await hashSecret("correct horse battery");
-    expect(stored).toMatch(/^scrypt\$131072\$8\$1\$/);
+    expect(stored).toMatch(/^scrypt:131072:8:1:[\w-]+:[\w-]+$/);
+    expect(stored).not.toContain("$"); // "$" would be expanded when Next.js loads .env files
     expect(await verifySecret("correct horse battery", stored)).toBe(true);
     expect(await verifySecret("wrong", stored)).toBe(false);
   });
@@ -32,10 +33,10 @@ describe("D4: secret hashing", () => {
   it("salts every hash and rejects malformed or absurd-cost hashes", async () => {
     expect(await hashSecret("same")).not.toBe(await hashSecret("same"));
     expect(await verifySecret("x", "garbage")).toBe(false);
-    expect(await verifySecret("x", "scrypt$abc$8$1$c2FsdA$aGFzaA")).toBe(false);
-    expect(await verifySecret("x", `scrypt$${2 ** 24}$8$1$c2FsdA$aGFzaA`)).toBe(false);
-    expect(await verifySecret("x", "scrypt$131072$8$1$c2FsdA$")).toBe(false);
-    expect(await verifySecret("x", "scrypt$131072$8$1$c2FsdA$aGFzaA")).toBe(false); // truncated hash
+    expect(await verifySecret("x", "scrypt:abc:8:1:c2FsdA:aGFzaA")).toBe(false);
+    expect(await verifySecret("x", `scrypt:${2 ** 24}:8:1:c2FsdA:aGFzaA`)).toBe(false);
+    expect(await verifySecret("x", "scrypt:131072:8:1:c2FsdA:")).toBe(false);
+    expect(await verifySecret("x", "scrypt:131072:8:1:c2FsdA:aGFzaA")).toBe(false); // truncated hash
   });
 });
 

@@ -19,6 +19,7 @@ beforeAll(async () => {
 });
 afterAll(() => close());
 
+const NOW = new Date("2026-10-25T10:00:00+03:00");
 const at = (time: string) => new Date(`2026-12-12T${time}:00+03:00`);
 const item = (time: string, title: string) => ({ startsAt: at(time), title, detail: null, venue: null });
 
@@ -54,9 +55,9 @@ describe("D14: the approval email carries the QR inline", () => {
     const wedding = await createWedding(db);
     const ctx = await adminCtx(wedding.id);
     const { invitation } = await createInvitation(db, wedding.id, { status: "awaiting_approval", email: "qr@example.com" });
-    await approveInvitation(db, ctx, invitation.id);
+    await approveInvitation(db, ctx, invitation.id, { now: NOW });
     const mailer = new FakeMailer();
-    await sendNow(db, ctx, mailer, { now: new Date("2026-10-25T10:00:00+03:00") });
+    await sendNow(db, ctx, mailer, { now: NOW });
     const [email] = mailer.sent;
     expect(email.attachments).toHaveLength(1);
     const [qr] = email.attachments!;

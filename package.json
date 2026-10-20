@@ -15,7 +15,11 @@
     "test:watch": "vitest",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx server/db/migrate.ts",
-    "db:seed": "tsx --env-file=.env.local server/db/seed.ts"
+    "db:seed": "tsx --env-file-if-exists=.env.local server/db/seed.ts",
+    "db:check": "tsx --env-file-if-exists=.env.local scripts/check-db.ts",
+    "email:test": "tsx --env-file-if-exists=.env.local scripts/send-test-email.ts",
+    "hash-password": "tsx scripts/hash-password.ts",
+    "secret": "tsx scripts/generate-secret.ts"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.2.0",

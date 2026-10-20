@@ -31,11 +31,12 @@ function scrypt(secret: string, salt: Buffer, keylen: number, opts: ScryptOption
 export async function hashSecret(secret: string): Promise<string> {
   const salt = randomBytes(16);
   const hash = await scrypt(secret, salt, KEY_LENGTH, SCRYPT);
-  return ["scrypt", SCRYPT.N, SCRYPT.r, SCRYPT.p, salt.toString("base64url"), hash.toString("base64url")].join("$");
+  // ":" separators: "$" would be expanded as a variable when Next.js loads .env files.
+  return ["scrypt", SCRYPT.N, SCRYPT.r, SCRYPT.p, salt.toString("base64url"), hash.toString("base64url")].join(":");
 }
 
 export async function verifySecret(secret: string, stored: string): Promise<boolean> {
-  const [scheme, n, r, p, salt, hash] = stored.split("$");
+  const [scheme, n, r, p, salt, hash] = stored.split(":");
   if (scheme !== "scrypt" || !salt || !hash) return false;
   const opts = { N: Number(n), r: Number(r), p: Number(p) };
   if (![opts.N, opts.r, opts.p].every(Number.isInteger) || opts.N > 2 ** 20) return false;

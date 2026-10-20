@@ -27,8 +27,9 @@ const CLAIM_BATCH = 10;
 
 export async function enqueueEmail(
   db: Db,
-  email: { weddingId: string; invitationId: string; template: EmailTemplate; dedupeKey?: string; scheduledFor?: Date },
+  email: { weddingId: string; invitationId: string; template: EmailTemplate; dedupeKey?: string; scheduledFor: Date },
 ): Promise<boolean> {
+  // scheduledFor is required: callers pass their own `now`, so services and tests share one clock.
   // A repeated dedupe key (e.g. a double-tapped RSVP) is silently ignored.
   const rows = await db.insert(emailQueue).values(email).onConflictDoNothing({ target: emailQueue.dedupeKey }).returning({ id: emailQueue.id });
   return rows.length > 0;
@@ -222,7 +223,7 @@ export async function retryFailedEmails(db: Db, ctx: AdminCtx, now: Date = new D
 // --- admin actions ---
 
 /** Queue invitation emails. Skips guests without email, bounced, revoked, or already queued. */
-export async function queueInvitationEmails(db: Db, ctx: AdminCtx, invitationIds: string[]) {
+export async function queueInvitationEmails(db: Db, ctx: AdminCtx, invitationIds: string[], now: Date = new Date()) {
   if (!invitationIds.length) return { queued: 0, skipped: [] as { id: string; reason: string }[] };
   if (invitationIds.length > 1000) throw new AppError("VALIDATION", "Please send at most 1,000 at a time.");
   const rows = await db
@@ -254,14 +255,14 @@ export async function queueInvitationEmails(db: Db, ctx: AdminCtx, invitationIds
   });
 
   if (toQueue.length) {
-    await db.insert(emailQueue).values(toQueue.map((r) => ({ weddingId: ctx.weddingId, invitationId: r.id, template: "invitation" as const })));
+    await db.insert(emailQueue).values(toQueue.map((r) => ({ weddingId: ctx.weddingId, invitationId: r.id, template: "invitation" as const, scheduledFor: now })));
     await logActivity(db, { ...adminLog(ctx), action: "invitations_queued", meta: { count: toQueue.length } });
   }
   return { queued: toQueue.length, skipped };
 }
 
 /** N5 / E8: tell every approved guest that details changed. */
-export async function queueDetailsUpdated(db: Db, ctx: AdminCtx): Promise<number> {
+export async function queueDetailsUpdated(db: Db, ctx: AdminCtx, now: Date = new Date()): Promise<number> {
   const rows = await db
     .select({ id: invitations.id })
     .from(invitations)
@@ -280,7 +281,7 @@ export async function queueDetailsUpdated(db: Db, ctx: AdminCtx): Promise<number
   const skip = new Set(pending.map((p) => p.invitationId));
   const toQueue = rows.filter((r) => !skip.has(r.id)); // a double click doesn't queue twice
   if (toQueue.length) {
-    await db.insert(emailQueue).values(toQueue.map((r) => ({ weddingId: ctx.weddingId, invitationId: r.id, template: "details_updated" as const })));
+    await db.insert(emailQueue).values(toQueue.map((r) => ({ weddingId: ctx.weddingId, invitationId: r.id, template: "details_updated" as const, scheduledFor: now })));
   }
   await logActivity(db, { ...adminLog(ctx), action: "details_update_queued", meta: { count: toQueue.length } });
   return toQueue.length;

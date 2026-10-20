@@ -34,7 +34,7 @@ export async function queueReminders(db: Db, wedding: Wedding, now: Date = new D
         ),
       );
     for (const { id } of due) {
-      if (await enqueueEmail(db, { weddingId: wedding.id, invitationId: id, template: "reminder_no_response", dedupeKey: `reminder:${id}:${nairobiDate(now)}` })) {
+      if (await enqueueEmail(db, { weddingId: wedding.id, invitationId: id, template: "reminder_no_response", dedupeKey: `reminder:${id}:${nairobiDate(now)}`, scheduledFor: now })) {
         noResponse++;
       }
       await db.update(invitations).set({ lastReminderAt: now }).where(eq(invitations.id, id));
@@ -47,7 +47,7 @@ export async function queueReminders(db: Db, wedding: Wedding, now: Date = new D
       .from(invitations)
       .where(and(withEmail, inArray(invitations.status, [...UNLOCKED_STATUSES])));
     for (const { id } of approved) {
-      if (await enqueueEmail(db, { weddingId: wedding.id, invitationId: id, template: "reminder_day_before", dedupeKey: `day_before:${id}` })) {
+      if (await enqueueEmail(db, { weddingId: wedding.id, invitationId: id, template: "reminder_day_before", dedupeKey: `day_before:${id}`, scheduledFor: now })) {
         dayBefore++;
       }
     }

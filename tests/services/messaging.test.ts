@@ -50,7 +50,7 @@ describe("sending an invitation email", () => {
   it("sends it, records Gmail's id, stamps emailSentAt and moves draft → sent", async () => {
     const { ctx, guest, queue, reload } = await setup();
     const { invitation, token } = await guest({ fullName: "Wanjiru Kamau" });
-    expect(await queueInvitationEmails(db, ctx, [invitation.id])).toEqual({ queued: 1, skipped: [] });
+    expect(await queueInvitationEmails(db, ctx, [invitation.id], NOW)).toEqual({ queued: 1, skipped: [] });
 
     const mailer = new FakeMailer();
     const s = await sendNow(db, ctx, mailer, { now: NOW });
@@ -70,7 +70,7 @@ describe("sending an invitation email", () => {
   it("escapes guest-supplied names so they can't inject HTML", async () => {
     const { ctx, guest } = await setup();
     const { invitation } = await guest({ fullName: '<script>alert("x")</script> Kamau' });
-    await queueInvitationEmails(db, ctx, [invitation.id]);
+    await queueInvitationEmails(db, ctx, [invitation.id], NOW);
     const mailer = new FakeMailer();
     await sendNow(db, ctx, mailer, { now: NOW });
     expect(mailer.sent[0].html).not.toContain("<script>");
@@ -83,14 +83,14 @@ describe("sending an invitation email", () => {
     const noEmail = await guest({ email: null });
     const bounced = await guest({ emailBouncedAt: NOW });
     const revoked = await guest({ status: "revoked" });
-    const res = await queueInvitationEmails(db, ctx, [ok.invitation.id, noEmail.invitation.id, bounced.invitation.id, revoked.invitation.id]);
+    const res = await queueInvitationEmails(db, ctx, [ok.invitation.id, noEmail.invitation.id, bounced.invitation.id, revoked.invitation.id], NOW);
     expect(res.queued).toBe(1);
     expect(res.skipped.map((s) => s.reason)).toEqual([
       "No email address: share on WhatsApp instead.",
       "Email marked as bounced.",
       "Invitation revoked.",
     ]);
-    expect((await queueInvitationEmails(db, ctx, [ok.invitation.id])).skipped[0].reason).toBe("Already queued.");
+    expect((await queueInvitationEmails(db, ctx, [ok.invitation.id], NOW)).skipped[0].reason).toBe("Already queued.");
   });
 });
 
@@ -99,7 +99,7 @@ describe("BR-17: the daily cap (400 by default, Nairobi calendar day)", () => {
     const { ctx, guest, queue } = await setup(3);
     const ids = [];
     for (let i = 0; i < 5; i++) ids.push((await guest()).invitation.id);
-    await queueInvitationEmails(db, ctx, ids);
+    await queueInvitationEmails(db, ctx, ids, NOW);
 
     const mailer = new FakeMailer();
     expect(await sendNow(db, ctx, mailer, { now: NOW })).toMatchObject({ sent: 3, capReached: true, remaining: 2 });
@@ -130,7 +130,7 @@ describe("BR-17: the daily cap (400 by default, Nairobi calendar day)", () => {
     const { ctx, guest } = await setup(4);
     const ids = [];
     for (let i = 0; i < 6; i++) ids.push((await guest()).invitation.id);
-    await queueInvitationEmails(db, ctx, ids);
+    await queueInvitationEmails(db, ctx, ids, NOW);
     const mailer = new FakeMailer();
     const [a, b] = await Promise.all([sendNow(db, ctx, mailer, { now: NOW }), processEmailQueue(db, ctx.weddingId, mailer, { by: SYSTEM, now: NOW })]);
     expect(a.sent + b.sent).toBe(4);
@@ -142,7 +142,7 @@ describe("failures (E10)", () => {
   it("a transient failure is retried after 5 then 30 minutes, then marked failed", async () => {
     const { ctx, guest, queue } = await setup();
     const { invitation } = await guest();
-    await queueInvitationEmails(db, ctx, [invitation.id]);
+    await queueInvitationEmails(db, ctx, [invitation.id], NOW);
     const mailer = new FakeMailer().fail("transient", "transient", "transient");
 
     expect(await sendNow(db, ctx, mailer, { now: NOW })).toMatchObject({ sent: 0, retrying: 1, remaining: 0 });
@@ -161,7 +161,7 @@ describe("failures (E10)", () => {
 
   it("a permanent failure is not retried", async () => {
     const { ctx, guest, queue } = await setup();
-    await queueInvitationEmails(db, ctx, [(await guest()).invitation.id]);
+    await queueInvitationEmails(db, ctx, [(await guest()).invitation.id], NOW);
     expect(await sendNow(db, ctx, new FakeMailer().fail("permanent"), { now: NOW })).toMatchObject({ failed: 1, retrying: 0 });
     expect((await queue())[0].status).toBe("failed");
   });
@@ -170,7 +170,7 @@ describe("failures (E10)", () => {
     const { ctx, guest, queue, reload } = await setup();
     const ids = [];
     for (let i = 0; i < 3; i++) ids.push((await guest()).invitation.id);
-    await queueInvitationEmails(db, ctx, ids);
+    await queueInvitationEmails(db, ctx, ids, NOW);
     const s = await sendNow(db, ctx, new FakeMailer().fail("auth"), { now: NOW });
     expect(s).toMatchObject({ sent: 0, failed: 1, authFailed: true, remaining: 2 });
     const rows = await queue();
@@ -199,7 +199,7 @@ describe("BR-18: each email re-checks that it still applies at send time", () =>
     const { wedding, ctx, guest, reload } = await setup();
     await db.update(venues).set({ name: "Safari Gardens", address: "Karen Road", lat: -1.32, lng: 36.7 }).where(eq(venues.weddingId, wedding.id));
     const { invitation, token } = await guest({ status: "awaiting_approval" });
-    await approveInvitation(db, ctx, invitation.id);
+    await approveInvitation(db, ctx, invitation.id, { now: NOW });
     const mailer = new FakeMailer();
     await sendNow(db, ctx, mailer, { now: NOW });
     const [email] = mailer.sent;
@@ -226,8 +226,8 @@ describe("BR-18: each email re-checks that it still applies at send time", () =>
   it("an approval email for a guest revoked before sending is cancelled", async () => {
     const { ctx, guest, queue } = await setup();
     const { invitation } = await guest({ status: "awaiting_approval" });
-    await approveInvitation(db, ctx, invitation.id);
-    await revokeInvitation(db, ctx, invitation.id);
+    await approveInvitation(db, ctx, invitation.id, { now: NOW });
+    await revokeInvitation(db, ctx, invitation.id, { now: NOW });
     const mailer = new FakeMailer();
     expect(await sendNow(db, ctx, mailer, { now: NOW })).toMatchObject({ sent: 0, cancelled: 1 });
     expect((await queue())[0]).toMatchObject({ status: "cancelled", lastError: expect.stringMatching(/no longer approved/) });
@@ -237,7 +237,7 @@ describe("BR-18: each email re-checks that it still applies at send time", () =>
     const { ctx, guest, queue } = await setup();
     const { invitation, token } = await guest({ status: "sent" });
     await submitRsvp(db, token, { attending: true, primary: { fullName: "Main Guest" } }, { now: NOW });
-    await revokeInvitation(db, ctx, invitation.id);
+    await revokeInvitation(db, ctx, invitation.id, { now: NOW });
     const mailer = new FakeMailer();
     expect(await sendNow(db, ctx, mailer, { now: NOW })).toMatchObject({ sent: 0, cancelled: 1 });
     expect((await queue())[0]).toMatchObject({ template: "rsvp_received", status: "cancelled", lastError: "Invitation revoked." });
@@ -246,7 +246,7 @@ describe("BR-18: each email re-checks that it still applies at send time", () =>
   it("a 'revoked' notice is cancelled if the guest was restored first", async () => {
     const { ctx, guest } = await setup();
     const { invitation } = await guest({ status: "approved" });
-    await revokeInvitation(db, ctx, invitation.id, { notifyGuest: true });
+    await revokeInvitation(db, ctx, invitation.id, { notifyGuest: true, now: NOW });
     await restoreInvitation(db, ctx, invitation.id);
     expect(await sendNow(db, ctx, new FakeMailer(), { now: NOW })).toMatchObject({ cancelled: 1 });
   });
@@ -255,9 +255,9 @@ describe("BR-18: each email re-checks that it still applies at send time", () =>
     const { ctx, guest } = await setup();
     const { invitation, token } = await guest({ status: "sent", seatAllowance: 1 });
     await submitRsvp(db, token, { attending: true, primary: { fullName: "Main" } }, { now: NOW });
-    await approveInvitation(db, ctx, invitation.id);
+    await approveInvitation(db, ctx, invitation.id, { now: NOW });
     await submitRsvp(db, token, { attending: true, primary: { fullName: "Main" }, extras: [{ fullName: "Plus One" }] }, { now: NOW });
-    await approveInvitation(db, ctx, invitation.id);
+    await approveInvitation(db, ctx, invitation.id, { now: NOW });
     const mailer = new FakeMailer();
     const s = await sendNow(db, ctx, mailer, { now: NOW });
     const subjects = mailer.sent.map((e) => e.subject);
@@ -271,15 +271,15 @@ describe("E11: bounces", () => {
   it("marking bounced cancels queued email; a corrected address can receive again", async () => {
     const { ctx, guest, queue, reload } = await setup();
     const { invitation } = await guest();
-    await queueInvitationEmails(db, ctx, [invitation.id]);
+    await queueInvitationEmails(db, ctx, [invitation.id], NOW);
     await markEmailBounced(db, ctx, invitation.id, NOW);
     expect((await queue())[0].status).toBe("cancelled");
-    expect((await queueInvitationEmails(db, ctx, [invitation.id])).skipped[0].reason).toBe("Email marked as bounced.");
+    expect((await queueInvitationEmails(db, ctx, [invitation.id], NOW)).skipped[0].reason).toBe("Email marked as bounced.");
 
     const inv = await reload(invitation.id);
     await updateInvitation(db, ctx, invitation.id, { email: "fixed@example.com" }, inv.updatedAt);
     expect((await reload(invitation.id)).emailBouncedAt).toBeNull();
-    expect((await queueInvitationEmails(db, ctx, [invitation.id])).queued).toBe(1);
+    expect((await queueInvitationEmails(db, ctx, [invitation.id], NOW)).queued).toBe(1);
   });
 });
 
@@ -290,8 +290,8 @@ describe("N5: details updated", () => {
     await guest({ status: "partially_arrived" });
     await guest({ status: "approved", email: null });
     await guest({ status: "awaiting_approval" });
-    expect(await queueDetailsUpdated(db, ctx)).toBe(2);
-    expect(await queueDetailsUpdated(db, ctx)).toBe(0);
+    expect(await queueDetailsUpdated(db, ctx, NOW)).toBe(2);
+    expect(await queueDetailsUpdated(db, ctx, NOW)).toBe(0);
   });
 });
 
@@ -299,7 +299,7 @@ describe("E12: the open pixel", () => {
   it("records the first open only, never changes status, and ignores forged tokens", async () => {
     const { wedding, guest, reload } = await setup();
     const { invitation } = await guest({ status: "sent" });
-    await enqueueEmail(db, { weddingId: wedding.id, invitationId: invitation.id, template: "invitation" });
+    await enqueueEmail(db, { weddingId: wedding.id, invitationId: invitation.id, template: "invitation", scheduledFor: NOW });
     const [row] = await db.select().from(emailQueue).where(eq(emailQueue.invitationId, invitation.id));
 
     await recordEmailOpen(db, `${row.id}.forgedsignature000000000`, NOW);
