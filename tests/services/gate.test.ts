@@ -7,6 +7,7 @@ import type { Db } from "@/server/db/client";
 import { activityLog, checkIns, invitations, partyMembers } from "@/server/db/schema";
 import { admit, getGatePass, getGateRoster, passTokenFor, scanUrl, searchAtGate, syncOfflineCheckIns, verifyScan } from "@/server/services/gate";
 import { usherLogin } from "@/server/services/gate-login";
+import { recordView } from "@/server/services/invitation-page";
 import { createInvitation, createTestDb, createWedding } from "../helpers/db";
 import { usherFor } from "../helpers/usher";
 
@@ -30,16 +31,28 @@ async function setup(values: Parameters<typeof createInvitation>[2] = {}) {
   return { wedding, usher, invitation, token, pass, reload };
 }
 
-describe("gate pass page", () => {
-  it("approved guests get a QR of the scan URL; first view is recorded once", async () => {
+describe("gate pass (a section of the invitation page, D22)", () => {
+  it("approved guests get a QR of the scan URL; loading it records nothing (link previews would fake it)", async () => {
     const { token, reload } = await setup();
-    const t1 = new Date("2026-12-01T10:00:00Z");
-    const pass = await getGatePass(db, token, { now: t1 });
+    const pass = await getGatePass(db, token);
     expect(pass).toMatchObject({ guestName: "Wanjiru Kamau", partySize: 3, arrivedCount: 0, weddingDate: "2026-12-12" });
     expect(pass.scanUrl).toMatch(/^https:\/\/wedding\.test\/scan\/v\/[\w-]+\.[\w-]+\.[\w-]+$/);
     expect(pass.qrSvg).toMatch(/^<svg/);
-    await getGatePass(db, token, { now: new Date("2026-12-02T10:00:00Z") });
+    expect((await reload()).passFirstViewedAt).toBeNull();
+  });
+
+  it("an approved guest tapping the seal records that they've seen their pass, once", async () => {
+    const { token, reload } = await setup();
+    const t1 = new Date("2026-12-01T10:00:00Z");
+    await recordView(db, token, { viewer: "guest", now: t1 });
+    await recordView(db, token, { viewer: "guest", now: new Date("2026-12-02T10:00:00Z") });
     expect((await reload()).passFirstViewedAt).toEqual(t1);
+  });
+
+  it("guests who aren't approved yet haven't seen a pass", async () => {
+    const { token, reload } = await setup({ status: "sent" });
+    await recordView(db, token, { viewer: "guest" });
+    expect((await reload()).passFirstViewedAt).toBeNull();
   });
 
   it("BR-1: nobody else gets a pass", async () => {

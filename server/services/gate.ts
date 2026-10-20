@@ -33,14 +33,12 @@ export function tokenFromScan(scanned: string): string {
   return (i >= 0 ? s.slice(i + "/scan/v/".length) : s).split(/[?#]/)[0];
 }
 
-// --- guest side: the pass page ---
+// --- guest side: the gate pass section of the invitation page (D22) ---
 
-export async function getGatePass(db: Db, token: string | null | undefined, opts: { now?: Date } = {}) {
+/** Pass data for an approved guest. Viewing is recorded by recordView (a real tap), not here. */
+export async function getGatePass(db: Db, token: string | null | undefined) {
   const { invitation: inv, wedding } = await requireApproved(db, token); // BR-1: pass is approved-only
   const passToken = await passTokenFor(inv);
-  if (!inv.passFirstViewedAt) {
-    await db.update(invitations).set({ passFirstViewedAt: opts.now ?? new Date() }).where(eq(invitations.id, inv.id));
-  }
   return {
     guestName: inv.fullName,
     partySize: inv.partySize, // "Wanjiru + 2" is partySize - 1 extras

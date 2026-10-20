@@ -174,12 +174,11 @@ Rules:
 |---|---|---|
 | `/` | Public | Teaser: envelope animation, names, date, countdown, "Request an invitation" form |
 | `/i/[token]` | Invited and above | **Personal invitation**: envelope opens to a card with the guest's name; logs "card viewed"; RSVP form pre-filled with seat allowance. Once **approved**, the same page shows the full wedding site (sections below) |
-| `/i/[token]/pass` | **Approved only** | **Gate pass**: name, party size, QR code, date, gate time, "Add to home screen" tip |
-| `/i/[token]/day` | **Approved only** | **Day-of page**: full programme, "happening now", live location / directions, transport/parking, contacts |
+| `/i/[token]/pass`, `/i/[token]/day` | — | Old addresses: redirect to the `#pass` and `#programme` sections of `/i/[token]` (BLUEPRINT D22) |
 | `/admin` … | Admin | Dashboard, guest list, settings (see §8) |
 | `/scan` | Usher (PIN) | Gate scanner |
 
-Any approved-only route opened by a guest who isn't approved redirects to `/i/[token]` showing their current status. Any route with an invalid token redirects to `/`.
+**One page per guest (BLUEPRINT D22).** `/i/[token]` holds everything, with a section navigation bar like the reference site. For approved guests it adds the gate pass (QR), the full programme, details and, on the wedding day, a live "happening now / next" banner at the top. Any route with an invalid token redirects to `/`.
 
 ### Sections — public teaser (`/`)
 
@@ -249,7 +248,7 @@ Day-of page extras:
 
 - Venue name, address, landmarks, and **latitude/longitude** stored per venue (ceremony, reception, optional traditional ceremony).
 - **Never shown** to the public, to invited guests awaiting a response, or to guests who said "Yes" but are **not yet approved** ("Exact location and directions will be shared once your attendance is confirmed").
-- Shown **only to approved guests** on `/i/[token]`, `/i/[token]/day` and in the approval email:
+- Shown **only to approved guests** on `/i/[token]` and in the approval email:
   - **"Get directions"** button → `https://www.google.com/maps/dir/?api=1&destination=LAT,LNG` (opens Google Maps navigation from the guest's current location).
   - **"Open in Maps"** button → `https://www.google.com/maps/search/?api=1&query=LAT,LNG`.
   - Static map image (screenshot exported once, stored in `/public`) — no paid map API.

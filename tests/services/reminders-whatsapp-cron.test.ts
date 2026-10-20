@@ -94,8 +94,8 @@ describe("day-before reminder", () => {
     await runReminders(db, mailer, new Date("2026-12-11T08:00:00+03:00")); // runs for every wedding in the database
     const [email] = mailer.to(invitation.email!);
     expect(email.subject).toMatch(/tomorrow/);
-    expect(email.html).toContain(`https://wedding.test/i/${token}/pass`);
-    expect(email.html).toContain(`https://wedding.test/i/${token}/day`);
+    expect(email.html).toContain(`https://wedding.test/i/${token}#pass`);
+    expect(email.html).toContain(`https://wedding.test/i/${token}#programme`);
     expect(email.html).toMatch(/11:30\s?am EAT/i);
   });
 });

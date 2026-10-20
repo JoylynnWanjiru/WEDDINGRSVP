@@ -11,6 +11,14 @@ const nextConfig: NextConfig = {
       { source: "/scan/:path*", headers: [noindex] },
     ];
   },
+  // D22: one page per guest. Old /pass and /day links jump to that section at the HTTP
+  // level (works without JavaScript). Temporary (307), so nothing caches it forever.
+  async redirects() {
+    return [
+      { source: "/i/:token/pass", destination: "/i/:token#pass", permanent: false },
+      { source: "/i/:token/day", destination: "/i/:token#programme", permanent: false },
+    ];
+  },
   cacheComponents: true,
   partialPrefetching: true,
   turbopack: {

@@ -5,7 +5,7 @@ import { asc, eq, sql } from "drizzle-orm";
 import type { Db } from "../db/client";
 import { invitations, partyMembers, rsvpEvents, venues, weddings, type Invitation, type Wedding } from "../db/schema";
 import { isRsvpOpen } from "../domain/rules";
-import { nextStatus } from "../domain/status";
+import { isUnlocked, nextStatus } from "../domain/status";
 import { AppError } from "../errors";
 import { approvedFrom, getAccess } from "./access";
 import { logActivity } from "./activity";
@@ -142,6 +142,8 @@ export async function recordView(
       .update(invitations)
       .set({
         status: to,
+        // D22: the pass is a section of this page, so an approved guest opening it has seen their pass.
+        ...(isUnlocked(inv.status) && !inv.passFirstViewedAt ? { passFirstViewedAt: now } : {}),
         firstViewedAt: inv.firstViewedAt ?? now,
         lastViewedAt: now,
         viewCount: sql`${invitations.viewCount} + 1`,

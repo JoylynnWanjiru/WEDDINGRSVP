@@ -1,6 +1,5 @@
 // Status banners on the personal invitation (spec §4a).
 
-import Link from "next/link";
 import type { ReactNode } from "react";
 
 function Banner({ tone, children }: { tone: "gold" | "soft"; children: ReactNode }) {
@@ -35,20 +34,12 @@ export function Declined() {
   );
 }
 
-export function Confirmed({ token, partySize, arrivedCount }: { token: string; partySize: number; arrivedCount: number }) {
+export function Confirmed({ partySize }: { partySize: number }) {
   return (
     <Banner tone="gold">
       <p className="label text-gold">Your attendance is confirmed</p>
       <p className="mt-2 font-display text-3xl">{partySize === 1 ? "We can't wait to see you" : `Party of ${partySize}`}</p>
-      {arrivedCount > 0 ? <p className="mt-1 text-sm text-pearl">{arrivedCount} of {partySize} checked in. Welcome!</p> : null}
-      <div className="mt-5 flex flex-wrap justify-center gap-3">
-        <Link href={`/i/${token}/pass`} className="label inline-flex min-h-11 items-center rounded-sm bg-gold px-6 py-3 text-wine hover:bg-[#d6bb7c]">
-          View gate pass
-        </Link>
-        <Link href={`/i/${token}/day`} className="label inline-flex min-h-11 items-center rounded-sm border border-gold/70 px-6 py-3 text-gold hover:bg-gold/10">
-          On the day
-        </Link>
-      </div>
+      <p className="mt-2 text-sm text-pearl">Your gate pass is just below. Everything you need for the day is on this page.</p>
     </Banner>
   );
 }

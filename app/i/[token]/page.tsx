@@ -1,10 +1,14 @@
-// Personal invitation (spec §4, §4a). The server decides what this token may see on every
-// request (BR-3); locked sections are only rendered (and only fetched) for approved guests.
+// Personal invitation: ONE page per guest (D22), like the reference site, with a section
+// navigation bar. The server decides what this token may see on every request (BR-3);
+// locked sections, including the gate pass, are only rendered (and fetched) for approved guests.
 
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { Countdown } from "@/components/Countdown";
 import { Envelope } from "@/components/envelope/Envelope";
+import { GatePass } from "@/components/GatePass";
+import { HappeningNow } from "@/components/HappeningNow";
+import { InvitationNav, type NavItem } from "@/components/InvitationNav";
 import { RsvpForm, type RsvpFormProps } from "@/components/RsvpForm";
 import { AwaitingApproval, Confirmed, Declined, DetailsAfterApproval } from "@/components/RsvpStatus";
 import { Contacts } from "@/components/sections/Contacts";
@@ -16,13 +20,14 @@ import { Story } from "@/components/sections/Story";
 import { Venues } from "@/components/sections/VenueCard";
 import { Ornament } from "@/components/ui/Ornament";
 import { getDb } from "@/server/db/client";
+import { getGatePass } from "@/server/services/gate";
 import { getInvitationPage, type InvitationPage } from "@/server/services/invitation-page";
-import { formatDate, formatDateTime, formatTime } from "@/server/utils/dates";
+import { addDays, formatDate, formatDateTime, formatTime, nairobiDate } from "@/server/utils/dates";
 import { recordViewAction } from "./actions";
 
 export default function InvitationRoute({ params }: PageProps<"/i/[token]">) {
   return (
-    <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col items-center gap-10 px-4 pb-16">
+    <main className="flex w-full flex-1 flex-col items-center pb-16">
       <Suspense fallback={<Loading />}>
         <Invitation params={params} />
       </Suspense>
@@ -32,7 +37,7 @@ export default function InvitationRoute({ params }: PageProps<"/i/[token]">) {
 
 function Loading() {
   return (
-    <div className="w-full animate-pulse pt-10" aria-label="Loading your invitation">
+    <div className="w-full max-w-2xl animate-pulse px-4 pt-10" aria-label="Loading your invitation">
       <div className="envelope mt-[38%] sm:mt-40">
         <div className="envelope__back" />
         <div className="envelope__front" />
@@ -63,10 +68,32 @@ async function Invitation({ params }: { params: PageProps<"/i/[token]">["params"
   const { teaser, guest } = page;
   const couple = `${teaser.brideName} & ${teaser.groomName}`;
   const date = formatDate(teaser.weddingDate);
+  const approved = page.level === "approved" && page.content ? page.content : null;
+  const pass = approved ? await getGatePass(getDb(), token) : null;
+
+  // On the wedding day (and the after-midnight send-off) the live banner leads the page.
+  const now = new Date(); // request time: awaiting params above made this render dynamic
+  const today = nairobiDate(now);
+  const weddingDay = today === teaser.weddingDate || today === addDays(teaser.weddingDate, 1);
+
+  const nav: NavItem[] = [{ href: "#top", label: "Invitation" }];
+  if (approved) {
+    if (approved.story || approved.photos.some((p) => p.section === "story")) nav.push({ href: "#story", label: "Our story" });
+    nav.push({ href: "#programme", label: "The day" }, { href: "#details", label: "Details" }, { href: "#pass", label: "Gate pass" });
+  }
+  nav.push({ href: "#rsvp", label: "RSVP" });
 
   return (
     <>
-      <section className="w-full pt-10" aria-label="Your invitation">
+      <InvitationNav items={nav} />
+      <div className="mx-auto flex w-full max-w-2xl flex-col items-center gap-10 px-4">
+      {approved && weddingDay ? (
+        <div className="w-full pt-6">
+          <HappeningNow programme={approved.programme} serverNow={now.toISOString()} />
+        </div>
+      ) : null}
+
+      <section id="top" className="w-full scroll-mt-14 pt-10" aria-label="Your invitation">
         <Envelope addressedTo={`For ${guest.firstName}`} monogram={teaser.monogram} onOpen={recordViewAction.bind(null, token)}>
           <p className="label text-[0.6rem] text-gold-deep">For {guest.fullName}</p>
           <p className="mt-3 font-display text-lg italic text-wine/80">You&rsquo;re invited to our wedding</p>
@@ -92,23 +119,26 @@ async function Invitation({ params }: { params: PageProps<"/i/[token]">["params"
         </div>
       </section>
 
-      {page.level === "approved" ? (
-        <Confirmed token={token} partySize={guest.partySize} arrivedCount={guest.arrivedCount} />
+      {approved ? (
+        <Confirmed partySize={guest.partySize} />
       ) : guest.awaitingApproval ? (
         <AwaitingApproval partySize={guest.partySize} />
       ) : page.level === "declined" ? (
         <Declined />
       ) : null}
 
-      {page.level === "approved" && page.content ? (
+      {approved && pass ? (
         <>
-          <Story story={page.content.story} photos={page.content.photos} />
-          <Programme items={page.content.programme} />
-          <Venues venues={page.content.venues} />
-          <DressCode dressCode={page.content.dressCode} />
-          <GoodToKnow contributionInfo={page.content.contributionInfo} />
-          <Faq items={page.content.faq} />
-          <Contacts contacts={page.content.contacts} />
+          <GatePass pass={pass} />
+          <Story story={approved.story} photos={approved.photos} />
+          <Programme items={approved.programme} />
+          <div id="details" className="flex w-full scroll-mt-14 flex-col gap-10">
+            <Venues venues={approved.venues} />
+            <DressCode dressCode={approved.dressCode} />
+            <GoodToKnow contributionInfo={approved.contributionInfo} />
+            <Faq items={approved.faq} />
+            <Contacts contacts={approved.contacts} />
+          </div>
         </>
       ) : (
         <DetailsAfterApproval />
@@ -120,7 +150,11 @@ async function Invitation({ params }: { params: PageProps<"/i/[token]">["params"
         <Ornament className="mb-4" />
         <p className="font-display text-xl">With love, {couple}</p>
         <p className="label mt-1 text-[0.65rem]">{date}</p>
+        <a href="#top" className="label mt-4 inline-block text-[0.6rem] text-gold underline underline-offset-4">
+          Back to top
+        </a>
       </footer>
+      </div>
     </>
   );
 }
@@ -140,7 +174,7 @@ function RsvpSection({ token, page }: { token: string; page: Full }) {
   const answered = rsvp.attending !== null;
 
   return (
-    <section id="rsvp" aria-labelledby="rsvp-title" className="w-full scroll-mt-6 rounded-sm bg-ivory px-5 py-10 text-wine sm:px-10">
+    <section id="rsvp" aria-labelledby="rsvp-title" className="w-full scroll-mt-14 rounded-sm bg-ivory px-5 py-10 text-wine sm:px-10">
       <h2 id="rsvp-title" className="text-center font-display text-4xl">
         {answered ? "Your response" : "RSVP"}
       </h2>

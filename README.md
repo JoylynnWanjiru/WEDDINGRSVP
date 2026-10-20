@@ -50,10 +50,10 @@ Running cost: **KSh 0**.
 │  │  ├─ page.tsx               # /  public teaser + request-an-invitation
 │  │  └─ actions.ts             # requestInvitation()
 │  ├─ i/[token]/
-│  │  ├─ page.tsx               # personal invitation → full site once approved
-│  │  ├─ actions.ts             # submitRsvp(), updateRsvp()
-│  │  ├─ pass/page.tsx          # gate pass        (approved only)
-│  │  └─ day/page.tsx           # day-of page      (approved only)
+│  │  ├─ page.tsx               # ONE page per guest (D22): nav, RSVP, and once approved
+│  │  │                         #   gate pass, programme, details, wedding-day live banner
+│  │  └─ actions.ts             # submitRsvpAction(), recordViewAction()
+│  │                            # (old /pass and /day links redirect in next.config.ts)
 │  ├─ admin/
 │  │  ├─ login/                 # admin login (not guarded)
 │  │  └─ (dashboard)/           # everything here requires an admin session

@@ -92,7 +92,8 @@ export async function composeEmail(db: Db, row: QueueRow, inv: Invitation, weddi
         return { cancel: "Superseded by a later approval." };
       }
       const content = await getApprovedContent(db, approved);
-      const passLink = `${link}/pass`;
+      // D22: one page per guest; the email buttons jump to its sections.
+      const passLink = `${link}#pass`;
       if (row.template === "details_updated") return { send: { ...base, ...detailsUpdatedEmail({ couple: c, firstName, pageLink: link }) } };
 
       // The QR for the current pass version, as an inline attachment (D14).
@@ -100,7 +101,7 @@ export async function composeEmail(db: Db, row: QueueRow, inv: Invitation, weddi
       const withQr = { ...base, attachments: [qr] };
       if (row.template === "reminder_day_before") {
         return {
-          send: { ...withQr, ...dayBeforeEmail({ couple: c, firstName, passLink, pageLink: `${link}/day`, gatesOpenAt: wedding.gatesOpenAt, content, qrCid: qr.cid }) },
+          send: { ...withQr, ...dayBeforeEmail({ couple: c, firstName, passLink, pageLink: `${link}#programme`, gatesOpenAt: wedding.gatesOpenAt, content, qrCid: qr.cid }) },
         };
       }
       return {
