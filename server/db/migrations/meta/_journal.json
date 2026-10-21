@@ -43,6 +43,13 @@
       "when": 1792575734714,
       "tag": "0005_magical_demogoblin",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1792604579963,
+      "tag": "0006_sparkling_wither",
+      "breakpoints": true
     }
   ]
 }

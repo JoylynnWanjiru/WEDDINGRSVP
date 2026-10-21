@@ -4,31 +4,41 @@
 // search, and offline mode (N3, E17). Every rule lives on the server; offline the
 // phone checks the approved list cached at the last sync (lib/gate-offline.ts) and
 // uploads its check-ins when the signal returns, where they are checked again.
+// Vendor teams (D25) scan the same way and get their own blue "Vendor" card.
 
 import { useCallback, useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import {
   afterSync,
   checkOffline,
-  readPassClaims,
-  searchRoster,
   queuedFor,
+  readPassClaims,
+  rosterEntries,
+  searchRoster,
+  syncEntry,
+  type Kind,
   type PendingCheckIn,
-  type RosterGuest,
+  type RosterEntry,
+  type ServerRoster,
   type SyncOutcome,
 } from "@/lib/gate-offline";
 import { formatTime } from "@/server/utils/dates";
 import { Camera } from "./Camera";
 
-const KEYS = { roster: "gate.roster", pending: "gate.pending", device: "gate.device" };
+// v2: entries carry `kind` (D25); older saved shapes are simply not read.
+const KEYS = { roster: "gate.roster.v2", pending: "gate.pending.v2", device: "gate.device" };
 const REFRESH_MS = 60_000;
 
-type Roster = { syncedAt: string; guests: RosterGuest[] };
-type Target = { scanned: string; passVersion?: number } | { invitationId: string };
+type Roster = { syncedAt: string; entries: RosterEntry[] };
+type Who = { kind: Kind; id: string };
+type Target = { scanned: string; passVersion?: number } | Who;
 type Card =
-  | { kind: "admit"; name: string; partySize: number; arrivedCount: number; remaining: number; target: Target; invitationId: string; offline: boolean }
-  | { kind: "admitted"; name: string; count: number; remaining: number; offline: boolean }
-  | { kind: "stop"; title: string; name?: string; detail?: string };
-type Found = { invitationId: string; name: string; partySize: number; arrivedCount: number; members?: string[] };
+  | { kind: "admit"; who: Who; role?: string; name: string; partySize: number; arrivedCount: number; remaining: number; target: Target; offline: boolean }
+  | { kind: "admitted"; role?: string; name: string; count: number; remaining: number; offline: boolean }
+  | { kind: "stop"; title: string; role?: string; name?: string; detail?: string };
+type Found = { kind: Kind; id: string; name: string; role?: string; partySize: number; arrivedCount: number; members?: string[] };
+type ServerFound =
+  | { invitationId: string; name: string; partySize: number; arrivedCount: number; members?: string[] }
+  | { vendorId: string; name: string; role: string; partySize: number; arrivedCount: number };
 
 // --- storage: a convenience only; private mode or full storage must not break scanning ---
 function load<T>(key: string, fallback: T): T {
@@ -66,6 +76,8 @@ async function api<T>(path: string, body?: unknown): Promise<T> {
 
 const time = (at: string | Date) => formatTime(new Date(at));
 const ref = () => (crypto.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`);
+const fromServer = (f: ServerFound): Found =>
+  "vendorId" in f ? { kind: "vendor", id: f.vendorId, name: f.name, role: f.role, partySize: f.partySize, arrivedCount: f.arrivedCount } : { kind: "guest", id: f.invitationId, ...f };
 
 export function Scanner() {
   const [phase, setPhase] = useState<"checking" | "login" | "ready">("checking");
@@ -94,14 +106,13 @@ export function Scanner() {
     try {
       if (pendingRef.current.length) {
         const sent = pendingRef.current;
-        const { results } = await api<{ results: SyncOutcome[] }>("/api/scan/sync", {
-          entries: sent.map(({ clientRef, invitationId, passVersion, count, at }) => ({ clientRef, invitationId, passVersion, count, at })),
-        });
+        const { results } = await api<{ results: SyncOutcome[] }>("/api/scan/sync", { entries: sent.map(syncEntry) });
         const done = afterSync(pendingRef.current, results);
         updatePending(done.pending);
         if (done.flagged.length) setFlagged((n) => n + done.flagged.length);
       }
-      const fresh = await api<Roster>("/api/scan/roster");
+      const server = await api<ServerRoster>("/api/scan/roster");
+      const fresh: Roster = { syncedAt: server.syncedAt, entries: rosterEntries(server) };
       setRoster(fresh);
       save(KEYS.roster, fresh);
       setOnline(true);
@@ -147,49 +158,67 @@ export function Scanner() {
   // --- checking a pass or a name ---
 
   function offlineCard(target: Target): Card {
-    const list = roster?.guests ?? [];
+    const list = roster?.entries ?? [];
     const claims = "scanned" in target ? readPassClaims(target.scanned) : null;
     if ("scanned" in target && !claims) return { kind: "stop", title: "Not a valid pass", detail: "This QR code isn't a gate pass for this wedding." };
-    const check = checkOffline(list, pendingRef.current, claims ? { claims } : { invitationId: (target as { invitationId: string }).invitationId });
+    const check = checkOffline(list, pendingRef.current, claims ? { claims } : (target as Who));
     const asOf = roster ? ` (list from ${time(roster.syncedAt)})` : "";
     if (check.result === "unknown") return { kind: "stop", title: "Not on the guest list", detail: `Not approved as of the last sync${asOf}. Ask the couple's contact to check.` };
-    if (check.result === "outdated") return { kind: "stop", title: "Old pass", name: check.name, detail: "This pass was replaced. Ask for the latest pass, or find the guest by name." };
+    const { entry } = check;
+    if (check.result === "outdated") return { kind: "stop", title: "Old pass", role: entry.role, name: entry.name, detail: "This pass was replaced. Ask for the latest pass, or find them by name." };
     if (check.result === "already_admitted") {
-      return { kind: "stop", title: "Already checked in", name: check.guest.name, detail: `${check.arrivedCount} of ${check.guest.partySize} arrived${asOf}.` };
+      return { kind: "stop", title: "Already checked in", role: entry.role, name: entry.name, detail: `${check.arrivedCount} of ${entry.partySize} arrived${asOf}.` };
     }
     const t: Target = claims ? { scanned: (target as { scanned: string }).scanned, passVersion: claims.passVersion } : target;
-    return { kind: "admit", name: check.guest.name, partySize: check.guest.partySize, arrivedCount: check.arrivedCount, remaining: check.remaining, target: t, invitationId: check.guest.invitationId, offline: true };
+    return {
+      kind: "admit",
+      who: { kind: entry.kind, id: entry.id },
+      role: entry.role,
+      name: entry.name,
+      partySize: entry.partySize,
+      arrivedCount: check.arrivedCount,
+      remaining: check.remaining,
+      target: t,
+      offline: true,
+    };
   }
 
+  // Vendor results (D25) carry vendorId and role instead of invitationId.
+  type Party = { invitationId?: string; vendorId?: string; role?: string; name: string; partySize: number; arrivedCount: number };
   type ServerResult =
-    | { result: "ok"; invitationId: string; name: string; partySize: number; arrivedCount: number; remaining: number }
-    | { result: "already_admitted"; name: string; partySize: number; arrivedCount: number; lastAt: string | null; lastBy: string | null }
-    | { result: "revoked" | "not_approved" | "outdated"; name: string }
+    | ({ result: "ok"; remaining: number } & Party)
+    | ({ result: "already_admitted"; lastAt: string | null; lastBy: string | null } & Party)
+    | { result: "revoked" | "not_approved" | "outdated"; name: string; role?: string; vendorId?: string }
     | { result: "invalid" | "expired" }
-    | { result: "admitted"; name: string; arrivedCount: number; remaining: number; partySize: number }
+    | ({ result: "admitted"; remaining: number } & Party)
     | { result: "duplicate" };
 
   function serverCard(r: ServerResult, target: Target, count = 0): Card {
     switch (r.result) {
-      case "ok":
-        return { kind: "admit", name: r.name, partySize: r.partySize, arrivedCount: r.arrivedCount, remaining: r.remaining, target, invitationId: r.invitationId, offline: false };
+      case "ok": {
+        const who: Who = r.vendorId ? { kind: "vendor", id: r.vendorId } : { kind: "guest", id: r.invitationId! };
+        return { kind: "admit", who, role: r.role, name: r.name, partySize: r.partySize, arrivedCount: r.arrivedCount, remaining: r.remaining, target, offline: false };
+      }
       case "admitted":
-        return { kind: "admitted", name: r.name, count, remaining: r.remaining, offline: false };
+        return { kind: "admitted", role: r.role, name: r.name, count, remaining: r.remaining, offline: false };
       case "duplicate":
         return { kind: "admitted", name: "", count, remaining: 0, offline: false };
       case "already_admitted": // BR-15
         return {
           kind: "stop",
           title: "Already checked in",
+          role: r.role,
           name: r.name,
           detail: `${r.arrivedCount} of ${r.partySize} arrived${r.lastAt ? `, last at ${time(r.lastAt)}${r.lastBy ? ` by ${r.lastBy}` : ""}` : ""}.`,
         };
       case "revoked":
-        return { kind: "stop", title: "Invitation withdrawn", name: r.name, detail: "This invitation is no longer valid. Please refer the guest to the couple's contact." };
+        return r.vendorId
+          ? { kind: "stop", title: "Vendor removed", role: r.role, name: r.name, detail: "The couple has removed this vendor. Please refer them to the couple's contact." }
+          : { kind: "stop", title: "Invitation withdrawn", name: r.name, detail: "This invitation is no longer valid. Please refer the guest to the couple's contact." };
       case "not_approved":
         return { kind: "stop", title: "Not confirmed", name: r.name, detail: "This guest's attendance hasn't been confirmed. Please refer them to the couple's contact." };
       case "outdated":
-        return { kind: "stop", title: "Old pass", name: r.name, detail: "This pass was replaced. Ask for the latest pass, or find the guest by name." };
+        return { kind: "stop", title: "Old pass", role: r.role, name: r.name, detail: "This pass was replaced. Ask for the latest pass, or find them by name." };
       case "expired":
         return { kind: "stop", title: "Pass expired", detail: "This pass was for a wedding that has already happened." };
       case "invalid":
@@ -200,10 +229,10 @@ export function Scanner() {
   async function check(target: Target) {
     if (!("scanned" in target)) {
       // A name from search. Online, the search result is fresh; admitting re-checks it under a lock anyway.
-      const g = online ? found.find((f) => f.invitationId === target.invitationId) : undefined;
+      const g = online ? found.find((f) => f.kind === target.kind && f.id === target.id) : undefined;
       if (!g) return setCard(offlineCard(target));
-      if (g.arrivedCount >= g.partySize) return setCard({ kind: "stop", title: "Already checked in", name: g.name, detail: `${g.arrivedCount} of ${g.partySize} arrived.` });
-      return setCard({ kind: "admit", name: g.name, partySize: g.partySize, arrivedCount: g.arrivedCount, remaining: g.partySize - g.arrivedCount, target, invitationId: g.invitationId, offline: false });
+      if (g.arrivedCount >= g.partySize) return setCard({ kind: "stop", title: "Already checked in", role: g.role, name: g.name, detail: `${g.arrivedCount} of ${g.partySize} arrived.` });
+      return setCard({ kind: "admit", who: target, role: g.role, name: g.name, partySize: g.partySize, arrivedCount: g.arrivedCount, remaining: g.partySize - g.arrivedCount, target, offline: false });
     }
     setBusy(true);
     try {
@@ -226,15 +255,15 @@ export function Scanner() {
     const queueOffline = () => {
       updatePending([
         ...pendingRef.current,
-        { clientRef, invitationId: c.invitationId, passVersion: "scanned" in c.target ? c.target.passVersion : undefined, count, at: new Date().toISOString(), name: c.name },
+        { clientRef, kind: c.who.kind, id: c.who.id, passVersion: "scanned" in c.target ? c.target.passVersion : undefined, count, at: new Date().toISOString(), name: c.name },
       ]);
-      setCard({ kind: "admitted", name: c.name, count, remaining: c.remaining - count, offline: true });
+      setCard({ kind: "admitted", role: c.role, name: c.name, count, remaining: c.remaining - count, offline: true });
     };
     try {
       if (c.offline) return queueOffline();
-      const body = "scanned" in c.target ? { scanned: c.target.scanned, count, clientRef } : { invitationId: c.target.invitationId, count, clientRef };
+      const body = "scanned" in c.target ? { scanned: c.target.scanned, count, clientRef } : { [c.who.kind === "vendor" ? "vendorId" : "invitationId"]: c.who.id, count, clientRef };
       const r = await api<ServerResult>("/api/scan/admit", body);
-      setCard(r.result === "duplicate" ? { kind: "admitted", name: c.name, count, remaining: c.remaining - count, offline: false } : serverCard(r, c.target, count));
+      setCard(r.result === "duplicate" ? { kind: "admitted", role: c.role, name: c.name, count, remaining: c.remaining - count, offline: false } : serverCard(r, c.target, count));
       void sync();
     } catch (err) {
       if (err instanceof SignedOut) setPhase("login");
@@ -256,12 +285,12 @@ export function Scanner() {
     const t = setTimeout(async () => {
       try {
         if (!online) throw new Offline();
-        setFound(await api<Found[]>(`/api/scan/search?q=${encodeURIComponent(query.trim())}`));
+        setFound((await api<ServerFound[]>(`/api/scan/search?q=${encodeURIComponent(query.trim())}`)).map(fromServer));
       } catch (err) {
         if (err instanceof SignedOut) return setPhase("login");
         if (err instanceof Offline) setOnline(false);
         const queued = pendingRef.current;
-        setFound(searchRoster(roster?.guests ?? [], query).map((g) => ({ ...g, arrivedCount: g.arrivedCount + queuedFor(queued, g.invitationId) })));
+        setFound(searchRoster(roster?.entries ?? [], query).map((e) => ({ ...e, arrivedCount: e.arrivedCount + queuedFor(queued, e.kind, e.id) })));
       }
     }, 250);
     return () => clearTimeout(t);
@@ -325,7 +354,7 @@ export function Scanner() {
           ) : (
             <div className="space-y-3">
               <label className="block">
-                <span className="label text-[0.6rem] text-gold">Guest or party member name</span>
+                <span className="label text-[0.6rem] text-gold">Guest, party member or vendor</span>
                 <input
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
@@ -337,16 +366,19 @@ export function Scanner() {
               </label>
               <ul className="divide-y divide-gold/15 rounded-sm border border-gold/20">
                 {found.map((g) => (
-                  <li key={g.invitationId}>
-                    <button type="button" className="flex min-h-14 w-full flex-col items-start px-4 py-3 text-left hover:bg-white/5" onClick={() => void check({ invitationId: g.invitationId })}>
-                      <span className="text-lg text-white">{g.name}</span>
+                  <li key={`${g.kind}-${g.id}`}>
+                    <button type="button" className="flex min-h-14 w-full flex-col items-start px-4 py-3 text-left hover:bg-white/5" onClick={() => void check({ kind: g.kind, id: g.id })}>
+                      <span className="text-lg text-white">
+                        {g.kind === "vendor" ? <VendorTag role={g.role} /> : null}
+                        {g.name}
+                      </span>
                       <span className="text-sm text-pearl/85">
                         {g.arrivedCount} of {g.partySize} arrived{g.members && g.members.length > 1 ? ` · ${g.members.slice(1).join(", ")}` : ""}
                       </span>
                     </button>
                   </li>
                 ))}
-                {query.trim().length >= 2 && !found.length ? <li className="px-4 py-3 text-pearl/85">No approved guest by that name.</li> : null}
+                {query.trim().length >= 2 && !found.length ? <li className="px-4 py-3 text-pearl/85">No approved guest or vendor by that name.</li> : null}
               </ul>
             </div>
           )}
@@ -361,6 +393,15 @@ function Shell({ children }: { children: ReactNode }) {
       <h1 className="text-center font-display text-3xl text-gold">Gate scanner</h1>
       {children}
     </main>
+  );
+}
+
+/** "VENDOR · Photographer" in front of a name: ushers must never mistake a team for a guest party. */
+function VendorTag({ role }: { role?: string }) {
+  return (
+    <span className="label mr-2 inline-block rounded-sm bg-[#bfdbfe] px-2 py-0.5 align-middle text-[0.55rem] text-[#172554]">
+      Vendor{role ? ` · ${role}` : ""}
+    </span>
   );
 }
 
@@ -413,6 +454,7 @@ function Login({ device, onDone }: { device: string; onDone: (device: string) =>
 
 function StatusBar(props: { device: string; online: boolean; roster: Roster | null; pending: number; flagged: number; onSync: () => void; onSignOut: () => void }) {
   const { device, online, roster, pending, flagged } = props;
+  const teams = roster?.entries.filter((e) => e.kind === "vendor").length ?? 0;
   return (
     <section aria-label="Scanner status" className="space-y-2 rounded-sm border border-gold/20 px-3 py-2 text-sm">
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -426,7 +468,11 @@ function StatusBar(props: { device: string; online: boolean; roster: Roster | nu
         </button>
       </div>
       <div className="flex flex-wrap items-center justify-between gap-2 text-pearl/85">
-        <span>{roster ? `List synced ${time(roster.syncedAt)} · ${roster.guests.length} parties` : "No saved list yet"}</span>
+        <span>
+          {roster
+            ? `List synced ${time(roster.syncedAt)} · ${roster.entries.length - teams} parties${teams ? `, ${teams} vendor team${teams === 1 ? "" : "s"}` : ""}`
+            : "No saved list yet"}
+        </span>
         {pending ? (
           <button type="button" onClick={props.onSync} className="label min-h-11 rounded-sm border border-[#f59e0b] px-3 text-[0.6rem] text-[#fcd34d]">
             {pending} to upload · Sync now
@@ -440,6 +486,11 @@ function StatusBar(props: { device: string; online: boolean; roster: Roster | nu
 
 function ResultCard({ card, busy, onAdmit, onNext }: { card: Card; busy: boolean; onAdmit: (c: Extract<Card, { kind: "admit" }>, n: number) => void; onNext: () => void }) {
   const [count, setCount] = useState(card.kind === "admit" ? card.remaining : 0);
+  const vendor = card.kind !== "stop" && !!card.role;
+  // Green welcomes a guest; blue welcomes a vendor team (D25), so the two can't be confused.
+  const ok = vendor ? "bg-[#1e3a8a]" : "bg-[#14532d]";
+  const okText = vendor ? "text-[#1e3a8a]" : "text-[#14532d]";
+  const tag = card.role ? <p className="label text-[0.65rem] text-white/90">Vendor · {card.role}</p> : null;
   const next = (
     <button type="button" onClick={onNext} autoFocus={card.kind !== "admit"} className="label min-h-14 w-full rounded-sm border border-white/60 text-[0.7rem] text-white">
       Scan next
@@ -451,6 +502,7 @@ function ResultCard({ card, busy, onAdmit, onNext }: { card: Card; busy: boolean
       <section role="alert" className="space-y-4 rounded-sm bg-[#7f1d1d] p-6 text-center text-white">
         <p aria-hidden className="text-6xl leading-none">✕</p>
         <h2 className="font-display text-4xl">{card.title}</h2>
+        {tag}
         {card.name ? <p className="text-2xl">{card.name}</p> : null}
         {card.detail ? <p className="text-lg">{card.detail}</p> : null}
         {next}
@@ -460,11 +512,12 @@ function ResultCard({ card, busy, onAdmit, onNext }: { card: Card; busy: boolean
 
   if (card.kind === "admitted") {
     return (
-      <section role="status" className="space-y-4 rounded-sm bg-[#14532d] p-6 text-center text-white">
+      <section role="status" className={`space-y-4 rounded-sm p-6 text-center text-white ${ok}`}>
         <p aria-hidden className="text-6xl leading-none">✓</p>
         <h2 className="font-display text-4xl">{card.count === 1 ? "1 person" : `${card.count} people`} admitted</h2>
+        {tag}
         {card.name ? <p className="text-2xl">{card.name}</p> : null}
-        {card.remaining > 0 ? <p className="text-lg">{card.remaining} more of this party can enter later.</p> : null}
+        {card.remaining > 0 ? <p className="text-lg">{card.remaining} more of this {vendor ? "team" : "party"} can enter later.</p> : null}
         {card.offline ? <p className="rounded-sm bg-black/25 px-3 py-2">Saved on this phone; it uploads when the signal is back.</p> : null}
         {next}
       </section>
@@ -473,13 +526,14 @@ function ResultCard({ card, busy, onAdmit, onNext }: { card: Card; busy: boolean
 
   // BR-16: admit fewer than the full party; the rest can come later.
   return (
-    <section aria-labelledby="welcome" className="space-y-5 rounded-sm bg-[#14532d] p-6 text-center text-white">
+    <section aria-labelledby="welcome" className={`space-y-5 rounded-sm p-6 text-center text-white ${ok}`}>
       <p aria-hidden className="text-6xl leading-none">✓</p>
+      {tag}
       <h2 id="welcome" className="font-display text-4xl">
-        Welcome, {card.name}
+        {vendor ? card.name : `Welcome, ${card.name}`}
       </h2>
       <p className="text-xl">
-        Party of {card.partySize}
+        {vendor ? "Team" : "Party"} of {card.partySize}
         {card.arrivedCount ? ` · ${card.arrivedCount} already in` : ""}
       </p>
       {card.offline ? <p className="rounded-sm bg-black/25 px-3 py-2">Offline check against the saved list.</p> : null}
@@ -494,7 +548,7 @@ function ResultCard({ card, busy, onAdmit, onNext }: { card: Card; busy: boolean
           +
         </button>
       </div>
-      <button type="button" disabled={busy} autoFocus onClick={() => onAdmit(card, count)} className="label min-h-14 w-full rounded-sm bg-white text-[0.75rem] text-[#14532d] disabled:opacity-60">
+      <button type="button" disabled={busy} autoFocus onClick={() => onAdmit(card, count)} className={`label min-h-14 w-full rounded-sm bg-white text-[0.75rem] disabled:opacity-60 ${okText}`}>
         {busy ? "Admitting…" : `Admit ${count} of ${card.remaining}`}
       </button>
       <button type="button" onClick={onNext} className="label min-h-12 w-full text-[0.65rem] text-white underline underline-offset-4">

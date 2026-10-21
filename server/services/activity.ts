@@ -11,6 +11,7 @@ export type ActivityEntry = {
   actor: Actor;
   actorLabel?: string;
   invitationId?: string;
+  vendorId?: string; // D25
   action: string;
   meta?: Record<string, unknown>;
 };

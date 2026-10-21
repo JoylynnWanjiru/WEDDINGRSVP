@@ -284,6 +284,40 @@ export const rsvpEvents = pgTable(
   (t) => [primaryKey({ columns: [t.invitationId, t.event] })],
 );
 
+// --- vendors (D25): a separate list, never counted as guests ---
+
+export const vendors = pgTable(
+  "vendors",
+  {
+    id: uuid("id").primaryKey(), // generated in app: the vendor link is derived from it
+    weddingId: uuid("wedding_id")
+      .notNull()
+      .references(() => weddings.id, { onDelete: "cascade" }),
+    company: text("company").notNull(),
+    role: text("role").notNull(), // "Photographer", "Caterer", …
+    contactName: text("contact_name"),
+    phone: text("phone"), // E.164 (BR-20); not unique: one coordinator may run two teams
+    email: text("email"),
+    staffCount: integer("staff_count").notNull().default(1),
+    mealCount: integer("meal_count").notNull().default(0),
+    arriveAt: tz("arrive_at"),
+    instructions: text("instructions"), // shown to the vendor
+    notes: text("notes"), // couple only
+    linkVersion: integer("link_version").notNull().default(1),
+    linkTokenHash: text("link_token_hash").notNull().unique(),
+    passVersion: integer("pass_version").notNull().default(1),
+    arrivedCount: integer("arrived_count").notNull().default(0),
+    removedAt: tz("removed_at"), // link and pass stop working
+    ...timestamps,
+  },
+  (t) => [
+    index("vendors_wedding_idx").on(t.weddingId),
+    check("vendors_staff_ck", sql`${t.staffCount} >= 1`),
+    check("vendors_meal_ck", sql`${t.mealCount} >= 0`),
+    check("vendors_arrived_ck", sql`${t.arrivedCount} >= 0 AND ${t.arrivedCount} <= ${t.staffCount}`), // BR-14
+  ],
+);
+
 // --- gate, messaging, audit ---
 
 export const checkIns = pgTable(
@@ -303,6 +337,25 @@ export const checkIns = pgTable(
     at: tz("at").notNull().defaultNow(),
   },
   (t) => [index("check_ins_invitation_idx").on(t.invitationId), check("check_ins_count_ck", sql`${t.count} > 0`)],
+);
+
+export const vendorCheckIns = pgTable(
+  "vendor_check_ins",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    weddingId: uuid("wedding_id")
+      .notNull()
+      .references(() => weddings.id, { onDelete: "cascade" }),
+    vendorId: uuid("vendor_id")
+      .notNull()
+      .references(() => vendors.id, { onDelete: "cascade" }),
+    count: integer("count").notNull(),
+    method: checkInMethod("method").notNull(),
+    usherDevice: text("usher_device"),
+    clientRef: text("client_ref").unique(), // idempotency key for offline sync
+    at: tz("at").notNull().defaultNow(),
+  },
+  (t) => [index("vendor_check_ins_vendor_idx").on(t.vendorId), check("vendor_check_ins_count_ck", sql`${t.count} > 0`)],
 );
 
 export const emailQueue = pgTable(
@@ -336,6 +389,7 @@ export const activityLog = pgTable(
     actor: actor("actor").notNull(),
     actorLabel: text("actor_label"),
     invitationId: uuid("invitation_id").references(() => invitations.id, { onDelete: "cascade" }),
+    vendorId: uuid("vendor_id").references(() => vendors.id, { onDelete: "cascade" }),
     action: text("action").notNull(),
     meta: jsonb("meta").$type<Record<string, unknown>>(),
     at: tz("at").notNull().defaultNow(),
@@ -354,3 +408,4 @@ export type Wedding = typeof weddings.$inferSelect;
 export type Invitation = typeof invitations.$inferSelect;
 export type InvitationRequest = typeof invitationRequests.$inferSelect;
 export type PartyMember = typeof partyMembers.$inferSelect;
+export type Vendor = typeof vendors.$inferSelect;

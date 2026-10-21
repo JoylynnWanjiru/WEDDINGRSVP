@@ -101,6 +101,40 @@ export const invitationPatch = z.object({
 
 const isoDate = z.coerce.date({ message: "Please enter a valid date and time." });
 
+// --- vendors (D25) ---
+
+const staffCount = z.coerce.number().int().min(1, "A team has at least 1 person.").max(50, "At most 50 people per team.");
+const mealCount = z.coerce.number().int().min(0, "Meals can't be negative.").max(50, "At most 50 meals per team.");
+
+export const vendorInput = z.object({
+  company: z.string().trim().min(1, "Please enter the company or vendor name.").max(120),
+  role: z.string().trim().min(1, "Please enter what they do, e.g. Photographer.").max(60),
+  contactName: optionalText(120),
+  phone: optionalText(30),
+  email: optionalEmail,
+  staffCount,
+  mealCount: mealCount.optional(), // defaults to the staff count
+  arriveAt: isoDate.optional(),
+  instructions: optionalText(2000),
+  notes: optionalText(1000),
+});
+
+/** Edit form: every field optional; null clears it. */
+export const vendorPatch = z.object({
+  company: vendorInput.shape.company.optional(),
+  role: vendorInput.shape.role.optional(),
+  contactName: nullableText(120),
+  phone: nullableText(30),
+  email: nullableText(200).refine((v) => v == null || z.email().safeParse(v).success, {
+    message: "Please enter a valid email address.",
+  }),
+  staffCount: staffCount.optional(),
+  mealCount: mealCount.optional(),
+  arriveAt: isoDate.nullable().optional(),
+  instructions: nullableText(2000),
+  notes: nullableText(1000),
+});
+
 export const weddingPatch = z
   .object({
     brideName: fullName,

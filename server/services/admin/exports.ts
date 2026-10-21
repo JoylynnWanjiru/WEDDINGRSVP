@@ -1,16 +1,16 @@
 // CSV exports (N4, PROJECT_SPEC §8): guest list, caterer's dietary list,
-// headcount by group, check-in report. Cells are guarded against formula injection.
+// headcount by group, check-in report, vendor list with meals (D25). Cells are guarded against formula injection.
 
-import { and, asc, eq, inArray, max, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull, max, sql } from "drizzle-orm";
 import type { Db } from "../../db/client";
-import { checkIns, invitations, partyMembers } from "../../db/schema";
+import { checkIns, invitations, partyMembers, vendors } from "../../db/schema";
 import { UNLOCKED_STATUSES } from "../../domain/status";
 import { AppError } from "../../errors";
 import { toCsv } from "../../utils/csv";
 import { logActivity } from "../activity";
 import { adminLog, type AdminCtx } from "./context";
 
-export const EXPORT_KINDS = ["guests", "dietary", "headcount", "checkins"] as const;
+export const EXPORT_KINDS = ["guests", "dietary", "headcount", "checkins", "vendors"] as const;
 export type ExportKind = (typeof EXPORT_KINDS)[number];
 
 export async function exportCsv(db: Db, ctx: AdminCtx, kind: string): Promise<{ filename: string; csv: string }> {
@@ -96,6 +96,26 @@ const builders: Record<ExportKind, (db: Db, weddingId: string) => Promise<string
       { header: "Party size", value: (r) => r.partySize },
       { header: "Arrived", value: (r) => r.arrived },
       { header: "Last check-in", value: (r) => r.lastAt },
+    ]);
+  },
+
+  /** D25: the vendor list, which is also the caterer's vendor meal count. Removed vendors are left out. */
+  async vendors(db, weddingId) {
+    const rows = await db
+      .select()
+      .from(vendors)
+      .where(and(eq(vendors.weddingId, weddingId), isNull(vendors.removedAt)))
+      .orderBy(asc(vendors.role), asc(vendors.company));
+    return toCsv(rows, [
+      { header: "Role", value: (r) => r.role },
+      { header: "Company", value: (r) => r.company },
+      { header: "Contact", value: (r) => r.contactName },
+      { header: "Phone", value: (r) => r.phone },
+      { header: "Email", value: (r) => r.email },
+      { header: "Staff", value: (r) => r.staffCount },
+      { header: "Meals", value: (r) => r.mealCount },
+      { header: "Arrive at", value: (r) => r.arriveAt },
+      { header: "Arrived", value: (r) => r.arrivedCount },
     ]);
   },
 };

@@ -7,6 +7,7 @@ const nextConfig: NextConfig = {
     return [
       { source: "/:path*", headers: [{ key: "Referrer-Policy", value: "no-referrer" }] },
       { source: "/i/:path*", headers: [noindex] },
+      { source: "/vendor/:path*", headers: [noindex] },
       { source: "/admin/:path*", headers: [noindex] },
       { source: "/scan/:path*", headers: [noindex] },
     ];

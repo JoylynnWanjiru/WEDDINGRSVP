@@ -1,14 +1,14 @@
-// Usage: npm run test-guests          create test guests and print their links
+// Usage: npm run test-guests          create test guests (and one test vendor, D25) and print their links
 //        npm run test-guests -- --remove   delete them again
 // Test guests are fake (no real phone/email) and marked in `notes`, so --remove
 // deletes only them, never a real guest.
 
 import { randomUUID } from "node:crypto";
 import { and, eq } from "drizzle-orm";
-import { hashToken, inviteLink, inviteTokenFor } from "../server/auth/tokens";
+import { hashToken, inviteLink, inviteTokenFor, vendorLink, vendorTokenFor } from "../server/auth/tokens";
 import { config } from "../server/config";
 import { getDb } from "../server/db/client";
-import { invitations, partyMembers, weddings } from "../server/db/schema";
+import { invitations, partyMembers, vendors, weddings } from "../server/db/schema";
 import type { InvitationStatus } from "../server/domain/status";
 
 const MARKER = "TEST GUEST: safe to delete (npm run test-guests -- --remove)";
@@ -33,8 +33,12 @@ async function main() {
     .delete(invitations)
     .where(and(eq(invitations.weddingId, w.id), eq(invitations.notes, MARKER)))
     .returning({ id: invitations.id });
+  const removedVendors = await db
+    .delete(vendors)
+    .where(and(eq(vendors.weddingId, w.id), eq(vendors.notes, MARKER)))
+    .returning({ id: vendors.id });
   if (process.argv.includes("--remove")) {
-    console.log(`✓ Removed ${removed.length} test guest(s).`);
+    console.log(`✓ Removed ${removed.length} test guest(s) and ${removedVendors.length} test vendor(s).`);
     process.exit(0);
   }
 
@@ -60,6 +64,22 @@ async function main() {
     }
     console.log(`  ${g.fullName.padEnd(12)} ${g.what}\n  ${inviteLink(id, 1)}\n`);
   }
+  // D25: one fake vendor team, to try the vendor page and a vendor pass at the scanner.
+  const vendorId = randomUUID();
+  await db.insert(vendors).values({
+    id: vendorId,
+    weddingId: w.id,
+    company: "Test Lens Studio",
+    role: "Photographer",
+    contactName: "Vendor Test",
+    staffCount: 3,
+    mealCount: 3,
+    instructions: "Test vendor: use the back gate.",
+    notes: MARKER,
+    linkTokenHash: hashToken(vendorTokenFor(vendorId, 1)),
+  });
+  console.log(`  ${"Test vendor".padEnd(12)} photographer, team of 3: their vendor page and pass\n  ${vendorLink(vendorId, 1)}
+`);
   console.log("Remove them any time with: npm run test-guests -- --remove");
   process.exit(0);
 }

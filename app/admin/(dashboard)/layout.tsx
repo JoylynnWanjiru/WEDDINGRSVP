@@ -11,6 +11,7 @@ export const metadata: Metadata = { title: "Wedding admin", robots: { index: fal
 const NAV = [
   { href: "/admin", label: "Dashboard" },
   { href: "/admin/guests", label: "Guests" },
+  { href: "/admin/vendors", label: "Vendors" },
   { href: "/admin/settings", label: "Settings" },
   { href: "/admin/tools", label: "Tools" },
 ];

@@ -30,6 +30,15 @@ export function inviteLink(invitationId: string, version: number): string {
   return `${config.appUrl()}/i/${inviteTokenFor(invitationId, version)}`;
 }
 
+/** D25: vendor links work like invite links, with their own HMAC purpose so the two can never collide. */
+export function vendorTokenFor(vendorId: string, version: number): string {
+  return hmac("vendor", `${vendorId}:${version}`).toString("base64url");
+}
+
+export function vendorLink(vendorId: string, version: number): string {
+  return `${config.appUrl()}/vendor/${vendorTokenFor(vendorId, version)}`;
+}
+
 // --- signed JWTs: gate passes and sessions ---
 
 const jwtKey = () => new Uint8Array(hmac("jwt", "v1"));
@@ -72,4 +81,17 @@ export async function verifyPassToken(token: string): Promise<PassClaims | null>
   const payload = await verifyJwt(token, "gate-pass");
   if (!payload?.sub || typeof payload.w !== "string" || typeof payload.pv !== "number") return null;
   return { invitationId: payload.sub, weddingId: payload.w, passVersion: payload.pv };
+}
+
+export type VendorPassClaims = { vendorId: string; weddingId: string; passVersion: number };
+
+/** D25: a vendor team's pass. Its own audience, so it can never be read as a guest pass. */
+export function signVendorPassToken({ vendorId, weddingId, passVersion }: VendorPassClaims): Promise<string> {
+  return signJwt("vendor-pass", vendorId, { w: weddingId, pv: passVersion });
+}
+
+export async function verifyVendorPassToken(token: string): Promise<VendorPassClaims | null> {
+  const payload = await verifyJwt(token, "vendor-pass");
+  if (!payload?.sub || typeof payload.w !== "string" || typeof payload.pv !== "number") return null;
+  return { vendorId: payload.sub, weddingId: payload.w, passVersion: payload.pv };
 }

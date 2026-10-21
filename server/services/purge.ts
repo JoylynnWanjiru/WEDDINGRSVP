@@ -1,17 +1,17 @@
 // Guest data deletion (BR-22, BR-23, Kenya Data Protection Act, D6).
 // Admins must type a confirmation phrase; the post-wedding cron runs it as "system".
-// Wedding content (programme, venues, FAQ, contacts) is kept; guest data is not.
+// Wedding content (programme, venues, FAQ, contacts) is kept; guest and vendor data is not (D25).
 
 import { eq, sql } from "drizzle-orm";
 import type { Db } from "../db/client";
-import { activityLog, emailQueue, invitationRequests, invitations, rateLimits, weddings } from "../db/schema";
+import { activityLog, emailQueue, invitationRequests, invitations, rateLimits, vendors, weddings } from "../db/schema";
 import { AppError } from "../errors";
 import { logActivity } from "./activity";
 import type { AdminCtx } from "./admin/context";
 
 export const PURGE_CONFIRMATION = "DELETE ALL GUEST DATA";
 
-export type PurgeResult = { invitations: number; requests: number };
+export type PurgeResult = { invitations: number; requests: number; vendors: number };
 
 /** Admin button. The typed phrase guards against a mis-tap (D6: the planner shares this login). */
 export async function purgeGuestDataAsAdmin(db: Db, ctx: AdminCtx, confirmation: string): Promise<PurgeResult> {
@@ -35,12 +35,14 @@ export async function purgeGuestData(
       .delete(invitationRequests)
       .where(eq(invitationRequests.weddingId, weddingId))
       .returning({ id: invitationRequests.id });
+    // D25: vendor contacts are personal data too. Their check-ins cascade.
+    const vendorRows = await tx.delete(vendors).where(eq(vendors.weddingId, weddingId)).returning({ id: vendors.id });
     await tx.delete(emailQueue).where(eq(emailQueue.weddingId, weddingId));
     await tx.delete(activityLog).where(eq(activityLog.weddingId, weddingId)); // metas may reference requests
     await tx.delete(rateLimits).where(sql`true`); // keyed hashes of IPs; v1 serves one wedding
     await tx.update(weddings).set({ purgedAt: now }).where(eq(weddings.id, weddingId));
 
-    const result = { invitations: removed.length, requests: requests.length };
+    const result = { invitations: removed.length, requests: requests.length, vendors: vendorRows.length };
     await logActivity(tx, { weddingId, actor: by.actor, actorLabel: by.label, action: "guest_data_purged", meta: result });
     return result;
   });

@@ -13,6 +13,8 @@ export type GatePassData = {
   weddingDate: string;
   gatesOpenAt: Date;
   qrSvg: string;
+  /** Replaces the party line, e.g. "Photographer · team of 3" on a vendor's pass (D25). */
+  subtitle?: string;
 };
 
 export function GatePass({ pass }: { pass: GatePassData }) {
@@ -37,7 +39,7 @@ export function GatePass({ pass }: { pass: GatePassData }) {
           <h2 id="pass-title" className="mt-1 font-display text-3xl">
             {pass.guestName}
           </h2>
-          <p className="mt-1 text-lg">{extras > 0 ? `+ ${extras} · party of ${pass.partySize}` : "Party of 1"}</p>
+          <p className="mt-1 text-lg">{pass.subtitle ?? (extras > 0 ? `+ ${extras} · party of ${pass.partySize}` : "Party of 1")}</p>
           <div
             className="mx-auto mt-5 w-full max-w-64 rounded-sm bg-white p-3 [&_svg]:h-auto [&_svg]:w-full"
             role="img"

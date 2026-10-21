@@ -176,6 +176,7 @@ Rules:
 | `/i/[token]` | Invited and above | **Personal invitation**: envelope opens to a card with the guest's name; logs "card viewed"; RSVP form pre-filled with seat allowance. Once **approved**, the same page shows the full wedding site (sections below) |
 | `/i/[token]/pass`, `/i/[token]/day` | — | Old addresses: redirect to the `#pass` and `#programme` sections of `/i/[token]` (BLUEPRINT D22) |
 | `/admin` … | Admin | Dashboard, guest list, settings (see §8) |
+| `/vendor/[token]` | Active vendor (BLUEPRINT D25) | Vendor page: arrival time and instructions, programme, venues and directions, contacts, the team's gate pass |
 | `/scan` | Usher (PIN) | Gate scanner |
 
 **One page per guest (BLUEPRINT D22).** `/i/[token]` holds everything, with a section navigation bar like the reference site. For approved guests it adds the gate pass (QR), the full programme, details and, on the wedding day, a live "happening now / next" banner at the top. Any route with an invalid token redirects to `/`.
@@ -302,8 +303,13 @@ The admin area is **only for the couple and planner**. Guests never see it.
 - Per guest: copy personal link, **Send email**, **Send on WhatsApp** (opens `wa.me/<phone>?text=<message with link>`), mark as sent, revoke / restore, edit seat allowance, view timeline (sent → opened → viewed → responded → checked in).
 - **Bulk actions**: send emails to selected (throttled to stay under Gmail's daily limit), revoke, change group.
 
+### Vendors (BLUEPRINT D25)
+- `/admin/vendors`: add, edit, remove / restore vendor teams (company, role, contact, phone, email, staff, meals, arrival time, instructions for the vendor, private notes).
+- Per vendor: copy link, **Send on WhatsApp**, new link (old link and pass stop working).
+- Dashboard line: vendor teams · staff · meals · arrived.
+
 ### Exports
-- CSV/Excel: full guest list, headcount by group, dietary list for caterer, check-in report.
+- CSV/Excel: full guest list, headcount by group, dietary list for caterer, check-in report, vendor list with meal counts.
 
 ### Settings
 - Couple names, date, ceremony time, RSVP deadline, timezone.
@@ -321,6 +327,7 @@ The admin area is **only for the couple and planner**. Guests never see it.
 | Admin (couple) | Everything |
 | Planner | v1: same login and rights as the couple (BLUEPRINT D6). v2: separate login, everything except deleting data / changing the admin password |
 | Usher | `/scan` only, with a shared PIN |
+| Vendor | `/vendor/[token]` only, their own page (BLUEPRINT D25) |
 
 ---
 
@@ -335,6 +342,7 @@ The admin area is **only for the couple and planner**. Guests never see it.
   - Shows a large result screen: ✅ green "Welcome, Wanjiru — party of 3" or ❌ red "Revoked / Already checked in at 12:14 / Invalid".
   - Partial check-in: "2 of 3 arrived" (remaining can enter later).
   - Manual search by name for guests without a phone.
+  - Vendor passes (BLUEPRINT D25) scan the same way and show a distinct "Vendor" card: role, company, staff count.
 - **Offline fallback**: scanner caches the approved list (names + pass IDs) in the browser at the start of the day; if signal drops it validates locally and syncs check-ins when back online.
 - Revoking or re-issuing a pass increments `passVersion`, so old screenshots fail.
 
@@ -374,7 +382,7 @@ Clicking "Send on WhatsApp" marks `whatsapp_shared_at` (proof the link was sent;
 
 > **Source of truth: the code, [`server/db/schema.ts`](../server/db/schema.ts).** Entities and the constraints that enforce correctness are summarised in [BLUEPRINT §8](BLUEPRINT.md#8-data-model-sketch).
 
-Tables: `weddings`, `admin_settings`, `venues`, `programme_items`, `faq_items`, `dress_code`, `contacts`, `photos`, **`invitations`** (one per household; earlier drafts called it `guests`), `invitation_requests` (public requests, kept separate until accepted), `party_members`, `rsvp_events`, `check_ins`, `email_queue`, `activity_log`, `rate_limits`.
+Tables: `weddings`, `admin_settings`, `venues`, `programme_items`, `faq_items`, `dress_code`, `contacts`, `photos`, **`invitations`** (one per household; earlier drafts called it `guests`), `invitation_requests` (public requests, kept separate until accepted), `party_members`, `rsvp_events`, `check_ins`, `vendors`, `vendor_check_ins` (BLUEPRINT D25), `email_queue`, `activity_log`, `rate_limits`.
 
 Top-level tables carry `wedding_id` for future multi-couple use. Child tables (`party_members`, `rsvp_events`) reach it through their invitation.
 
@@ -391,7 +399,7 @@ Storage estimate for 500 guests: well under 10 MB — far inside Neon's 1 GB fre
 - **Approval gate in one place:** a single server helper (`requireApproved(token)`) used by every page, server action and API route that returns locked content (story, programme, venue, dress code, FAQ, contacts, pass, day-of). Locked data is fetched only after it passes, so it never reaches the browser of an unapproved visitor.
 - Gate-pass tokens are only issued at approval and are checked live at the gate.
 - Story and venue photos are served through the same gate (or use unguessable file names), not as plain public images.
-- `noindex` on `/i/*`, `/admin`, `/scan`; `Referrer-Policy: no-referrer` (as the reference does).
+- `noindex` on `/i/*`, `/vendor/*`, `/admin`, `/scan`; `Referrer-Policy: no-referrer` (as the reference does).
 - No guest phone numbers or emails in URLs except the `wa.me` link the admin opens.
 - Kenya Data Protection Act: short privacy note on the RSVP form ("Your details are used only for this wedding and deleted afterwards"); admin button to **delete all guest data** after the wedding.
 

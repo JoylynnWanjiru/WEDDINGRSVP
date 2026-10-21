@@ -5,7 +5,7 @@
 import { eq } from "drizzle-orm";
 import { hashToken, looksLikeInviteToken } from "../auth/tokens";
 import type { Db } from "../db/client";
-import { invitations, weddings, type Invitation, type Wedding } from "../db/schema";
+import { invitations, vendors, weddings, type Invitation, type Vendor, type Wedding } from "../db/schema";
 import { isUnlocked } from "../domain/status";
 import { AppError } from "../errors";
 
@@ -63,4 +63,27 @@ export async function requireApproved(db: Db, token: string | null | undefined):
   const proof = approvedFrom(await getAccess(db, token));
   if (!proof) throw new AppError("FORBIDDEN", "This content is available once your attendance is confirmed.");
   return proof;
+}
+
+// --- vendors (D25) ---
+
+declare const vendorProof: unique symbol;
+
+/** Proof that a vendor link is valid and the vendor is active. Only this module creates one. */
+export type VendorAccess = { readonly vendor: Vendor; readonly wedding: Wedding; readonly [vendorProof]: true };
+
+/**
+ * D25: a vendor link unlocks the vendor's own working page and nothing else. A removed
+ * vendor, an unknown link or a purged wedding all look exactly like no link (BR-4).
+ */
+export async function requireVendor(db: Db, token: string | null | undefined): Promise<VendorAccess> {
+  const denied = new AppError("NOT_FOUND", "This link isn't valid.");
+  if (!looksLikeInviteToken(token)) throw denied;
+  const [row] = await db
+    .select({ vendor: vendors, wedding: weddings })
+    .from(vendors)
+    .innerJoin(weddings, eq(vendors.weddingId, weddings.id))
+    .where(eq(vendors.linkTokenHash, hashToken(token)));
+  if (!row || row.vendor.removedAt || row.wedding.purgedAt) throw denied;
+  return row as VendorAccess;
 }

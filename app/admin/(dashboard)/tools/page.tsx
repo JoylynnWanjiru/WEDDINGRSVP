@@ -14,6 +14,7 @@ const EXPORTS = [
   { kind: "dietary", title: "Dietary list", detail: "For the caterer: approved guests only, adults and children." },
   { kind: "headcount", title: "Headcount by group", detail: "Invitations and approved people per group." },
   { kind: "checkins", title: "Check-in report", detail: "Who arrived on the day, and when." },
+  { kind: "vendors", title: "Vendor list", detail: "Vendor teams with contacts, staff, meals and arrival times (D25)." },
 ];
 
 export default function ToolsPage() {

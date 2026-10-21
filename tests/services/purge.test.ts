@@ -36,7 +36,7 @@ describe("purge", () => {
   it("removes every guest record, keeps wedding content, and every link becomes public", async () => {
     const { wedding, invitation, token } = await populated();
     const ctx = await adminCtx(wedding.id);
-    expect(await purgeGuestDataAsAdmin(db, ctx, PURGE_CONFIRMATION)).toEqual({ invitations: 1, requests: 1 });
+    expect(await purgeGuestDataAsAdmin(db, ctx, PURGE_CONFIRMATION)).toEqual({ invitations: 1, requests: 1, vendors: 0 });
 
     expect(await db.select().from(invitations).where(eq(invitations.weddingId, wedding.id))).toHaveLength(0);
     expect(await db.select().from(partyMembers).where(eq(partyMembers.invitationId, invitation.id))).toHaveLength(0);
@@ -48,12 +48,12 @@ describe("purge", () => {
 
     // Only the purge record itself remains, with counts and no personal data.
     const logs = await db.select().from(activityLog).where(eq(activityLog.weddingId, wedding.id));
-    expect(logs.map((l) => [l.action, l.meta])).toEqual([["guest_data_purged", { invitations: 1, requests: 1 }]]);
+    expect(logs.map((l) => [l.action, l.meta])).toEqual([["guest_data_purged", { invitations: 1, requests: 1, vendors: 0 }]]);
   });
 
   it("the post-wedding cron can run it as system without a phrase", async () => {
     const { wedding } = await populated();
-    expect(await purgeGuestData(db, wedding.id, { actor: "system" })).toEqual({ invitations: 1, requests: 1 });
+    expect(await purgeGuestData(db, wedding.id, { actor: "system" })).toEqual({ invitations: 1, requests: 1, vendors: 0 });
   });
 
   it("only touches the given wedding", async () => {

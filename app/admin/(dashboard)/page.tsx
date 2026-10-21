@@ -99,6 +99,11 @@ async function Dashboard() {
           <p className="mt-4 text-sm">
             Arrived on the day: <span className="font-medium tabular-nums">{h.arrived}</span>
           </p>
+          {d.vendors.teams ? (
+            <p className="mt-1 text-sm text-wine/70">
+              Plus {d.vendors.staff} vendor staff in {d.vendors.teams} team{d.vendors.teams === 1 ? "" : "s"} ({d.vendors.arrived} arrived), not counted above.
+            </p>
+          ) : null}
         </section>
 
         <section aria-labelledby="dietary" className="rounded-sm border border-wine/10 bg-white p-5">
@@ -114,6 +119,13 @@ async function Dashboard() {
             ))}
           </dl>
           <p className="mt-3 text-xs text-wine/70">Approved guests only.</p>
+          {/* D25: vendors are fed too, but counted on their own line. */}
+          <p className="mt-4 flex justify-between border-t border-wine/10 pt-3 text-sm">
+            <Link href="/admin/vendors" className="underline underline-offset-4">
+              Vendor meals
+            </Link>
+            <span className="tabular-nums">{d.vendors.meals}</span>
+          </p>
         </section>
 
         <section aria-labelledby="email" className="rounded-sm border border-wine/10 bg-white p-5">

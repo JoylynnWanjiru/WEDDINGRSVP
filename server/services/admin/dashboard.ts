@@ -1,9 +1,9 @@
 // Dashboard totals (U10, PROJECT_SPEC §8 overview cards, E25). All figures come
 // straight from the database, so "totals match the database" (§15) holds by construction.
 
-import { and, eq, inArray, sql } from "drizzle-orm";
+import { and, eq, inArray, isNull, sql } from "drizzle-orm";
 import type { Db } from "../../db/client";
-import { emailQueue, invitationRequests, invitations, partyMembers } from "../../db/schema";
+import { emailQueue, invitationRequests, invitations, partyMembers, vendors } from "../../db/schema";
 import { capacityOverflow } from "../../domain/rules";
 import { INVITATION_STATUSES, UNLOCKED_STATUSES, type InvitationStatus } from "../../domain/status";
 import { DIETARY } from "../../validation/schemas";
@@ -14,7 +14,7 @@ export async function getDashboard(db: Db, ctx: AdminCtx) {
   const w = eq(invitations.weddingId, ctx.weddingId);
   const unlocked = inArray(invitations.status, [...UNLOCKED_STATUSES]);
 
-  const [byStatusRows, [funnel], [people], dietaryRows, [requests], emailRows] = await Promise.all([
+  const [byStatusRows, [funnel], [people], dietaryRows, [requests], emailRows, [vendorTotals]] = await Promise.all([
     db.select({ status: invitations.status, n: sql<number>`count(*)::int` }).from(invitations).where(w).groupBy(invitations.status),
     db
       .select({
@@ -49,6 +49,16 @@ export async function getDashboard(db: Db, ctx: AdminCtx) {
       .from(emailQueue)
       .where(eq(emailQueue.weddingId, ctx.weddingId))
       .groupBy(emailQueue.status),
+    // D25: vendors have their own line and never enter guest totals or capacity (BR-11).
+    db
+      .select({
+        teams: sql<number>`count(*)::int`,
+        staff: sql<number>`coalesce(sum(${vendors.staffCount}), 0)::int`,
+        meals: sql<number>`coalesce(sum(${vendors.mealCount}), 0)::int`,
+        arrived: sql<number>`coalesce(sum(${vendors.arrivedCount}), 0)::int`,
+      })
+      .from(vendors)
+      .where(and(eq(vendors.weddingId, ctx.weddingId), isNull(vendors.removedAt))),
   ]);
 
   const byStatus = Object.fromEntries(INVITATION_STATUSES.map((s) => [s, 0])) as Record<InvitationStatus, number>;
@@ -83,6 +93,7 @@ export async function getDashboard(db: Db, ctx: AdminCtx) {
       arrived: funnel.arrived,
     },
     dietary,
+    vendors: vendorTotals,
     email: { queued: email.queued ?? 0, failed: email.failed ?? 0, sent: email.sent ?? 0 }, // E9, E10 banner
   };
 }
