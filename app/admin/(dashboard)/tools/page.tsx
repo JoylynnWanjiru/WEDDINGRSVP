@@ -21,9 +21,9 @@ export default function ToolsPage() {
     <div className="space-y-6">
       <header>
         <h1 className="font-display text-4xl">Tools</h1>
-        <p className="text-sm text-wine/60">Downloads, the gate scanner, and deleting guest data after the wedding.</p>
+        <p className="text-sm text-wine/70">Downloads, the gate scanner, and deleting guest data after the wedding.</p>
       </header>
-      <Suspense fallback={<p className="text-wine/60">Loading…</p>}>
+      <Suspense fallback={<p className="text-wine/70">Loading…</p>}>
         <Tools />
       </Suspense>
     </div>
@@ -56,7 +56,7 @@ async function Tools() {
               {/* A plain link: the browser downloads the file (the route checks the admin session). */}
               <a href={`/api/export/${e.kind}`} download className="flex min-h-11 flex-col rounded-sm border border-wine/15 px-4 py-3 hover:border-gold-deep">
                 <span className="font-medium">{e.title} ↓</span>
-                <span className="text-sm text-wine/60">{e.detail}</span>
+                <span className="text-sm text-wine/70">{e.detail}</span>
               </a>
             </li>
           ))}

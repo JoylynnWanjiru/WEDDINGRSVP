@@ -150,7 +150,7 @@ async function Invitation({ params }: { params: PageProps<"/i/[token]">["params"
         <Ornament className="mb-4" />
         <p className="font-display text-xl">With love, {couple}</p>
         <p className="label mt-1 text-[0.65rem]">{date}</p>
-        <a href="#top" className="label mt-4 inline-block text-[0.6rem] text-gold underline underline-offset-4">
+        <a href="#top" className="label mt-2 inline-flex min-h-11 items-center px-3 text-[0.6rem] text-gold underline underline-offset-4">
           Back to top
         </a>
       </footer>
@@ -236,9 +236,9 @@ function ResponseSummary({ members, attending }: { members: Full["rsvp"]["member
         <li key={i} className="flex items-center justify-between px-4 py-3">
           <span>
             {m.fullName}
-            {m.isChild ? <span className="ml-2 text-xs text-wine/60">(child)</span> : null}
+            {m.isChild ? <span className="ml-2 text-xs text-wine/70">(child)</span> : null}
           </span>
-          <span className="text-sm text-wine/60">
+          <span className="text-sm text-wine/70">
             {[DIETARY_LABEL[m.dietary], m.dietaryNotes].filter(Boolean).join(": ")}
           </span>
         </li>

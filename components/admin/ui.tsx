@@ -3,14 +3,14 @@
 import type { InputHTMLAttributes, ReactNode } from "react";
 
 export const adminInput =
-  "w-full rounded-sm border border-wine/25 bg-white px-3 py-2.5 text-wine placeholder:text-wine/40 focus:border-gold-deep focus:outline-none disabled:bg-wine/5";
+  "w-full rounded-sm border border-wine/25 bg-white px-3 py-2.5 text-wine placeholder:text-wine/60 focus:border-gold-deep focus:outline-none disabled:bg-wine/5";
 
 export function Field({ label, error, hint, children }: { label: string; error?: string; hint?: string; children: ReactNode }) {
   return (
     <label className="block">
       <span className="label text-[0.6rem] text-wine/70">{label}</span>
       <div className="mt-1.5">{children}</div>
-      {hint && !error ? <span className="mt-1 block text-xs text-wine/50">{hint}</span> : null}
+      {hint && !error ? <span className="mt-1 block text-xs text-wine/70">{hint}</span> : null}
       {error ? <span className="mt-1 block text-sm text-[#9b1c1c]">{error}</span> : null}
     </label>
   );

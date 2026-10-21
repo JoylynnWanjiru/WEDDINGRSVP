@@ -53,7 +53,7 @@ export function UsherControls({ pinSet }: { pinSet: boolean }) {
           <button type="button" className={btn.danger} disabled={pending} onClick={signOut}>
             Sign out all ushers
           </button>
-          <p className="mt-1 text-sm text-wine/60">Use this if an usher&rsquo;s phone is lost. If the PIN itself has leaked, change it instead.</p>
+          <p className="mt-1 text-sm text-wine/70">Use this if an usher&rsquo;s phone is lost. If the PIN itself has leaked, change it instead.</p>
         </div>
       ) : null}
       {notice ? <Notice tone={notice.tone}>{notice.text}</Notice> : null}

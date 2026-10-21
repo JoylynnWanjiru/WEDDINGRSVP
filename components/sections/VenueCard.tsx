@@ -38,7 +38,7 @@ export function Venues({ venues }: { venues: ApprovedContent["venues"] }) {
                 </a>
               </div>
             ) : (
-              <p className="mt-4 text-sm italic text-wine/60">The map pin will be added soon.</p>
+              <p className="mt-4 text-sm italic text-wine/70">The map pin will be added soon.</p>
             )}
           </article>
         ))}

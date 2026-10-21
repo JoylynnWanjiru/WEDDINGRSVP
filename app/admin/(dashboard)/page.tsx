@@ -13,7 +13,7 @@ import { getAdmin } from "../_lib/auth";
 
 export default function DashboardPage() {
   return (
-    <Suspense fallback={<p className="text-wine/60">Loading the dashboard…</p>}>
+    <Suspense fallback={<p className="text-wine/70">Loading the dashboard…</p>}>
       <Dashboard />
     </Suspense>
   );
@@ -40,7 +40,7 @@ async function Dashboard() {
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="font-display text-4xl">Dashboard</h1>
-          <p className="text-sm text-wine/60">Live numbers from the guest list.</p>
+          <p className="text-sm text-wine/70">Live numbers from the guest list.</p>
         </div>
         <Link href="/admin/guests" className="label inline-flex min-h-11 items-center rounded-sm bg-wine px-5 text-[0.65rem] text-gold">
           Manage guests
@@ -72,7 +72,7 @@ async function Dashboard() {
         <h2 id="queue" className="font-display text-3xl">
           Awaiting your approval <span className="text-gold-deep">({queue.queue.length})</span>
         </h2>
-        <p className="mb-4 text-sm text-wine/60">Guests who said Yes. Nothing unlocks for them until you approve.</p>
+        <p className="mb-4 text-sm text-wine/70">Guests who said Yes. Nothing unlocks for them until you approve.</p>
         <ApprovalQueue
           rows={queue.queue.map((r) => ({ ...r, respondedAt: r.respondedAt?.toISOString() ?? null }))}
         />
@@ -85,9 +85,9 @@ async function Dashboard() {
           </h2>
           <p className="mt-2 font-display text-5xl tabular-nums">
             {h.approved}
-            {h.capacity ? <span className="text-2xl text-wine/50"> / {h.capacity}</span> : null}
+            {h.capacity ? <span className="text-2xl text-wine/70"> / {h.capacity}</span> : null}
           </p>
-          <p className="text-sm text-wine/60">
+          <p className="text-sm text-wine/70">
             approved people · {h.adults} adults, {h.children} children
           </p>
           {capacityPct !== null ? (
@@ -113,7 +113,7 @@ async function Dashboard() {
               </div>
             ))}
           </dl>
-          <p className="mt-3 text-xs text-wine/50">Approved guests only.</p>
+          <p className="mt-3 text-xs text-wine/70">Approved guests only.</p>
         </section>
 
         <section aria-labelledby="email" className="rounded-sm border border-wine/10 bg-white p-5">
@@ -136,7 +136,7 @@ async function Dashboard() {
               <dd className="tabular-nums">{d.email.sent}</dd>
             </div>
           </dl>
-          <p className="mt-3 text-xs text-wine/50">Daily cap {quota.cap} (BR-17), counted by Nairobi day.</p>
+          <p className="mt-3 text-xs text-wine/70">Daily cap {quota.cap} (BR-17), counted by Nairobi day.</p>
         </section>
       </div>
     </div>

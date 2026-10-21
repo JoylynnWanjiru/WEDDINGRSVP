@@ -35,7 +35,7 @@ export function DressCode({ dressCode }: { dressCode: { text: string; swatches: 
               </li>
             ))}
           </ul>
-          <p className="mt-4 text-center text-xs text-wine/60" aria-live="polite">
+          <p className="mt-4 text-center text-xs text-wine/70" aria-live="polite">
             Tap a colour to copy its code.
           </p>
         </>

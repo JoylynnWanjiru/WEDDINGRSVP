@@ -85,7 +85,7 @@ export function GuestActions({ id, fullName, status, link, whatsappUrl, email, e
       {notice ? <Notice tone={notice.tone}>{notice.text}</Notice> : null}
 
       <section aria-label="Share the invitation">
-        <p className="label mb-2 text-[0.6rem] text-wine/60">Share the personal link</p>
+        <p className="label mb-2 text-[0.6rem] text-wine/70">Share the personal link</p>
         <div className="flex flex-wrap gap-2">
           <button type="button" className={btn.outline} onClick={copy}>
             {copied ? "Copied" : "Copy link"}
@@ -116,7 +116,7 @@ export function GuestActions({ id, fullName, status, link, whatsappUrl, email, e
       </section>
 
       <section aria-label="Decisions">
-        <p className="label mb-2 text-[0.6rem] text-wine/60">Decisions</p>
+        <p className="label mb-2 text-[0.6rem] text-wine/70">Decisions</p>
         <div className="flex flex-wrap gap-2">
           {status === "awaiting_approval" ? (
             <>
@@ -160,7 +160,7 @@ export function GuestActions({ id, fullName, status, link, whatsappUrl, email, e
       </section>
 
       <section aria-label="Fixes">
-        <p className="label mb-2 text-[0.6rem] text-wine/60">Fixes</p>
+        <p className="label mb-2 text-[0.6rem] text-wine/70">Fixes</p>
         <div className="flex flex-wrap gap-2">
           <button
             type="button"
@@ -189,14 +189,14 @@ export function GuestActions({ id, fullName, status, link, whatsappUrl, email, e
       {/* D20, §7: fix a mis-tapped count at the gate. The original check-ins stay in the log. */}
       {status === "partially_arrived" || status === "arrived" ? (
         <section aria-label="Correct arrivals">
-          <p className="label mb-2 text-[0.6rem] text-wine/60">Correct arrivals</p>
+          <p className="label mb-2 text-[0.6rem] text-wine/70">Correct arrivals</p>
           <form action={correct} className="flex flex-wrap items-end gap-2">
             <label className="flex items-center gap-2 text-sm">
               Arrived
               <span className="w-20">
                 <TextInput name="arrived" type="number" min={0} max={partySize} defaultValue={arrivedCount} required />
               </span>
-              <span className="text-wine/60">of {partySize}</span>
+              <span className="text-wine/70">of {partySize}</span>
             </label>
             <span className="min-w-56 flex-1">
               <TextInput name="reason" aria-label="Reason" placeholder="Reason, e.g. usher tapped 3 instead of 2" required maxLength={300} />

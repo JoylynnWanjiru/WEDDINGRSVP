@@ -15,10 +15,10 @@ import { getAdmin } from "../../../_lib/auth";
 export default function GuestPage({ params }: PageProps<"/admin/guests/[id]">) {
   return (
     <div className="space-y-6">
-      <Link href="/admin/guests" className="label text-[0.6rem] text-gold-deep underline underline-offset-4">
+      <Link href="/admin/guests" className="label inline-flex min-h-11 items-center text-[0.6rem] text-gold-deep underline underline-offset-4">
         ← All guests
       </Link>
-      <Suspense fallback={<p className="text-wine/60">Loading guest…</p>}>
+      <Suspense fallback={<p className="text-wine/70">Loading guest…</p>}>
         <Guest params={params} />
       </Suspense>
     </div>
@@ -67,7 +67,7 @@ async function Guest({ params }: { params: PageProps<"/admin/guests/[id]">["para
         <section className="rounded-sm border border-wine/10 bg-white p-5" aria-labelledby="party">
           <h2 id="party" className="font-display text-2xl">
             Party of {g.partySize}
-            {g.arrivedCount ? <span className="text-base text-wine/60"> · {g.arrivedCount} arrived</span> : null}
+            {g.arrivedCount ? <span className="text-base text-wine/70"> · {g.arrivedCount} arrived</span> : null}
           </h2>
           {g.party.length ? (
             <ul className="mt-3 divide-y divide-wine/10">
@@ -75,15 +75,15 @@ async function Guest({ params }: { params: PageProps<"/admin/guests/[id]">["para
                 <li key={i} className="flex justify-between gap-4 py-2 text-sm">
                   <span>
                     {m.fullName}
-                    {m.isPrimary ? <span className="text-wine/50"> (invitee)</span> : null}
-                    {m.isChild ? <span className="text-wine/50"> (child)</span> : null}
+                    {m.isPrimary ? <span className="text-wine/70"> (invitee)</span> : null}
+                    {m.isChild ? <span className="text-wine/70"> (child)</span> : null}
                   </span>
-                  <span className="text-wine/60">{[DIETARY[m.dietary], m.dietaryNotes].filter(Boolean).join(": ")}</span>
+                  <span className="text-wine/70">{[DIETARY[m.dietary], m.dietaryNotes].filter(Boolean).join(": ")}</span>
                 </li>
               ))}
             </ul>
           ) : (
-            <p className="mt-2 text-sm text-wine/60">They haven&rsquo;t answered yet.</p>
+            <p className="mt-2 text-sm text-wine/70">They haven&rsquo;t answered yet.</p>
           )}
           {g.events.length > 1 ? (
             <p className="mt-3 text-sm text-wine/70">
@@ -130,7 +130,7 @@ async function Guest({ params }: { params: PageProps<"/admin/guests/[id]">["para
               ["Pass emailed", fmt(g.passEmailedAt)],
             ].map(([k, v]) => (
               <div key={k} className="flex justify-between gap-4">
-                <dt className="text-wine/60">{k}</dt>
+                <dt className="text-wine/70">{k}</dt>
                 <dd className="tabular-nums">{v}</dd>
               </div>
             ))}

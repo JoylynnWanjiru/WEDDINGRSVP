@@ -10,7 +10,7 @@ export function StatCards({ cards }: { cards: Card[] }) {
       {cards.map((c) => {
         const inner = (
           <>
-            <span className="label text-[0.6rem] text-wine/60">{c.label}</span>
+            <span className="label text-[0.6rem] text-wine/70">{c.label}</span>
             <span className={`mt-1 font-display text-4xl tabular-nums ${c.tone === "alert" && c.value > 0 ? "text-[#9b1c1c]" : "text-wine"}`}>{c.value}</span>
           </>
         );

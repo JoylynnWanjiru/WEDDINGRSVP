@@ -14,7 +14,7 @@ export default function ImportPage() {
       </Link>
       <header>
         <h1 className="font-display text-4xl">Import guests</h1>
-        <p className="text-sm text-wine/60">You&rsquo;ll see a preview first. Nothing is saved until you press Import.</p>
+        <p className="text-sm text-wine/70">You&rsquo;ll see a preview first. Nothing is saved until you press Import.</p>
       </header>
       <ImportForm />
     </div>

@@ -295,7 +295,7 @@ export function DressCodeEditor({ value }: { value: { text: string; swatches: { 
                 type="color"
                 value={/^#[0-9a-f]{6}$/i.test(s.hex) ? s.hex : "#000000"}
                 onChange={(e) => setSwatches((xs) => xs.map((x, j) => (j === i ? { ...x, hex: e.target.value } : x)))}
-                className="h-11 w-14 cursor-pointer rounded-sm border border-wine/25 bg-white"
+                className="h-11 w-14 shrink-0 cursor-pointer rounded-sm border border-wine/25 bg-white"
                 aria-label={`Colour for ${s.name || "swatch"}`}
               />
               <input value={s.name} onChange={(e) => setSwatches((xs) => xs.map((x, j) => (j === i ? { ...x, name: e.target.value } : x)))} placeholder="Name, e.g. Burgundy" className={adminInput} />

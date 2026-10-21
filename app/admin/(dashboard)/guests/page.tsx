@@ -21,13 +21,13 @@ export default function GuestsPage({ searchParams }: PageProps<"/admin/guests">)
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="font-display text-4xl">Guests</h1>
-          <p className="text-sm text-wine/60">One row per invitation (household).</p>
+          <p className="text-sm text-wine/70">One row per invitation (household).</p>
         </div>
         <Link href="/admin/guests/import" className={btn.outline}>
           Import from CSV
         </Link>
       </header>
-      <Suspense fallback={<p className="text-wine/60">Loading guests…</p>}>
+      <Suspense fallback={<p className="text-wine/70">Loading guests…</p>}>
         <Guests searchParams={searchParams} />
       </Suspense>
     </div>

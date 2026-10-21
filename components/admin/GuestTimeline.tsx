@@ -26,7 +26,7 @@ const BY: Record<string, string> = { admin: "the couple", guest: "the guest", us
 type Entry = { at: Date; actor: string; actorLabel: string | null; action: string; meta: Record<string, unknown> | null };
 
 export function GuestTimeline({ entries }: { entries: Entry[] }) {
-  if (!entries.length) return <p className="text-sm text-wine/60">Nothing yet.</p>;
+  if (!entries.length) return <p className="text-sm text-wine/70">Nothing yet.</p>;
   const fmt = new Intl.DateTimeFormat("en-KE", { timeZone: "Africa/Nairobi", day: "numeric", month: "short", hour: "numeric", minute: "2-digit", hour12: true });
   return (
     <ol className="space-y-2">
@@ -35,11 +35,11 @@ export function GuestTimeline({ entries }: { entries: Entry[] }) {
         const by = e.actor === "usher" && e.actorLabel ? e.actorLabel : BY[e.actor];
         return (
           <li key={i} className="flex gap-3 text-sm">
-            <span className="w-32 shrink-0 tabular-nums text-wine/50">{fmt.format(e.at)}</span>
+            <span className="w-32 shrink-0 tabular-nums text-wine/70">{fmt.format(e.at)}</span>
             <span>
               {ACTION[e.action] ?? e.action}
               {channel}
-              <span className="text-wine/50"> · {by}</span>
+              <span className="text-wine/70"> · {by}</span>
             </span>
           </li>
         );

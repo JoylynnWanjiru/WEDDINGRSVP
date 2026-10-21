@@ -15,9 +15,9 @@ export default function SettingsPage() {
     <div className="space-y-6">
       <header>
         <h1 className="font-display text-4xl">Settings</h1>
-        <p className="text-sm text-wine/60">Changes show on the guest pages straight away. All times are East Africa Time.</p>
+        <p className="text-sm text-wine/70">Changes show on the guest pages straight away. All times are East Africa Time.</p>
       </header>
-      <Suspense fallback={<p className="text-wine/60">Loading settings…</p>}>
+      <Suspense fallback={<p className="text-wine/70">Loading settings…</p>}>
         <Settings />
       </Suspense>
     </div>
@@ -29,7 +29,7 @@ function Panel({ id, title, hint, children, open }: { id: string; title: string;
     <details id={id} open={open} className="scroll-mt-16 rounded-sm border border-wine/10 bg-white">
       <summary className="flex min-h-14 cursor-pointer flex-wrap items-baseline gap-x-3 px-5 py-4">
         <span className="font-display text-2xl">{title}</span>
-        {hint ? <span className="text-sm text-wine/50">{hint}</span> : null}
+        {hint ? <span className="text-sm text-wine/70">{hint}</span> : null}
       </summary>
       <div className="border-t border-wine/10 p-5">{children}</div>
     </details>
@@ -54,7 +54,7 @@ async function Settings() {
           ["#contacts", "Contacts"],
           ["#photos", "Photos"],
         ].map(([href, label]) => (
-          <a key={href} href={href} className="rounded-full border border-wine/15 bg-white px-3 py-1.5 hover:border-gold-deep">
+          <a key={href} href={href} className="inline-flex min-h-11 items-center rounded-full border border-wine/15 bg-white px-4 hover:border-gold-deep">
             {label}
           </a>
         ))}
@@ -113,7 +113,7 @@ async function Settings() {
         <PhotosEditor items={s.photos.map((p) => ({ id: p.id, section: p.section, src: p.src, alt: p.alt, sortOrder: p.sortOrder }))} />
       </Panel>
 
-      <p className="text-sm text-wine/60">
+      <p className="text-sm text-wine/70">
         See it as a guest: open any approved guest from the{" "}
         <Link href="/admin/guests?status=approved" className="text-gold-deep underline">
           guest list

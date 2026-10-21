@@ -476,7 +476,7 @@ CRON_SECRET=             # protects cron routes
 - [ ] Test on Android + iPhone, Safari + Chrome, slow 3G
 - [ ] Send test invites to friends; full dry run of revoke → scan fails
 - [ ] Access test: public, invited, "Yes" but not approved, approved, declined, revoked — confirm each sees only what §4a allows, including by calling the API routes directly. `npm run access:check` passes on the dev server (21 Oct 2026); repeat it on the deployed site.
-- [ ] Accessibility pass (contrast, tap targets ≥44 px, keyboard)
+- [ ] Accessibility pass (contrast, tap targets ≥44 px, keyboard). Automated pass on 21 Oct 2026 (axe-core WCAG 2.2 AA at phone and desktop sizes, tap-target sizes, Tab order and visible focus, reduced motion, Escape on the envelope): guest, public and admin pages clean. Still to do: the usher scanner page once built, and a screen-reader check on a real phone.
 - [ ] Send invitations **6–8 weeks** before the wedding (between **24 October and 7 November** for 19 December; WhatsApp-shared links can go out before email is finished)
 
 ---

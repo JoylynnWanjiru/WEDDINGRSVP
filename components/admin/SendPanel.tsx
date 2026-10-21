@@ -50,7 +50,7 @@ export function SendPanel({ queued, failed, sentToday, cap }: { queued: number; 
         <p className="text-sm">
           <span className="font-display text-2xl tabular-nums">{queued}</span> waiting to send
         </p>
-        <p className="text-sm text-wine/60">
+        <p className="text-sm text-wine/70">
           Sent today {sentToday} / {cap}
         </p>
         {failed > 0 ? <p className="text-sm text-[#9b1c1c]">{failed} failed</p> : null}
@@ -65,7 +65,7 @@ export function SendPanel({ queued, failed, sentToday, cap }: { queued: number; 
           </button>
         </div>
       </div>
-      {progress ? <p className="mt-2 text-sm text-wine/60">{progress}</p> : null}
+      {progress ? <p className="mt-2 text-sm text-wine/70">{progress}</p> : null}
       {message ? (
         <div className="mt-3">
           <Notice tone={message.tone}>{message.text}</Notice>

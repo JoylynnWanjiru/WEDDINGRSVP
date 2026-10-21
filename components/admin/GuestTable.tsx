@@ -76,7 +76,7 @@ export function GuestTable({ rows }: { rows: GuestRow[] }) {
     });
   }
 
-  if (!rows.length) return <p className="rounded-sm border border-wine/10 bg-white px-4 py-8 text-center text-wine/60">No guests match.</p>;
+  if (!rows.length) return <p className="rounded-sm border border-wine/10 bg-white px-4 py-8 text-center text-wine/70">No guests match.</p>;
 
   return (
     <div className="space-y-3">
@@ -95,15 +95,17 @@ export function GuestTable({ rows }: { rows: GuestRow[] }) {
         {rows.map((r) => (
           <li key={r.id} className="flex flex-col gap-3 px-3 py-3 sm:flex-row sm:items-center">
             <div className="flex min-w-0 flex-1 items-start gap-3">
-              <input type="checkbox" checked={selected.has(r.id)} onChange={() => toggle(r.id)} className="mt-2 accent-[#3D0F19]" aria-label={`Select ${r.fullName}`} />
+              <label className="-my-1 -ml-2 flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center">
+                <input type="checkbox" checked={selected.has(r.id)} onChange={() => toggle(r.id)} className="h-4 w-4 accent-[#3D0F19]" aria-label={`Select ${r.fullName}`} />
+              </label>
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
-                  <Link href={`/admin/guests/${r.id}`} className="font-display text-xl hover:text-gold-deep">
+                  <Link href={`/admin/guests/${r.id}`} className="inline-flex min-h-11 min-w-11 items-center font-display text-xl hover:text-gold-deep">
                     {r.fullName}
                   </Link>
                   <StatusBadge status={r.status} />
                 </div>
-                <p className="text-xs text-wine/60">
+                <p className="text-xs text-wine/70">
                   {[
                     r.group,
                     `party ${r.partySize}${r.seatAllowance ? ` (up to ${r.seatAllowance + 1})` : ""}`,

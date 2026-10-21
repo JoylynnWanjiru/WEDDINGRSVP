@@ -37,7 +37,7 @@ export function ApprovalQueue({ rows }: { rows: QueueRow[] }) {
     });
   }
 
-  if (!rows.length) return <p className="rounded-sm border border-wine/10 bg-white px-4 py-6 text-center text-wine/60">Nobody is waiting for approval.</p>;
+  if (!rows.length) return <p className="rounded-sm border border-wine/10 bg-white px-4 py-6 text-center text-wine/70">Nobody is waiting for approval.</p>;
 
   return (
     <div className="space-y-3">
@@ -55,7 +55,7 @@ export function ApprovalQueue({ rows }: { rows: QueueRow[] }) {
                 <Link href={`/admin/guests/${r.id}`} className="font-display text-xl hover:text-gold-deep">
                   {r.fullName}
                 </Link>
-                <p className="text-sm text-wine/60">
+                <p className="text-sm text-wine/70">
                   Party of {r.partySize}
                   {extras > 0 ? ` (${extras} of ${r.seatAllowance} extra seats used)` : ""}
                   {r.group ? ` · ${r.group}` : ""}

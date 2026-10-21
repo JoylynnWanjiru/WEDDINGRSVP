@@ -48,10 +48,10 @@ export function ImportForm() {
     <div className="space-y-5">
       <label className="block rounded-sm border-2 border-dashed border-wine/25 bg-white px-6 py-10 text-center hover:border-gold-deep">
         <span className="font-display text-2xl">Choose a CSV file</span>
-        <span className="mt-1 block text-sm text-wine/60">{fileName || "Columns: full_name, phone, email, group, side, seat_allowance"}</span>
+        <span className="mt-1 block text-sm text-wine/70">{fileName || "Columns: full_name, phone, email, group, side, seat_allowance"}</span>
         <input type="file" accept=".csv,text/csv" className="sr-only" onChange={(e) => choose(e.target.files?.[0])} />
       </label>
-      <p className="text-sm text-wine/60">
+      <p className="text-sm text-wine/70">
         Start from the{" "}
         <a href="/templates/guest-list-template.csv" download className="text-gold-deep underline">
           template
@@ -96,7 +96,7 @@ function SkippedTable({ rows }: { rows: ImportResult["skipped"] }) {
   return (
     <table className="w-full text-left text-sm">
       <thead>
-        <tr className="text-wine/60">
+        <tr className="text-wine/70">
           <th className="py-1 pr-4 font-normal">Row</th>
           <th className="py-1 pr-4 font-normal">Name</th>
           <th className="py-1 font-normal">Why it was skipped</th>

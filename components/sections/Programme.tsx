@@ -17,7 +17,7 @@ export function Programme({ items }: { items: ApprovedContent["programme"] }) {
             <div>
             <h3>{item.title}</h3>
             {item.detail ? <p className="text-sm text-wine/75">{item.detail}</p> : null}
-            {manyVenues && item.venue ? <p className="text-xs text-wine/60">{item.venue}</p> : null}
+            {manyVenues && item.venue ? <p className="text-xs text-wine/70">{item.venue}</p> : null}
             </div>
           </li>
         ))}

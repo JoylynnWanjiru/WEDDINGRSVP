@@ -36,7 +36,7 @@ export type RsvpFormProps = {
 };
 
 const input =
-  "w-full rounded-sm border border-wine/25 bg-white px-3 py-2.5 text-wine placeholder:text-wine/40 focus:border-gold-deep focus:outline-none";
+  "w-full rounded-sm border border-wine/25 bg-white px-3 py-2.5 text-wine placeholder:text-wine/60 focus:border-gold-deep focus:outline-none";
 const label = "label text-[0.65rem] text-wine/70";
 
 export function RsvpForm({ token, seatAllowance, weddingEvents, hasEmail, hasPhone, initial }: RsvpFormProps) {
@@ -114,7 +114,7 @@ export function RsvpForm({ token, seatAllowance, weddingEvents, hasEmail, hasPho
             {extras.map((m, i) => (
               <div key={i} className="rounded-sm border border-wine/15 bg-white/60 p-4">
                 <MemberFields title={`Guest ${i + 1}`} member={m} onChange={(p) => updateExtra(i, p)} errors={errors} prefix={`extras.${i}`} />
-                <button type="button" onClick={() => setExtras((xs) => xs.filter((_, j) => j !== i))} className="label mt-3 text-[0.65rem] text-gold-deep underline">
+                <button type="button" onClick={() => setExtras((xs) => xs.filter((_, j) => j !== i))} className="label mt-1 inline-flex min-h-11 items-center text-[0.65rem] text-gold-deep underline">
                   Remove
                 </button>
               </div>
@@ -173,7 +173,7 @@ export function RsvpForm({ token, seatAllowance, weddingEvents, hasEmail, hasPho
         </p>
       ) : null}
 
-      <p className="text-xs text-wine/60">Your details are used only for this wedding and deleted afterwards.</p>
+      <p className="text-xs text-wine/70">Your details are used only for this wedding and deleted afterwards.</p>
       <Button type="submit" disabled={pending || attending === null} className="w-full !bg-wine !text-gold hover:!bg-burgundy">
         {pending ? "Sending…" : "Send my response"}
       </Button>
