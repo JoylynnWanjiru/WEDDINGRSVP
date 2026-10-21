@@ -4,8 +4,9 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { eq } from "drizzle-orm";
 import { loginUsher, requireUsher } from "@/server/auth/sessions";
 import type { Db } from "@/server/db/client";
-import { activityLog, checkIns, invitations } from "@/server/db/schema";
-import { changeUsherPin, correctArrivals, signOutUshers } from "@/server/services/admin/gate";
+import { activityLog, checkIns, invitations, weddings } from "@/server/db/schema";
+import { changeUsherPin, correctArrivals, getGateStatus, signOutUshers } from "@/server/services/admin/gate";
+import { purgeGuestDataAsAdmin, PURGE_CONFIRMATION } from "@/server/services/purge";
 import { admit, passTokenFor, scanUrl } from "@/server/services/gate";
 import { adminCtx } from "../../helpers/admin";
 import { createInvitation, createTestDb, createWedding } from "../../helpers/db";
@@ -20,6 +21,21 @@ beforeAll(async () => {
 afterAll(() => close());
 
 const DAY = { now: new Date("2026-12-12T12:00:00+03:00") };
+
+describe("Tools page status", () => {
+  it("shows whether a PIN is set, counts guest data, and the BR-23 purge date; after a purge the counts are zero", async () => {
+    const wedding = await createWedding(db);
+    await db.update(weddings).set({ weddingDate: "2026-12-19", purgeAfterDays: 30 }).where(eq(weddings.id, wedding.id));
+    const ctx = await adminCtx(wedding.id);
+    await createInvitation(db, wedding.id, { status: "approved" });
+    expect(await getGateStatus(db, ctx)).toMatchObject({ pinSet: false, invitations: 1, autoPurgeOn: "2027-01-18", purgedAt: null });
+    await changeUsherPin(db, ctx, "1234");
+    await purgeGuestDataAsAdmin(db, ctx, PURGE_CONFIRMATION);
+    const after = await getGateStatus(db, ctx);
+    expect(after).toMatchObject({ pinSet: true, invitations: 0, requests: 0 });
+    expect(after.purgedAt).toBeInstanceOf(Date);
+  });
+});
 
 describe("E26: PIN and sign-out", () => {
   it("changing the PIN ends every scanner session and is logged without the PIN", async () => {

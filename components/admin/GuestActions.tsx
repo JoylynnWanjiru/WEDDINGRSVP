@@ -15,7 +15,8 @@ import {
   rotateLinkAction,
   sendNowAction,
 } from "@/app/admin/(dashboard)/guests/actions";
-import { btn, Notice } from "./ui";
+import { correctArrivalsAction } from "@/app/admin/(dashboard)/tools/actions";
+import { btn, Notice, TextInput } from "./ui";
 
 type Props = {
   id: string;
@@ -25,9 +26,11 @@ type Props = {
   whatsappUrl: string | null;
   email: string | null;
   emailBounced: boolean;
+  partySize: number;
+  arrivedCount: number;
 };
 
-export function GuestActions({ id, fullName, status, link, whatsappUrl, email, emailBounced }: Props) {
+export function GuestActions({ id, fullName, status, link, whatsappUrl, email, emailBounced, partySize, arrivedCount }: Props) {
   const [pending, startTransition] = useTransition();
   const [notice, setNotice] = useState<{ tone: "ok" | "error" | "info"; text: string } | null>(null);
   const [copied, setCopied] = useState(false);
@@ -67,6 +70,12 @@ export function GuestActions({ id, fullName, status, link, whatsappUrl, email, e
             : { tone: "info", text: "Queued; it will go out with the next send (daily limit may be reached)." },
       );
     });
+  }
+
+  function correct(form: FormData) {
+    const arrived = Number(form.get("arrived"));
+    const reason = String(form.get("reason") ?? "");
+    run(() => correctArrivalsAction(id, arrived, reason), `Corrected: ${arrived} of ${partySize} arrived.`);
   }
 
   const canSend = status !== "revoked";
@@ -176,6 +185,28 @@ export function GuestActions({ id, fullName, status, link, whatsappUrl, email, e
           ) : null}
         </div>
       </section>
+
+      {/* D20, §7: fix a mis-tapped count at the gate. The original check-ins stay in the log. */}
+      {status === "partially_arrived" || status === "arrived" ? (
+        <section aria-label="Correct arrivals">
+          <p className="label mb-2 text-[0.6rem] text-wine/60">Correct arrivals</p>
+          <form action={correct} className="flex flex-wrap items-end gap-2">
+            <label className="flex items-center gap-2 text-sm">
+              Arrived
+              <span className="w-20">
+                <TextInput name="arrived" type="number" min={0} max={partySize} defaultValue={arrivedCount} required />
+              </span>
+              <span className="text-wine/60">of {partySize}</span>
+            </label>
+            <span className="min-w-56 flex-1">
+              <TextInput name="reason" aria-label="Reason" placeholder="Reason, e.g. usher tapped 3 instead of 2" required maxLength={300} />
+            </span>
+            <button type="submit" className={btn.outline} disabled={pending}>
+              Save correction
+            </button>
+          </form>
+        </section>
+      ) : null}
     </div>
   );
 }

@@ -59,6 +59,8 @@ async function Guest({ params }: { params: PageProps<"/admin/guests/[id]">["para
             whatsappUrl={g.whatsapp?.url ?? null}
             email={g.email}
             emailBounced={!!g.emailBouncedAt}
+            partySize={g.partySize}
+            arrivedCount={g.arrivedCount}
           />
         </section>
 
