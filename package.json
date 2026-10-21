@@ -17,6 +17,7 @@
     "db:migrate": "tsx server/db/migrate.ts",
     "db:seed": "tsx --env-file-if-exists=.env.local server/db/seed.ts",
     "db:check": "tsx --env-file-if-exists=.env.local scripts/check-db.ts",
+    "access:check": "tsx --env-file-if-exists=.env.local scripts/check-access.ts",
     "email:test": "tsx --env-file-if-exists=.env.local scripts/send-test-email.ts",
     "env:check": "tsx scripts/check-env.ts",
     "test-guests": "tsx --env-file-if-exists=.env.local scripts/test-guests.ts",

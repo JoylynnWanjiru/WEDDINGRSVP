@@ -475,7 +475,7 @@ CRON_SECRET=             # protects cron routes
 ### Phase 6 — Test & launch (1–2 days)
 - [ ] Test on Android + iPhone, Safari + Chrome, slow 3G
 - [ ] Send test invites to friends; full dry run of revoke → scan fails
-- [ ] Access test: public, invited, "Yes" but not approved, approved, declined, revoked — confirm each sees only what §4a allows, including by calling the API routes directly
+- [ ] Access test: public, invited, "Yes" but not approved, approved, declined, revoked — confirm each sees only what §4a allows, including by calling the API routes directly. `npm run access:check` passes on the dev server (21 Oct 2026); repeat it on the deployed site.
 - [ ] Accessibility pass (contrast, tap targets ≥44 px, keyboard)
 - [ ] Send invitations **6–8 weeks** before the wedding (between **24 October and 7 November** for 19 December; WhatsApp-shared links can go out before email is finished)
 

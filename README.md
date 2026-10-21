@@ -190,6 +190,7 @@ Never commit `.env.local`. Add the same variables in **Vercel → Project → Se
 | `npm run db:migrate` | Apply migrations to `DATABASE_URL` |
 | `npm run db:seed` | Seed one wedding with placeholder content |
 | `npm run db:check` | End-to-end check on the real database (cleans up after itself) |
+| `npm run access:check [-- <site url>]` | Access test over HTTP: every guest status sees only what it should; routes refuse visitors without a login (cleans up after itself) |
 | `npm run env:check` | Checks `.env.local` formatting; never prints values |
 | `npm run email:test -- you@example.com` | Sends one test email through Gmail |
 | `npm run secret` / `npm run hash-password` | Generate `TOKEN_SECRET`/`CRON_SECRET` / `ADMIN_PASSWORD_HASH` |

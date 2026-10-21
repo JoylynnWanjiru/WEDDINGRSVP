@@ -102,6 +102,7 @@ npm run db:check
 | `db:migrate` | Runs the SQL files in `server/db/migrations` in order, creating the 16 tables. Neon remembers which have run, so running it twice is harmless. | `✓ Migrations applied to ep-…neon.tech` |
 | `db:seed` | Adds your wedding with placeholder names, the programme, FAQ and dress code. Safe to run twice. | `✓ Seeded wedding "our-wedding"…` |
 | `db:check` | Creates a throwaway wedding, runs add guest → RSVP → approve → two ushers scanning at once, then deletes it. | a list of `✓` lines and `✓ All checks passed` |
+| `access:check` | Needs the site running (`npm run dev`, or pass the live address: `npm run access:check -- https://…`). Creates a throwaway wedding with one guest in every status, fetches each page and route like a stranger would, and confirms locked content reaches only approved guests. Then deletes it. | `✓ All access checks passed` |
 
 **Migrations vs seed:** a migration changes the *shape* of the database (tables,
 columns, rules). A seed puts starting *data* in. Both are repeatable.
@@ -209,3 +210,4 @@ provider the address is trusted.
 
 When you deploy (you'll do this yourself on Vercel), the same names and values go into
 **Vercel → Project → Settings → Environment Variables**. Set `APP_URL` to the real site address.
+Then run `npm run access:check -- https://<your-site>` to repeat the access test on the live site.
