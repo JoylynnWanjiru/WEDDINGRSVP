@@ -146,7 +146,7 @@ async function Invitation({ params }: { params: PageProps<"/i/[token]">["params"
 
       <RsvpSection token={token} page={page} />
 
-      <footer className="guest-footer">
+      <footer className="guest-footer guest-footer--photo">
         <Ornament className="mb-4" />
         <p className="font-display text-xl">With love, {couple}</p>
         <p className="label mt-1 text-[0.65rem]">{date}</p>
