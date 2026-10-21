@@ -78,6 +78,7 @@ export const weddings = pgTable("weddings", {
   purgeAfterDays: integer("purge_after_days").notNull().default(30), // A10, BR-23
   requirePhoneCheck: boolean("require_phone_check").notNull().default(false), // A8, E2
   publicRequestsEnabled: boolean("public_requests_enabled").notNull().default(false), // A11: off by default (D21)
+  autoApprove: boolean("auto_approve").notNull().default(true), // A1: a "Yes" within the allowance is approved at once (D24)
   purgedAt: tz("purged_at"),
   ...timestamps,
 });

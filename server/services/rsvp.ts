@@ -1,22 +1,31 @@
-// Guest RSVP: submit or change a response (BLUEPRINT §5a, BR-5 to BR-9, E1, E6, E7, E14).
+// Guest RSVP: submit or change a response (BLUEPRINT §5a, BR-5 to BR-9, E1, E6, E7, E14, D24).
 
 import { createHash } from "node:crypto";
 import { and, asc, eq, ne } from "drizzle-orm";
 import type { Db } from "../db/client";
-import { invitations, partyMembers, rsvpEvents, venues, type Invitation } from "../db/schema";
+import { invitations, partyMembers, rsvpEvents, venues, weddings, type Invitation } from "../db/schema";
 import { normalizePhone } from "../domain/phone";
-import { assertPartyWithinAllowance, isRsvpOpen, partyNeedsReapproval } from "../domain/rules";
+import { assertPartyWithinAllowance, capacityOverflow, isRsvpOpen, partyNeedsReapproval } from "../domain/rules";
 import { canRespond, nextStatus, type InvitationStatus } from "../domain/status";
 import { AppError } from "../errors";
 import { parseInput, rsvpInput, type RsvpInput } from "../validation/schemas";
 import { getAccess } from "./access";
 import { logActivity } from "./activity";
+import { approvedHeadcount } from "./admin/approvals";
 import { enqueueEmail } from "./messaging";
+import { applyTransition } from "./transitions";
+
+/**
+ * D24: a "Yes" from these states is approved at once. A guest already in the queue
+ * (added someone after approval, BR-8; over capacity, BR-11; or answered while
+ * auto-approval was off) stays with the couple.
+ */
+const AUTO_APPROVE_FROM: ReadonlySet<InvitationStatus> = new Set(["draft", "sent", "viewed", "declined"]);
 
 export type RsvpResult = {
   status: InvitationStatus;
   partySize: number;
-  /** True when the couple now needs to approve (said Yes, or added someone after approval). */
+  /** True when the couple now needs to approve (auto-approval off, added someone after approval, or over capacity). */
   awaitingApproval: boolean;
   /** True when nothing changed because this exact response was already saved (BR-9). */
   unchanged: boolean;
@@ -147,15 +156,30 @@ export async function applyRsvp(
       meta: { from: inv.status, to, partySize: members.length, passVersionBumped: passVersion !== inv.passVersion },
     });
 
-    // BR-18: this email confirms receipt only; the template carries no event details.
+    // D24: approve straight away unless that would pass the venue capacity (BR-11 stays the couple's call).
+    let autoApproved = false;
+    if (to === "awaiting_approval" && AUTO_APPROVE_FROM.has(inv.status)) {
+      const [w] = await tx
+        .select({ autoApprove: weddings.autoApprove, capacity: weddings.venueCapacity })
+        .from(weddings)
+        .where(eq(weddings.id, inv.weddingId));
+      if (w?.autoApprove && capacityOverflow(await approvedHeadcount(tx, inv.weddingId), members.length, w.capacity) === 0) {
+        to = await applyTransition(tx, { ...inv, status: to }, { type: "approve" }, { actor: "system", label: "Auto-approval" }, {
+          set: { approvedAt: now },
+          meta: { partySize: members.length, auto: true },
+        });
+        autoApproved = true;
+      }
+    }
+
     if (input.email ?? inv.email) {
-      await enqueueEmail(tx, {
-        weddingId: inv.weddingId,
-        invitationId: inv.id,
-        template: "rsvp_received",
-        dedupeKey: `rsvp_received:${inv.id}:${fingerprint}`,
-        scheduledFor: now,
-      });
+      // Approved: the pass email replaces the receipt. Otherwise BR-18: the receipt carries no event details.
+      await enqueueEmail(
+        tx,
+        autoApproved
+          ? { weddingId: inv.weddingId, invitationId: inv.id, template: "approval_pass", dedupeKey: `approval_pass:${inv.id}:${passVersion}`, scheduledFor: now }
+          : { weddingId: inv.weddingId, invitationId: inv.id, template: "rsvp_received", dedupeKey: `rsvp_received:${inv.id}:${fingerprint}`, scheduledFor: now },
+      );
     }
 
     return result(to, members.length, false);

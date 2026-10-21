@@ -163,7 +163,7 @@ Access is decided **on the server on every request** from the guest's personal t
 | **Usher** | Gate staff (PIN) | Scanner result: name + party size only | Guest list, contact details, settings |
 
 Rules:
-- A guest answering **"Yes" does not unlock anything** — approval by the couple does. Approval is always an explicit admin action (no auto-approve).
+- A guest answering **"Yes" unlocks the details only once approved**. Approval is automatic within the seat allowance and venue capacity, and the couple decide the exceptions (BLUEPRINT D24).
 - If the couple revokes, or an approved guest changes their answer to "No", access is removed **immediately** on the next page load, and the gate pass stops scanning.
 - Share-preview image and page metadata show only names + date — no venue, no programme.
 - Locked pages and personal links carry `noindex` so search engines never list them.

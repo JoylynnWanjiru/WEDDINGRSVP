@@ -78,6 +78,7 @@ async function Settings() {
             whatsappTemplate: w.whatsappTemplate,
             contributionInfo: w.contributionInfo ?? null,
             publicRequestsEnabled: w.publicRequestsEnabled,
+            autoApprove: w.autoApprove,
             dailyEmailCap: w.dailyEmailCap,
             reminderIntervalDays: w.reminderIntervalDays,
           }}

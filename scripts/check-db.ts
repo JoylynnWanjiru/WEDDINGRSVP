@@ -65,6 +65,8 @@ async function main() {
 
     // A throwaway wedding for the flow checks.
     weddingId = (await seedWedding(db, slug)).id;
+    // Exercise the couple's manual approval; D24 auto-approval is covered by the tests.
+    await db.update(weddings).set({ autoApprove: false }).where(eq(weddings.id, weddingId));
     process.env.ADMIN_PASSWORD_HASH = await hashSecret("smoke-test-password"); // in memory only
     const ctx = { session: await requireAdmin(await loginAdmin("smoke-test-password")), weddingId };
     let invitationId = "";

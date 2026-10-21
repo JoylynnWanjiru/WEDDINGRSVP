@@ -1,0 +1,1 @@
+ALTER TABLE "weddings" ADD COLUMN "auto_approve" boolean DEFAULT true NOT NULL;

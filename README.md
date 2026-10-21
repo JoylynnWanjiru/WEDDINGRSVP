@@ -5,12 +5,12 @@ A private, personalised wedding website and guest-management system in **burgund
 - Every guest gets a **personal invitation link** by email and WhatsApp.
 - The couple can see who **received, opened and viewed** their invitation.
 - Guests **RSVP**, including named extra guests within a seat allowance.
-- The couple **approves or revokes** each guest's attendance.
+- A guest's "Yes" is **approved automatically** within the seat allowance the couple set; the couple decide the exceptions (added guests, over capacity) and can **revoke** anyone (D24).
 - Approved guests get a **QR gate pass**, which ushers scan at the gate.
 - Venue, live location, programme and all other details are shown **only to approved guests**.
 - An admin dashboard shows **headcount, dietary needs and arrivals** live.
 
-> **Privacy rule:** the public sees only a teaser and a "request an invitation" form. Saying "Yes" unlocks nothing; only the couple's approval does. Access is checked on the server on every request, so locked content never reaches an unapproved visitor's browser.
+> **Privacy rule:** the public sees only a teaser and a "request an invitation" form. Saying "Yes" unlocks the details only once it is approved: automatically within the seat allowance and venue capacity, otherwise by the couple (D24). Access is checked on the server on every request, so locked content never reaches an unapproved visitor's browser.
 
 Two documents guide this project:
 

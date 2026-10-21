@@ -1,6 +1,7 @@
 // In-memory Postgres (PGlite) with the real migrations applied. No account, no network.
 
 import { randomUUID } from "node:crypto";
+import { eq } from "drizzle-orm";
 import { PGlite } from "@electric-sql/pglite";
 import { drizzle } from "drizzle-orm/pglite";
 import { migrate } from "drizzle-orm/pglite/migrator";
@@ -19,8 +20,16 @@ export async function createTestDb() {
 
 let slugCounter = 0;
 
-/** A fresh wedding per test keeps tests isolated within one database. */
-export const createWedding = (db: Db) => seedWedding(db, `test-wedding-${++slugCounter}`);
+/**
+ * A fresh wedding per test keeps tests isolated within one database. Auto-approval
+ * (D24) is off so tests drive approval explicitly; tests of D24 turn it on.
+ */
+export async function createWedding(db: Db, opts: { autoApprove?: boolean } = {}) {
+  const wedding = await seedWedding(db, `test-wedding-${++slugCounter}`);
+  const autoApprove = opts.autoApprove ?? false;
+  await db.update(schema.weddings).set({ autoApprove }).where(eq(schema.weddings.id, wedding.id));
+  return { ...wedding, autoApprove };
+}
 
 export async function createInvitation(
   db: Db,

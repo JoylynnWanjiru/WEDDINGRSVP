@@ -36,6 +36,13 @@
       "when": 1792512173246,
       "tag": "0004_story_title",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1792575734714,
+      "tag": "0005_magical_demogoblin",
+      "breakpoints": true
     }
   ]
 }

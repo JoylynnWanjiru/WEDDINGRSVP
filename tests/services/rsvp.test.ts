@@ -1,9 +1,10 @@
-// Module 3: guest RSVP (BLUEPRINT §5a, BR-5 to BR-9, BR-20/21, E1, E6, E7, E14).
+// Module 3: guest RSVP (BLUEPRINT §5a, BR-5 to BR-9, BR-20/21, E1, E6, E7, E14, D24).
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { eq } from "drizzle-orm";
 import type { Db } from "@/server/db/client";
-import { activityLog, emailQueue, invitations, partyMembers, rsvpEvents, venues } from "@/server/db/schema";
+import { activityLog, emailQueue, invitations, partyMembers, rsvpEvents, venues, weddings } from "@/server/db/schema";
+import { requireApproved } from "@/server/services/access";
 import { submitRsvp } from "@/server/services/rsvp";
 import { createInvitation, createTestDb, createWedding } from "../helpers/db";
 
@@ -25,8 +26,8 @@ const yes = (extras: { fullName: string; isChild?: boolean }[] = [], more: Recor
   ...more,
 });
 
-async function setup(values: Parameters<typeof createInvitation>[2] = {}) {
-  const wedding = await createWedding(db);
+async function setup(values: Parameters<typeof createInvitation>[2] = {}, weddingOpts: Parameters<typeof createWedding>[1] = {}) {
+  const wedding = await createWedding(db, weddingOpts);
   const { invitation, token } = await createInvitation(db, wedding.id, { status: "sent", ...values });
   const reload = async () => (await db.select().from(invitations).where(eq(invitations.id, invitation.id)))[0];
   const members = () => db.select().from(partyMembers).where(eq(partyMembers.invitationId, invitation.id));
@@ -76,6 +77,53 @@ describe("saying Yes", () => {
     const { token } = await setup();
     await expect(submitRsvp(db, token, yes([], { events: ["traditional"] }), opts)).rejects.toMatchObject({ code: "VALIDATION" });
     await expect(submitRsvp(db, token, yes([], { events: [] }), opts)).rejects.toMatchObject({ code: "VALIDATION" });
+  });
+});
+
+describe("D24: automatic approval", () => {
+  const auto = (values: Parameters<typeof createInvitation>[2] = {}) => setup({ email: "guest@example.com", ...values }, { autoApprove: true });
+  const log = (id: string) => db.select().from(activityLog).where(eq(activityLog.invitationId, id));
+  const emails = (id: string) => db.select().from(emailQueue).where(eq(emailQueue.invitationId, id));
+
+  it("a Yes within the allowance is approved at once, logged as the system, and gets the pass email instead of the receipt", async () => {
+    const { invitation, token, reload } = await auto({ seatAllowance: 1 });
+    const res = await submitRsvp(db, token, yes([{ fullName: "Extra One" }]), opts);
+    expect(res).toEqual({ status: "approved", partySize: 2, awaitingApproval: false, unchanged: false });
+    expect((await reload()).approvedAt).toEqual(NOW);
+    await expect(requireApproved(db, token)).resolves.toBeTruthy(); // BR-1: details unlock straight away
+
+    const entries = await log(invitation.id);
+    expect(entries.find((e) => e.action === "rsvp_yes")?.meta).toMatchObject({ from: "sent", to: "awaiting_approval" });
+    expect(entries.find((e) => e.action === "approve")).toMatchObject({ actor: "system", meta: { from: "awaiting_approval", to: "approved", auto: true } });
+    expect((await emails(invitation.id)).map((e) => e.template)).toEqual(["approval_pass"]);
+  });
+
+  it("a guest who said No and changes to Yes is approved too", async () => {
+    const { token } = await auto({ status: "declined" });
+    expect((await submitRsvp(db, token, yes(), opts)).status).toBe("approved");
+  });
+
+  it("BR-11: a Yes that would pass the venue capacity waits for the couple", async () => {
+    const { wedding, invitation, token } = await auto({ seatAllowance: 1 });
+    await db.update(weddings).set({ venueCapacity: 3 }).where(eq(weddings.id, wedding.id));
+    await createInvitation(db, wedding.id, { status: "approved", partySize: 2 });
+    const res = await submitRsvp(db, token, yes([{ fullName: "Extra One" }]), opts);
+    expect(res.status).toBe("awaiting_approval");
+    expect((await emails(invitation.id)).map((e) => e.template)).toEqual(["rsvp_received"]);
+    await expect(requireApproved(db, token)).rejects.toMatchObject({ code: "FORBIDDEN" });
+  });
+
+  it("BR-8: adding someone after approval goes to the couple, and further edits keep it there", async () => {
+    const { token } = await auto({ seatAllowance: 2 });
+    expect((await submitRsvp(db, token, yes(), opts)).status).toBe("approved");
+    expect((await submitRsvp(db, token, yes([{ fullName: "New Person" }]), opts)).status).toBe("awaiting_approval");
+    const edited = yes([{ fullName: "New Person" }], { message: "Changed my mind about the menu" });
+    expect((await submitRsvp(db, token, edited, opts)).status).toBe("awaiting_approval");
+  });
+
+  it("turned off, a Yes waits for the couple as before", async () => {
+    const { token } = await setup({ seatAllowance: 0 });
+    expect((await submitRsvp(db, token, yes(), opts)).status).toBe("awaiting_approval");
   });
 });
 

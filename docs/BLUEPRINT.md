@@ -10,7 +10,7 @@
 
 Printed invitation cards can't be tracked. You don't know who received one, guests claim they never got it, extra people turn up, and on the day there's no reliable way to check who was actually invited. Headcount for catering is a guess.
 
-The system replaces printed cards with **personal online invitations**. The couple sends each guest a private link, sees whether it was opened, collects a response with named extra guests, and **personally approves** who attends. Only approved guests can see the venue, programme and other details, and only they receive a gate pass that is checked at the gate on the day. The couple can withdraw any invitation at any time, and it stops working everywhere immediately.
+The system replaces printed cards with **personal online invitations**. The couple sends each guest a private link, sees whether it was opened, collects a response with named extra guests, and approves who attends: automatically for a Yes within the seat allowance the couple set, personally for the exceptions (D24). Only approved guests can see the venue, programme and other details, and only they receive a gate pass that is checked at the gate on the day. The couple can withdraw any invitation at any time, and it stops working everywhere immediately.
 
 ### Project type
 
@@ -44,7 +44,7 @@ Plus a small **real-time** slice: gate check-in on the wedding day, where speed 
 
 ## 2. The system in one sentence
 
-> **The couple** sends each guest a **personal invitation link** → the guest opens it and responds with their named party → **the couple approves** them → the approved guest unlocks the venue, programme and a **gate pass** that ushers scan on the day — **with the guarantee that no one sees event details or gets through the gate unless the couple has approved them, and that approval can be withdrawn at any moment.**
+> **The couple** sends each guest a **personal invitation link** → the guest opens it and responds with their named party → **the couple approves** them → the approved guest unlocks the venue, programme and a **gate pass** that ushers scan on the day — **with the guarantee that no one sees event details or gets through the gate without an approved invitation (approved by the couple, or automatically within the seat allowance they set, D24), and that approval can be withdrawn at any moment.**
 
 ---
 
@@ -90,7 +90,7 @@ Plus a small **real-time** slice: gate check-in on the wedding day, where speed 
 | **Couple (admin)** | Admin password session | Everything: guests, approvals, revocations, content, settings, exports, data deletion | — |
 | **Planner** | v1: the same admin login as the couple (A5) | v1: same as the couple, because a shared login can't tell them apart (D6). v2: separate login, everything except changing the admin password or deleting all data | — |
 | **Usher** | Shared gate PIN | Open scanner; scan; search a name at the gate; record arrivals | See phone numbers, emails, guest list outside the scanner, settings |
-| **System (scheduler)** | Cron secret | Send queued emails; send reminders; switch site to "thank you" after the wedding | Approve or revoke anyone |
+| **System (scheduler)** | Cron secret | Send queued emails; send reminders; switch site to "thank you" after the wedding | Revoke anyone; approve anyone (D24 auto-approval happens inside the guest's own RSVP, not the scheduler) |
 
 **Capability vs action:** every action is written to the activity log with *who* did it (actor + which usher device/admin session) and *when*, separate from what their role permits.
 
@@ -116,7 +116,7 @@ The central object is an **invitation** (one per household/party), not an indivi
                         AWAITING_APPROVAL (said Yes)            DECLINED (said No)
                                  │         │                         │
                     couple approves   couple declines        guest changes to Yes
-                                 │         │                 (before deadline) ──► AWAITING_APPROVAL
+         or automatically (D24)  │         │                 (before deadline) ──► AWAITING_APPROVAL
                                  ▼         ▼
        pass exists from here ► APPROVED   NOT_APPROVED (couple can reopen → AWAITING_APPROVAL)
                                  │
@@ -136,7 +136,7 @@ The central object is an **invitation** (one per household/party), not an indivi
 | DECLINED → AWAITING_APPROVAL | Guest changes to "Yes" before deadline | new party, timestamp |
 | AWAITING_APPROVAL → AWAITING_APPROVAL | Guest edits their party, dietary or events before the couple decides | old vs new party, timestamp |
 | AWAITING_APPROVAL → DECLINED | Guest changes to "No" before the couple decides | timestamp, optional message |
-| AWAITING_APPROVAL → APPROVED | Couple approves | admin, timestamp; **pass becomes available immediately**; approval email queued |
+| AWAITING_APPROVAL → APPROVED | Couple approves, **or** automatically in the same transaction as a Yes from DRAFT/SENT/VIEWED/DECLINED within venue capacity (D24) | admin or `system`, timestamp; **pass becomes available immediately**; approval email queued (replaces the receipt when automatic) |
 | *(side event)* pass emailed | Approval email accepted by Gmail | `pass_emailed_at` — **does not change state** |
 | AWAITING_APPROVAL → NOT_APPROVED | Couple declines attendance | admin, timestamp, optional message to guest |
 | NOT_APPROVED → AWAITING_APPROVAL | Couple reopens | admin, timestamp |
@@ -148,7 +148,7 @@ The central object is an **invitation** (one per household/party), not an indivi
 | any (except ARRIVED) → REVOKED | Couple revokes | admin, timestamp, reason (internal); pass version bumped |
 | REVOKED → previous state | Couple restores | admin, timestamp; new pass version if previously approved |
 
-Approval is **never automatic** (A1).
+Approval is **automatic** for a Yes from DRAFT, SENT, VIEWED or DECLINED when the wedding's `autoApprove` setting is on (the default) and the party fits the venue capacity (D24, A1). Everything already in AWAITING_APPROVAL stays with the couple: someone added after approval (BR-8), over capacity (BR-11), or answered while the setting was off.
 
 ### 5b. Request lifecycle (public "request an invitation" form)
 
@@ -185,7 +185,7 @@ PENDING ──couple accepts──► ACCEPTED (creates a DRAFT invitation; fina
 - **BR-9** Submitting the same response twice (double-tap, retry) produces one record, not two.
 
 ### Approval & capacity
-- **BR-10** Only admins can approve, decline, revoke or restore.
+- **BR-10** Only admins can approve, decline, revoke or restore. The one exception is automatic approval of a Yes (D24), logged with actor `system`.
 - **BR-11** Approving when approved headcount would exceed venue capacity shows a warning with the overflow number and requires a second confirmation; it does not hard-block. **[ASSUMPTION]**
 - **BR-12** Reducing a seat allowance below a guest's current party size is blocked until the admin removes named people (the admin chooses who).
 
@@ -213,7 +213,7 @@ PENDING ──couple accepts──► ACCEPTED (creates a DRAFT invitation; fina
 | # | Scenario | Correct behaviour |
 |---|---|---|
 | E1 | Guest **double-taps Submit** or the request retries on a slow network | One response saved (upsert keyed on invitation); the button disables on submit; the second request returns the same result. |
-| E2 | Personal link is **forwarded** to someone else | They see the original guest's name and status only. They could respond on that guest's behalf — mitigated because the couple approves every "Yes" and sees the named party. Optional: ask for the last 4 digits of the guest's phone before responding. **[ASSUMPTION: off by default]** |
+| E2 | Personal link is **forwarded** to someone else | They see the original guest's name and status only. They could respond on that guest's behalf — with auto-approval (D24) they could get the pass. Mitigations: the party can't exceed the seat allowance (BR-5), the couple sees every response and named party in the dashboard and can revoke at once, and the first scan wins at the gate (BR-14). Optional: ask for the last 4 digits of the guest's phone before responding. **[ASSUMPTION: off by default]** |
 | E3 | Approved guest **screenshots the pass and shares it** | First scan wins (BR-13/14). Later scans show "Already admitted at 12:14 by Gate 1". Usher can check names on the screen against the person. |
 | E4 | Couple **revokes on the wedding day** while a scanner is **offline** | Offline cache can't know. Mitigation: scanner shows "last synced HH:MM"; it re-syncs automatically every minute when online; revocations on the day should be phoned to the head usher. Online scans always reflect revocation instantly. |
 | E5 | Two ushers scan the **same pass at the same second** | Database update is conditional (`arrived_count + n ≤ party_size`); one succeeds, the other gets "already admitted". |
@@ -313,11 +313,11 @@ No external system calls into this app, so there is **no public API contract** t
 
 | ID | Assumption (default) |
 |---|---|
-| A1 | Every "Yes" needs the couple's approval — never automatic. |
+| A1 | A "Yes" within the seat allowance is **approved automatically**; additions after approval and over-capacity responses wait for the couple (changed 21 Oct 2026, D24). The couple can switch auto-approval off in settings. |
 | A2 | One invitation = one household/party; default seat allowance **0 extras** unless set. |
 | A3 | RSVP deadline **5 December 2026**, 11:59 pm EAT (confirmed). |
 | A4 | Ceremony and reception at the **same venue** (confirmed). The system still supports separate venues. |
-| A5 | Couple and planner share **one admin login** in v1. |
+| A5 | Couple and planner share **one admin login** in v1 (confirmed 21 Oct 2026). |
 | A6 | Ushers share **one gate PIN**; each scanner device is named (e.g. "Gate 1"). |
 | A7 | Over-capacity approval = **warning, not block**. |
 | A8 | Forwarded-link phone verification **off** by default. |
@@ -433,3 +433,4 @@ Choices that refine or change earlier drafts of this blueprint, with their reaso
 | D21 | **Public invitation requests are off by default.** The public page shows only the envelope, names, date, countdown and the private-celebration note. Turning `publicRequestsEnabled` on in settings brings the form back; everything behind it (D3, D10, E19) stays built and tested. | The couple's decision (20 Oct 2026): the reference site has no request option, and a minimal public page fits the privacy rule (§4a). Missed guests contact the couple directly. | A11, U11, spec §4 |
 | D22 | **One page per guest.** `/i/[token]` holds everything, with a sticky section navigation bar (Invitation · Our story · The day · Details · Gate pass · RSVP) like the reference site; each guest sees only the items for sections they're allowed to see. For approved guests the gate pass (QR) is a section near the top, and on the wedding day a live "happening now / next" banner leads the page. The old `/pass` and `/day` addresses redirect (HTTP 307) to those sections, and email buttons link to them. "Pass first viewed" is recorded when an approved guest taps the seal, a real person rather than a link preview. | The couple's decision (20 Oct 2026): separate pages make guests hunt for the right link, especially at the gate. One link from invitation to RSVP to gate is simpler. | Spec §4 routes, U7, U8, N2 |
 | D23 | **Changing the wedding date moves the programme with it**, by the same number of days and at the same times, in one transaction. Settings also accept a pasted Google Maps link for the venue pin: short links are followed only to Google hosts over HTTPS, never to arbitrary URLs. | Programme items store full dates, so a date change would otherwise leave the order of the day on the old day. The pin helper saves typing coordinates without letting the server be used to fetch other sites (SSRF). | U12, spec §5, §6 |
+| D24 | **A "Yes" is approved automatically.** When `weddings.auto_approve` is on (default), a Yes from DRAFT, SENT, VIEWED or DECLINED moves to APPROVED in the same transaction, through `nextStatus()` and logged as `system`; the guest gets the pass email instead of the receipt. It stays in AWAITING_APPROVAL for the couple when the party would pass venue capacity (BR-11), when an approved guest adds someone (BR-8), or when it was already waiting. The couple can turn it off in settings to approve every Yes by hand. | Developer decision with the couple (21 Oct 2026): the seat allowance already says how many people each guest may bring, so approving hundreds of Yes responses by hand added work and delay without real protection. The gate pass, the seat allowance and instant revoke still control who gets in. | A1, BR-1, BR-10, BR-11, E2, §5 |

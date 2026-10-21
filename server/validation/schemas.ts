@@ -122,6 +122,7 @@ export const weddingPatch = z
     purgeAfterDays: z.coerce.number().int().min(1).max(365),
     requirePhoneCheck: z.boolean(),
     publicRequestsEnabled: z.boolean(),
+    autoApprove: z.boolean(),
   })
   .partial();
 

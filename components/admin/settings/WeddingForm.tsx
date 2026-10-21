@@ -24,6 +24,7 @@ export type WeddingValues = {
   whatsappTemplate: string | null;
   contributionInfo: Record<string, string> | null;
   publicRequestsEnabled: boolean;
+  autoApprove: boolean;
   dailyEmailCap: number;
   reminderIntervalDays: number;
 };
@@ -62,6 +63,7 @@ export function WeddingForm({ w }: { w: WeddingValues }) {
       whatsappTemplate: v("whatsappTemplate") || null,
       contributionInfo: Object.keys(contributions).length ? contributions : null,
       publicRequestsEnabled: form.get("publicRequestsEnabled") === "on",
+      autoApprove: form.get("autoApprove") === "on",
       dailyEmailCap: Number(v("dailyEmailCap")),
       reminderIntervalDays: Number(v("reminderIntervalDays")),
     };
@@ -149,6 +151,11 @@ export function WeddingForm({ w }: { w: WeddingValues }) {
           <TextInput name="reminderIntervalDays" type="number" min={1} max={30} defaultValue={w.reminderIntervalDays} />
         </Field>
       </div>
+
+      <label className="flex min-h-11 items-center gap-3">
+        <input type="checkbox" name="autoApprove" defaultChecked={w.autoApprove} className="h-4 w-4 accent-[#3D0F19]" />
+        <span>Approve a &ldquo;Yes&rdquo; automatically (D24). Added guests and going over capacity still come to you.</span>
+      </label>
 
       <label className="flex min-h-11 items-center gap-3">
         <input type="checkbox" name="publicRequestsEnabled" defaultChecked={w.publicRequestsEnabled} className="h-4 w-4 accent-[#3D0F19]" />
