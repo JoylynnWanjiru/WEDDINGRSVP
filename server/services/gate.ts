@@ -5,6 +5,7 @@
 // invitation row, so two ushers scanning the same pass can never over-admit (BR-14).
 
 import { and, desc, eq, ilike, inArray, or } from "drizzle-orm";
+import { tokenFromScan } from "../../lib/gate-offline";
 import type { UsherSession } from "../auth/sessions";
 import { signPassToken, verifyPassToken } from "../auth/tokens";
 import { config } from "../config";
@@ -26,12 +27,8 @@ export async function passTokenFor(inv: Invitation): Promise<string> {
   return signPassToken({ invitationId: inv.id, weddingId: inv.weddingId, passVersion: inv.passVersion });
 }
 
-/** Accepts the full scanned URL or the bare token. */
-export function tokenFromScan(scanned: string): string {
-  const s = scanned.trim();
-  const i = s.indexOf("/scan/v/");
-  return (i >= 0 ? s.slice(i + "/scan/v/".length) : s).split(/[?#]/)[0];
-}
+// Shared with the scanner page, which reads the same URL offline (N3).
+export { tokenFromScan };
 
 // --- guest side: the gate pass section of the invitation page (D22) ---
 
