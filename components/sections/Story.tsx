@@ -12,24 +12,24 @@ export function Story({ title, story, photos }: { title: string | null; story: s
 
   return (
     <Section id="story" eyebrow="Our story" title={heading}>
-      <div className={storyPhotos.length ? "grid items-center gap-8 md:grid-cols-[1fr_1.2fr]" : undefined}>
+      <div className="story-layout">
         {story ? (
-          <div className="mx-auto max-w-prose space-y-4 text-center text-lg leading-relaxed md:text-left">
+          <div className="story-prose">
             {story.split(/\n{2,}/).map((para, i) => (
               <p key={i}>{para}</p>
             ))}
           </div>
         ) : null}
         {storyPhotos.length ? (
-          <div className="grid grid-cols-2 gap-3">
-            {storyPhotos.map((p, i) => (
+          <div className="story-gallery">
+            {storyPhotos.map((p) => (
               // eslint-disable-next-line @next/next/no-img-element -- pre-compressed, served as-is (spec §14)
               <img
                 key={p.src}
                 src={p.src}
                 alt={p.alt}
                 loading="lazy"
-                className={`aspect-[4/5] w-full rounded-sm object-cover ${i % 2 ? "translate-y-6" : ""}`}
+                decoding="async"
               />
             ))}
           </div>

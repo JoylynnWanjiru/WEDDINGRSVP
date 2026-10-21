@@ -6,7 +6,8 @@ function Banner({ tone, children }: { tone: "gold" | "soft"; children: ReactNode
   return (
     <div
       role="status"
-      className={`w-full rounded-sm px-5 py-6 text-center ${tone === "gold" ? "border border-gold bg-gold/15 text-white" : "border border-gold/30 bg-wine-night/40 text-pearl"}`}
+      className="guest-status"
+      data-tone={tone}
     >
       {children}
     </div>
@@ -39,7 +40,8 @@ export function Confirmed({ partySize }: { partySize: number }) {
     <Banner tone="gold">
       <p className="label text-gold">Your attendance is confirmed</p>
       <p className="mt-2 font-display text-3xl">{partySize === 1 ? "We can't wait to see you" : `Party of ${partySize}`}</p>
-      <p className="mt-2 text-sm text-pearl">Your gate pass is just below. Everything you need for the day is on this page.</p>
+      <p className="mt-2 text-sm">Everything you need for the day is on this page.</p>
+      <a href="#pass">View your gate pass <span aria-hidden="true">&nbsp;↗</span></a>
     </Banner>
   );
 }
@@ -47,7 +49,7 @@ export function Confirmed({ partySize }: { partySize: number }) {
 /** §6: event details are never hinted at before approval. */
 export function DetailsAfterApproval() {
   return (
-    <p className="mx-auto max-w-md text-center text-sm text-pearl/80">
+    <p className="details-after-approval mx-auto max-w-md text-center text-sm">
       The programme, exact location and directions will be shared once your attendance is confirmed.
     </p>
   );

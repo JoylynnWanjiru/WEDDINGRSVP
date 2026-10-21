@@ -21,7 +21,7 @@ export const metadata: Metadata = {
 
 export default function PublicPage() {
   return (
-    <main className="mx-auto flex w-full max-w-xl flex-1 flex-col items-center px-4 pb-16 text-center">
+    <main className="guest-site flex w-full flex-1 flex-col text-center">
       <Suspense fallback={<TeaserFallback />}>
         <TeaserContent />
       </Suspense>
@@ -57,7 +57,7 @@ async function TeaserContent() {
 
   return (
     <>
-      <section className="w-full pt-10" aria-label="Invitation">
+      <section id="top" className="guest-top" aria-label="Invitation">
         <Envelope addressedTo="For our dear guest" monogram={teaser.monogram}>
           <p className="label text-[0.65rem] text-gold-deep">Together with their families</p>
           <h1 className="mt-3 font-display text-4xl leading-tight text-wine sm:text-5xl">
@@ -69,10 +69,10 @@ async function TeaserContent() {
         </Envelope>
       </section>
 
-      <section className="mt-12 w-full" aria-labelledby="names">
+      <section id="celebration" className="celebration-section" aria-labelledby="names">
         <Ornament />
         <h2 id="names" className="mt-6 font-display text-5xl text-white sm:text-6xl">
-          {couple}
+          Counting down to forever
         </h2>
         <p className="label mt-4 text-gold">
           {date} · {formatTime(teaser.ceremonyStartAt)}
@@ -82,7 +82,7 @@ async function TeaserContent() {
         </div>
       </section>
 
-      <section className="mt-14 w-full" aria-labelledby="private">
+      <section className="public-private" aria-labelledby="private">
         <Ornament />
         <h2 id="private" className="mt-6 font-display text-3xl text-gold">
           A private celebration
@@ -93,7 +93,9 @@ async function TeaserContent() {
       </section>
 
       {teaser.acceptsRequests ? (
-        <section className="mt-14 w-full text-left" aria-labelledby="request">
+        <section className="public-request text-left" aria-labelledby="request">
+          <div className="public-request-inner">
+          <p className="label mb-3 text-center text-gold">A note to the couple</p>
           <h2 id="request" className="text-center font-display text-3xl text-white">
             Request an invitation
           </h2>
@@ -101,10 +103,11 @@ async function TeaserContent() {
             Think you were missed? Let the couple know and they&rsquo;ll be in touch.
           </p>
           <RequestInviteForm />
+          </div>
         </section>
       ) : null}
 
-      <footer className="mt-16 text-pearl/60">
+      <footer className="guest-footer">
         <Ornament className="mb-4" />
         <p className="font-display text-xl">{couple}</p>
         <p className="label mt-1 text-[0.65rem]">{date}</p>
@@ -118,7 +121,7 @@ function ComingSoon() {
     <section className="flex flex-1 flex-col items-center justify-center gap-4 py-24">
       <Ornament />
       <h1 className="font-display text-4xl">Coming soon</h1>
-      <p className="text-pearl/80">The invitation is being prepared.</p>
+      <p className="text-wine/80">The invitation is being prepared.</p>
     </section>
   );
 }

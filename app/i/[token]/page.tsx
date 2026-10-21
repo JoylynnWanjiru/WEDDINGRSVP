@@ -27,7 +27,7 @@ import { recordViewAction } from "./actions";
 
 export default function InvitationRoute({ params }: PageProps<"/i/[token]">) {
   return (
-    <main className="flex w-full flex-1 flex-col items-center pb-16">
+    <main className="guest-site flex w-full flex-1 flex-col items-center">
       <Suspense fallback={<Loading />}>
         <Invitation params={params} />
       </Suspense>
@@ -43,7 +43,7 @@ function Loading() {
         <div className="envelope__front" />
         <div className="envelope__flap" />
       </div>
-      <p className="label mt-8 text-center text-pearl/70">Preparing your invitation…</p>
+      <p className="label mt-8 text-center text-wine/70">Preparing your invitation…</p>
     </div>
   );
 }
@@ -86,14 +86,14 @@ async function Invitation({ params }: { params: PageProps<"/i/[token]">["params"
   return (
     <>
       <InvitationNav items={nav} />
-      <div className="mx-auto flex w-full max-w-2xl flex-col items-center gap-10 px-4">
+      <div className="guest-shell">
       {approved && weddingDay ? (
         <div className="w-full pt-6">
           <HappeningNow programme={approved.programme} serverNow={now.toISOString()} />
         </div>
       ) : null}
 
-      <section id="top" className="w-full scroll-mt-14 pt-10" aria-label="Your invitation">
+      <section id="top" className="guest-top" aria-label="Your invitation">
         <Envelope addressedTo={`For ${guest.firstName}`} monogram={teaser.monogram} onOpen={recordViewAction.bind(null, token)}>
           <p className="label text-[0.6rem] text-gold-deep">For {guest.fullName}</p>
           <p className="mt-3 font-display text-lg italic text-wine/80">You&rsquo;re invited to our wedding</p>
@@ -106,10 +106,10 @@ async function Invitation({ params }: { params: PageProps<"/i/[token]">["params"
         </Envelope>
       </section>
 
-      <section className="w-full text-center" aria-labelledby="welcome">
+      <section id="celebration" className="celebration-section" aria-labelledby="welcome">
         <Ornament />
         <h2 id="welcome" className="mt-5 font-display text-4xl sm:text-5xl">
-          {couple}
+          Counting down to forever
         </h2>
         <p className="label mt-3 text-gold">
           {date} · {formatTime(teaser.ceremonyStartAt)}
@@ -129,16 +129,16 @@ async function Invitation({ params }: { params: PageProps<"/i/[token]">["params"
 
       {approved && pass ? (
         <>
-          <GatePass pass={pass} />
           <Story title={approved.storyTitle} story={approved.story} photos={approved.photos} />
           <Programme items={approved.programme} />
-          <div id="details" className="flex w-full scroll-mt-14 flex-col gap-10">
+          <div id="details" className="guest-details">
             <Venues venues={approved.venues} />
             <DressCode dressCode={approved.dressCode} />
             <GoodToKnow contributionInfo={approved.contributionInfo} />
             <Faq items={approved.faq} />
             <Contacts contacts={approved.contacts} />
           </div>
+          <GatePass pass={pass} />
         </>
       ) : (
         <DetailsAfterApproval />
@@ -146,7 +146,7 @@ async function Invitation({ params }: { params: PageProps<"/i/[token]">["params"
 
       <RsvpSection token={token} page={page} />
 
-      <footer className="text-center text-pearl/60">
+      <footer className="guest-footer">
         <Ornament className="mb-4" />
         <p className="font-display text-xl">With love, {couple}</p>
         <p className="label mt-1 text-[0.65rem]">{date}</p>
@@ -174,9 +174,11 @@ function RsvpSection({ token, page }: { token: string; page: Full }) {
   const answered = rsvp.attending !== null;
 
   return (
-    <section id="rsvp" aria-labelledby="rsvp-title" className="w-full scroll-mt-14 rounded-sm bg-ivory px-5 py-10 text-wine sm:px-10">
+    <section id="rsvp" aria-labelledby="rsvp-title" className="guest-rsvp">
+      <div className="guest-rsvp-inner">
+      <p className="label text-center text-gold-deep">A note to the couple</p>
       <h2 id="rsvp-title" className="text-center font-display text-4xl">
-        {answered ? "Your response" : "RSVP"}
+        {answered ? "Your response" : "Will you join us?"}
       </h2>
       <p className="mt-2 text-center text-sm text-wine/70">
         {rsvp.open ? `Kindly respond by ${formatDateTime(rsvp.deadline)}.` : "The RSVP deadline has passed."}
@@ -199,6 +201,7 @@ function RsvpSection({ token, page }: { token: string; page: Full }) {
       ) : (
         <p className="text-center">Please contact the couple if anything has changed.</p>
       )}
+      </div>
     </section>
   );
 }
@@ -248,8 +251,8 @@ function Neutral({ title, text }: { title: string; text?: string }) {
   return (
     <section className="flex flex-1 flex-col items-center justify-center gap-4 py-24 text-center">
       <Ornament />
-      <h1 className="font-display text-4xl text-gold">{title}</h1>
-      {text ? <p className="max-w-sm text-pearl/80">{text}</p> : null}
+      <h1 className="font-display text-4xl text-wine">{title}</h1>
+      {text ? <p className="max-w-sm text-wine/80">{text}</p> : null}
     </section>
   );
 }

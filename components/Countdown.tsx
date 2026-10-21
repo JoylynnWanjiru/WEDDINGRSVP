@@ -39,10 +39,10 @@ export function Countdown({ target }: { target: string }) {
   ];
 
   return (
-    <div className="grid grid-cols-4 gap-2 sm:gap-4" role="timer" aria-label={parts ? `${parts.days} days to go` : "Countdown"}>
+    <div className="guest-countdown" role="timer" aria-label={parts ? `${parts.days} days to go` : "Countdown"}>
       {cells.map(([label, value]) => (
-        <div key={label} className="flex min-w-16 flex-col items-center rounded-sm border border-gold/30 bg-wine-night/40 px-2 py-3 sm:min-w-20">
-          <span className="font-display text-3xl tabular-nums text-white sm:text-4xl" aria-hidden>
+        <div key={label}>
+          <span className="countdown-number" aria-hidden>
             {value === undefined ? "–" : String(value).padStart(2, "0")}
           </span>
           <span className="label mt-1 text-[0.6rem] text-gold">{label}</span>
