@@ -13,11 +13,12 @@ import { getDb } from "@/server/db/client";
 import { isAppError } from "@/server/errors";
 import { getPublicTeaser, type Teaser } from "@/server/services/invitation-page";
 import { formatDate, formatTime } from "@/server/utils/dates";
+import { shareMetadata } from "../_lib/share";
 
-export const metadata: Metadata = {
-  title: "You're invited",
-  description: "A private celebration.",
-};
+// The link preview when someone shares the site: names, date, invitation line.
+export function generateMetadata(): Promise<Metadata> {
+  return shareMetadata();
+}
 
 export default function PublicPage() {
   return (

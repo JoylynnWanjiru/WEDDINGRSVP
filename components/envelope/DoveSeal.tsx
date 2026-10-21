@@ -1,7 +1,8 @@
 // Gold wax seal with a white dove (spec §3 motifs). Pure SVG: crisp at any size, no image file.
 // `id` keeps gradient ids unique when more than one seal is on a page.
 
-export function DoveSeal({ id = "seal", monogram, className = "" }: { id?: string; monogram?: string | null; className?: string }) {
+// `size` sets pixel width/height, for generated images (app/opengraph-image.tsx) where CSS classes don't apply.
+export function DoveSeal({ id = "seal", monogram, className = "", size }: { id?: string; monogram?: string | null; className?: string; size?: number }) {
   // Irregular wax edge: a circle with 14 soft bumps.
   const bumps = Array.from({ length: 28 }, (_, i) => {
     const a = (i / 28) * Math.PI * 2;
@@ -10,7 +11,7 @@ export function DoveSeal({ id = "seal", monogram, className = "" }: { id?: strin
   }).join(" ");
 
   return (
-    <svg viewBox="0 0 100 100" className={className} role="img" aria-label="Gold wax seal with a dove">
+    <svg viewBox="0 0 100 100" width={size} height={size} className={className} role="img" aria-label="Gold wax seal with a dove">
       <defs>
         <radialGradient id={`${id}-wax`} cx="38%" cy="32%" r="75%">
           <stop offset="0%" stopColor="#E9D49A" />

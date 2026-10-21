@@ -19,6 +19,8 @@ const jost = Jost({
 export const metadata: Metadata = {
   title: { default: "You're invited", template: "%s" },
   description: "A private celebration.",
+  // Link previews need full addresses for their images (APP_URL is the live site).
+  metadataBase: new URL(process.env.APP_URL || "http://localhost:3000"),
 };
 
 export const viewport: Viewport = {
