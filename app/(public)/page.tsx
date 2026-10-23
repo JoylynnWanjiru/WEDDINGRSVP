@@ -3,15 +3,15 @@
 
 import type { Metadata } from "next";
 import { io } from "next/cache";
-import { Suspense } from "react";
+import { cache, Suspense } from "react";
 import { Countdown } from "@/components/Countdown";
-import { Envelope } from "@/components/envelope/Envelope";
+import { DismissEnvelope, EnvelopeHero, EnvelopeIntro, EnvelopeProvider } from "@/components/envelope/Envelope";
 import { RequestInviteForm } from "@/components/RequestInviteForm";
 import { Ornament } from "@/components/ui/Ornament";
 import { config } from "@/server/config";
 import { getDb } from "@/server/db/client";
 import { isAppError } from "@/server/errors";
-import { getPublicTeaser, type Teaser } from "@/server/services/invitation-page";
+import { getPublicTeaser } from "@/server/services/invitation-page";
 import { formatDate, formatTime } from "@/server/utils/dates";
 import { shareMetadata } from "../_lib/share";
 
@@ -20,14 +20,36 @@ export function generateMetadata(): Promise<Metadata> {
   return shareMetadata();
 }
 
+// The envelope overlay is in the static shell: it animates on the first bytes of HTML,
+// and only the monogram streams in once the database answers.
 export default function PublicPage() {
   return (
     <main className="guest-site flex w-full flex-1 flex-col text-center">
-      <Suspense fallback={<TeaserFallback />}>
-        <TeaserContent />
-      </Suspense>
+      <EnvelopeProvider
+        intro={<EnvelopeIntro address="For our dear guest" monogram={<Suspense fallback={null}><Monogram /></Suspense>} />}
+      >
+        <Suspense fallback={<TeaserFallback />}>
+          <TeaserContent />
+        </Suspense>
+      </EnvelopeProvider>
     </main>
   );
+}
+
+// One database read per request, shared by the monogram slot and the page body.
+const loadTeaser = cache(async () => {
+  await io(); // request time only: never touch the database while building
+  try {
+    return await getPublicTeaser(getDb(), config.weddingSlug());
+  } catch (err) {
+    if (!isAppError(err) || err.code !== "NOT_FOUND") throw err; // real errors go to app/error.tsx
+    return null;
+  }
+});
+
+async function Monogram() {
+  const teaser = await loadTeaser();
+  return teaser ? teaser.monogram || "Together" : null;
 }
 
 /** Prerendered shell: the envelope frame appears instantly while the details load. */
@@ -44,13 +66,7 @@ function TeaserFallback() {
 }
 
 async function TeaserContent() {
-  await io(); // request time only: never touch the database while building
-  let teaser: (Teaser & { acceptsRequests: boolean }) | null = null;
-  try {
-    teaser = await getPublicTeaser(getDb(), config.weddingSlug());
-  } catch (err) {
-    if (!isAppError(err) || err.code !== "NOT_FOUND") throw err; // real errors go to app/error.tsx
-  }
+  const teaser = await loadTeaser();
   if (!teaser) return <ComingSoon />;
 
   const couple = `${teaser.brideName} & ${teaser.groomName}`;
@@ -59,7 +75,7 @@ async function TeaserContent() {
   return (
     <>
       <section id="top" className="guest-top" aria-label="Invitation">
-        <Envelope addressedTo="For our dear guest" monogram={teaser.monogram}>
+        <EnvelopeHero monogram={teaser.monogram}>
           <p className="label text-[0.65rem] text-gold-deep">Together with their families</p>
           <h1 className="mt-3 font-display text-4xl leading-tight text-wine sm:text-5xl">
             {teaser.brideName}
@@ -67,7 +83,7 @@ async function TeaserContent() {
             {teaser.groomName}
           </h1>
           <p className="label mt-4 text-[0.65rem] text-wine">{date}</p>
-        </Envelope>
+        </EnvelopeHero>
       </section>
 
       <section id="celebration" className="celebration-section" aria-labelledby="names">
@@ -120,6 +136,7 @@ async function TeaserContent() {
 function ComingSoon() {
   return (
     <section className="flex flex-1 flex-col items-center justify-center gap-4 py-24">
+      <DismissEnvelope />
       <Ornament />
       <h1 className="font-display text-4xl">Coming soon</h1>
       <p className="text-wine/80">The invitation is being prepared.</p>

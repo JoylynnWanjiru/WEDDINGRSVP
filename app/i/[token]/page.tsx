@@ -3,9 +3,9 @@
 // locked sections, including the gate pass, are only rendered (and fetched) for approved guests.
 
 import { redirect } from "next/navigation";
-import { Suspense } from "react";
+import { cache, Suspense } from "react";
 import { Countdown } from "@/components/Countdown";
-import { Envelope } from "@/components/envelope/Envelope";
+import { DismissEnvelope, EnvelopeHero, EnvelopeIntro, EnvelopeProvider, TrackOpen } from "@/components/envelope/Envelope";
 import { GatePass } from "@/components/GatePass";
 import { HappeningNow } from "@/components/HappeningNow";
 import { InvitationNav, type NavItem } from "@/components/InvitationNav";
@@ -25,14 +25,41 @@ import { getInvitationPage, type InvitationPage } from "@/server/services/invita
 import { addDays, formatDate, formatDateTime, formatTime, nairobiDate } from "@/server/utils/dates";
 import { recordViewAction } from "./actions";
 
+// One database read per request, shared by the envelope slots and the page body.
+const loadPage = cache((token: string) => getInvitationPage(getDb(), token));
+
+type Params = PageProps<"/i/[token]">["params"];
+
+// The envelope overlay is outside every Suspense boundary, so it is part of the static
+// App Shell and starts animating before the database answers. Only the guest's first name
+// and the monogram stream into it, and only for links that may show them (BR-2, BR-4).
 export default function InvitationRoute({ params }: PageProps<"/i/[token]">) {
   return (
     <main className="guest-site flex w-full flex-1 flex-col items-center">
-      <Suspense fallback={<Loading />}>
-        <Invitation params={params} />
-      </Suspense>
+      <EnvelopeProvider
+        intro={
+          <EnvelopeIntro
+            address={<Suspense fallback={null}><Addressee params={params} /></Suspense>}
+            monogram={<Suspense fallback={null}><Monogram params={params} /></Suspense>}
+          />
+        }
+      >
+        <Suspense fallback={<Loading />}>
+          <Invitation params={params} />
+        </Suspense>
+      </EnvelopeProvider>
     </main>
   );
+}
+
+async function Addressee({ params }: { params: Params }) {
+  const page = await loadPage((await params).token);
+  return "guest" in page && page.level !== "not_approved" ? `For ${page.guest.firstName}` : null;
+}
+
+async function Monogram({ params }: { params: Params }) {
+  const page = await loadPage((await params).token);
+  return "teaser" in page ? page.teaser.monogram || "Together" : null;
 }
 
 function Loading() {
@@ -50,9 +77,9 @@ function Loading() {
 
 type Full = Extract<InvitationPage, { level: "invited" | "declined" | "approved" }>;
 
-async function Invitation({ params }: { params: PageProps<"/i/[token]">["params"] }) {
+async function Invitation({ params }: { params: Params }) {
   const { token } = await params; // request-time: the suspension point
-  const page = await getInvitationPage(getDb(), token);
+  const page = await loadPage(token);
 
   if (page.level === "public") redirect("/"); // BR-4: an unknown link behaves like no link
   if (page.level === "revoked") return <Neutral title="This invitation is no longer active" />;
@@ -94,7 +121,8 @@ async function Invitation({ params }: { params: PageProps<"/i/[token]">["params"
       ) : null}
 
       <section id="top" className="guest-top" aria-label="Your invitation">
-        <Envelope addressedTo={`For ${guest.firstName}`} monogram={teaser.monogram} onOpen={recordViewAction.bind(null, token)}>
+        <TrackOpen onOpen={recordViewAction.bind(null, token)} />
+        <EnvelopeHero monogram={teaser.monogram}>
           <p className="label text-[0.6rem] text-gold-deep">For {guest.fullName}</p>
           <p className="mt-3 font-display text-lg italic text-wine/80">You&rsquo;re invited to our wedding</p>
           <h1 className="mt-2 font-display text-4xl leading-tight text-wine sm:text-5xl">
@@ -103,7 +131,7 @@ async function Invitation({ params }: { params: PageProps<"/i/[token]">["params"
             {teaser.groomName}
           </h1>
           <p className="label mt-3 text-[0.6rem] text-wine">{date}</p>
-        </Envelope>
+        </EnvelopeHero>
       </section>
 
       <section id="celebration" className="celebration-section" aria-labelledby="welcome">
@@ -250,6 +278,7 @@ function ResponseSummary({ members, attending }: { members: Full["rsvp"]["member
 function Neutral({ title, text }: { title: string; text?: string }) {
   return (
     <section className="flex flex-1 flex-col items-center justify-center gap-4 py-24 text-center">
+      <DismissEnvelope />
       <Ornament />
       <h1 className="font-display text-4xl text-wine">{title}</h1>
       {text ? <p className="max-w-sm text-wine/80">{text}</p> : null}
