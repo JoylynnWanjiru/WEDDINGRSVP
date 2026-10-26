@@ -2,7 +2,7 @@
 
 > Companion to [`PROJECT_SPEC.md`](PROJECT_SPEC.md) (stack, colours, pages, folder structure).
 > This blueprint defines **behaviour**: who acts, how an invitation moves, the rules, and the edge cases.
-> Prepared 19 October 2026 · Updated 20 October 2026 (decisions D1–D23, §16) · Wedding date **Saturday 19 December 2026** (confirmed 20 Oct 2026) · Items marked **[ASSUMPTION]** need confirming.
+> Prepared 19 October 2026 · Updated 26 October 2026 (decisions D1–D27, §16; v2 rental plan, §17) · Wedding date **Saturday 19 December 2026** (confirmed 20 Oct 2026) · Items marked **[ASSUMPTION]** need confirming.
 
 ---
 
@@ -336,7 +336,7 @@ No external system calls into this app, so there is **no public API contract** t
 
 ## 12. Non-goals (v1)
 
-- Multi-couple sign-up, theme editor, billing (v2).
+- Multi-couple sign-up, theme editor, billing (v2: planned in §17, D27).
 - Payments or M-Pesa integration (contribution details can be shown as text only).
 - Official WhatsApp API / automated WhatsApp sending.
 - Guest accounts or passwords — the personal link is the identity.
@@ -441,3 +441,74 @@ Choices that refine or change earlier drafts of this blueprint, with their reaso
 | D24 | **A "Yes" is approved automatically.** When `weddings.auto_approve` is on (default), a Yes from DRAFT, SENT, VIEWED or DECLINED moves to APPROVED in the same transaction, through `nextStatus()` and logged as `system`; the guest gets the pass email instead of the receipt. It stays in AWAITING_APPROVAL for the couple when the party would pass venue capacity (BR-11), when an approved guest adds someone (BR-8), or when it was already waiting. The couple can turn it off in settings to approve every Yes by hand. | Developer decision with the couple (21 Oct 2026): the seat allowance already says how many people each guest may bring, so approving hundreds of Yes responses by hand added work and delay without real protection. The gate pass, the seat allowance and instant revoke still control who gets in. | A1, BR-1, BR-10, BR-11, E2, §5 |
 | D25 | **Vendors are a separate list, not guests.** The couple adds each vendor team (company, role, contact person, phone, email, staff count, meal count, arrival time, instructions for the vendor, private notes) in the admin. Each gets a personal link (`/vendor/[token]`, derived like invite tokens with its own purpose, D1) showing only what they need to work: their arrival time and instructions, the programme, venues with directions, the couple's contacts and their gate pass. Never Our Story, photos, FAQ, dress code, the guest list or other vendors. The vendor pass is a signed JWT with its own audience (`vendor-pass`), scanned by the same scanner and checked by the same rules as a guest pass (BR-13 to BR-16, E23), with the team's staff count as the party size; the usher sees "Vendor", role, company and staff count. Removing a vendor ends the link and the pass at once and bumps the pass version, so restoring doesn't revive old screenshots (as D13). A new link bumps both versions. Vendors never count toward guest totals, approvals or the capacity warning (BR-11); the dashboard shows vendor teams, staff, meals and arrivals on their own line, and the vendor export doubles as the caterer's vendor meal count. Links go out by copy or WhatsApp only, not the email queue. Vendor details are personal data and are deleted with guest data (BR-23). | The couple's decision (21 Oct 2026), from a recommendation to include vendors: vendors need to get in early, be fed and know the schedule, but mustn't see guests' details or be mistaken for guests in the numbers. | §4, BR-1, BR-11, BR-13 to BR-16, BR-23, §8, spec §4, §8, §9 |
 | D26 | **Two-step admin sign-in with named admins.** Each person who can sign in is a row in `admins` (name, email) for one wedding. Signing in needs their email, the shared admin password (`ADMIN_PASSWORD_HASH`, D4) and a 6-digit code from an authenticator app (RFC 6238: SHA-1, a new code every 30 s; the site accepts each code for 90 s after it appears, and one step early for a fast phone clock). The authenticator secret is `HMAC(TOKEN_SECRET, admin id + setup version)`, never stored, so a database leak alone reveals none (like D1). Each code works once: the used time step is stored and the update only succeeds for a later step, so two racing sign-ins can't share a code. A wrong email, password or code all give the same message. Sign-in is rate-limited per client and per email (E20). A new admin, or one whose authenticator was reset, gets a one-time setup link (`/admin/setup/[token]`, signed, 72 hours) that shows their QR code until they type a code back; a bad, used or replaced link looks like no link (BR-4). Admins are added, reset and removed in Settings → Who can sign in, and nobody can remove themselves; the very first admin comes from `npm run admin:add`. Sessions carry the admin's id, wedding and `session_version`: removing an admin or resetting their authenticator ends their sessions at once, and changing the password still ends everyone's (D5). The activity log names which admin acted, never their email. | The couple's request (26 Oct 2026): a single shared password was the only thing protecting every guest's personal data. A code from a phone stops a leaked or guessed password from being enough, and naming each admin means a lost phone or a departing planner can be dealt with without changing everyone's password. Replaces A5's shared login; D6's equal rights for the planner stay. | A5, D5, D6, §4, E20, E24, E28, §8, §13, spec §2, §8, §12 |
+| D27 | **Direction for v2: rent the system to other couples as one multi-tenant app.** One codebase and one deployment serve many weddings, each rented for a set period. A client's needs are met by settings, content, looks, templates and feature switches, **never by a separate copy of the code**. New features are built once in the shared code and switched on per wedding. **Planned, not built**: the plan and its open questions are in §17. v1 rules are unchanged until each part is decided and built. | The owner's decision (26 Oct 2026): rent the system out without rebuilding it for each client. The data model is already scoped by `wedding_id` and admins already belong to one wedding (D26), so one shared app costs far less than maintaining a copy per client, where every fix would have to be made N times. | §12, §17, D1, D26, BR-17, BR-23 |
+
+---
+
+## 17. v2 roadmap: renting the system to other couples (planned, D27)
+
+> **Status: planned, not built.** Nothing here changes a v1 rule. When a part is built, record its decision in §16 (D28, D29, …) and update the sections it affects.
+
+### 17a. Goal
+
+One app, many weddings. Each client (a couple or their planner) rents the system for a set period. Their wedding gets its own web address, look, content, admins, guests and gate, fully separate from every other wedding. Customising for a client means changing data and switches, not code.
+
+### 17b. What already supports it
+
+| Already built | Where |
+|---|---|
+| Every guest, vendor, content and log table belongs to one wedding (`wedding_id`, directly or through its invitation or vendor) | §8, `server/db/schema.ts` |
+| Every admin service is scoped to `ctx.weddingId` | `server/services/admin/context.ts` |
+| Admins belong to one wedding; one wedding's session can't open another (tested) | D26 |
+| Couple-specific content lives in the database, not in code | §9 Maintainability |
+| Colours are CSS variables; `weddings.theme` exists (unused) | `app/globals.css`, §8 |
+| Feature switches per wedding already exist (`auto_approve`, public request form) | D21, D24 |
+| Data is deleted per wedding after the event | BR-23 |
+
+### 17c. What must change (in build order)
+
+| # | Change | Today | Planned |
+|---|---|---|---|
+| 1 | **Which wedding a visitor sees** | One `WEDDING_SLUG` setting (9 places in `app/`) | Resolved from the web address: a subdomain (`couple.<brand>.com`) or the client's own domain, stored on the wedding. Unknown addresses show a neutral page. |
+| 2 | **Rental period** | None | Each wedding has `rental_starts_at` / `rental_ends_at` and a state: *setup → live → read-only after the event → exported → purged*. BR-23's purge is the last step. A suspended or expired wedding shows a neutral page, never another wedding's data. |
+| 3 | **Owner console** (the person renting the system out) | `npm run admin:add` only | A separate area for the owner, with its own two-step sign-in: create a wedding (from a template), set its address and rental dates, create its first admin (setup link as in D26), suspend or end it. The owner never sees guest details by default. |
+| 4 | **Email** | One Gmail account for everything, ~500/day in total (BR-17) | A transactional email service (e.g. Resend, Postmark or Amazon SES) with the couple's name as sender and a daily cap per wedding, or each client connects their own Gmail. One personal Gmail can't carry many weddings. |
+| 5 | **Looks and templates** | One burgundy and gold design | Per-wedding colours, fonts, monogram and images (`weddings.theme`), plus a few **templates** (page designs) each wedding picks one of. "Template weddings" with sample content make a new client a copy, not a build. Gold-on-ivory contrast rules apply to every theme (checked when a theme is saved). |
+| 6 | **Secrets per wedding** | One `TOKEN_SECRET` derives every link, pass and authenticator (D1) | A secret per wedding, or random tokens plus an encrypted copy (D1's v2 note), so one wedding's change can't break another's. |
+| 7 | **Billing** | None | Manual invoices or M-Pesa at first; automate only once there are repeat clients. |
+
+### 17d. How a client's own needs are met
+
+Never fork the code for one client. Every request fits one of these levels:
+
+| Client wants… | Handled by |
+|---|---|
+| Their names, story, venues, programme, FAQ, photos | **Content**, edited in their admin (works today) |
+| Their colours, fonts, monogram | **Look**, stored per wedding |
+| A different overall layout or style | **Template**, picked per wedding |
+| Sections in another order, or some hidden | **Section list** per wedding: which guest-page sections show, in what order |
+| A feature that doesn't exist yet (e.g. gift registry, seating plan, another language) | **New feature**, built once in the shared code behind a per-wedding switch (off by default), then sold as an add-on to later clients |
+| Something that isn't a wedding (conference, funeral) | A separate product on the same base: decide case by case |
+
+**Rules for new features:**
+- Off by default, so existing weddings look and behave exactly as before.
+- Tests cover the switch both on and off, and its locked content still goes through `requireApproved` (BR-1 to BR-4).
+- Built and checked on a branch with a Vercel preview link before release.
+- **Change freeze:** no risky release in the week of any live client's wedding, because one release reaches every wedding at once.
+
+### 17e. Before charging anyone
+
+- **Hosting plan:** Vercel's free Hobby plan is for non-commercial use only; renting the system out needs the Pro plan. Check the Neon plan limits against the number of weddings.
+- **Data protection (Kenya Data Protection Act):** the owner holds guests' personal data on clients' behalf, which typically makes them a data processor. Each client gets a short agreement covering what is held, why, and the deletion date. Check with the Office of the Data Protection Commissioner, or a lawyer, whether registration is required.
+- **Isolation tests:** for every route and service, an admin, usher, guest or vendor of wedding A gets nothing from wedding B (extends the D26 tests).
+
+### 17f. Open questions
+
+| # | Question |
+|---|---|
+| Q1 | Subdomains of one brand domain, clients' own domains, or both? |
+| Q2 | Who sends email: one service for all clients, or each client's own account? |
+| Q3 | Pricing: per wedding, per guest count, per feature, or per month of rental? |
+| Q4 | How long after the event does a client keep access before read-only and purge? (v1: 30 days, A10) |
+| Q5 | Can the owner open a client's admin for support, and if so, how is that logged and agreed? |
+| Q6 | Which templates and add-on features to offer first? |
