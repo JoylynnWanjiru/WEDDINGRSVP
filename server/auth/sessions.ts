@@ -2,16 +2,20 @@
 // strings; the Next.js layer only moves them in and out of HTTP-only cookies.
 //
 // Sessions end immediately when the secret behind them changes (BLUEPRINT D5):
-// admin sessions carry a fingerprint of ADMIN_PASSWORD_HASH, usher sessions carry
-// usher_session_version, which is bumped on PIN change and "sign out all ushers".
+// admin sessions carry a fingerprint of ADMIN_PASSWORD_HASH and the admin's
+// session_version (D26), usher sessions carry usher_session_version, which is
+// bumped on PIN change and "sign out all ushers".
 
 import { createHash, randomBytes, scrypt as scryptCb, timingSafeEqual, type ScryptOptions } from "node:crypto";
-import { eq, sql } from "drizzle-orm";
+import { and, eq, isNull, lt, or, sql } from "drizzle-orm";
 import { config } from "../config";
 import type { Db } from "../db/client";
-import { adminSettings } from "../db/schema";
+import { admins, adminSettings } from "../db/schema";
 import { AppError } from "../errors";
+import { logActivity } from "../services/activity";
+import { isUuid } from "./admins";
 import { signJwt, verifyJwt } from "./tokens";
+import { matchCode, totpSecretFor } from "./totp";
 
 // --- password / PIN hashing (BLUEPRINT D4) ---
 // scrypt with OWASP's recommended cost: N=2^17, r=8, p=1 (~128 MB, ~0.2 s).
@@ -48,16 +52,34 @@ export async function verifySecret(secret: string, stored: string): Promise<bool
 
 const fingerprint = (value: string) => createHash("sha256").update(value).digest("base64url").slice(0, 16);
 
-// --- admin (A5: couple and planner share one login in v1) ---
+// --- admin (D26: named admins; the shared password plus each person's authenticator code) ---
 
 export const ADMIN_COOKIE = "admin_session";
 export const ADMIN_SESSION_TTL = "7d";
 
-/** Returns a session token on success. Rate limiting is applied by the caller (E20). */
-export async function loginAdmin(password: string): Promise<string | null> {
+export type AdminLogin = { email: string; password: string; code: string };
+
+/**
+ * Returns a session token, or null when any detail is wrong (it never says which).
+ * Rate limiting is applied by the caller (E20).
+ */
+export async function loginAdmin(db: Db, weddingId: string, input: AdminLogin, now: Date = new Date()): Promise<string | null> {
   const stored = config.adminPasswordHash();
-  if (!(await verifySecret(password, stored))) return null;
-  return signJwt("admin", "admin", { pf: fingerprint(stored) }, ADMIN_SESSION_TTL);
+  if (!(await verifySecret(input.password, stored))) return null;
+  const email = input.email.trim().toLowerCase();
+  const [admin] = await db.select().from(admins).where(and(eq(admins.weddingId, weddingId), eq(admins.email, email)));
+  if (!admin?.totpConfirmedAt) return null; // not set up yet: only the setup link works
+  const step = matchCode(totpSecretFor(admin.id, admin.setupVersion), input.code, now);
+  if (step === null) return null;
+  // Each code works once, even when two sign-ins race with the same code.
+  const used = await db
+    .update(admins)
+    .set({ lastTotpStep: step })
+    .where(and(eq(admins.id, admin.id), or(isNull(admins.lastTotpStep), lt(admins.lastTotpStep, step))))
+    .returning({ id: admins.id });
+  if (!used.length) return null;
+  await logActivity(db, { weddingId, actor: "admin", actorLabel: admin.name, action: "admin_signed_in" });
+  return signJwt("admin", admin.id, { pf: fingerprint(stored), w: weddingId, av: admin.sessionVersion }, ADMIN_SESSION_TTL);
 }
 
 declare const adminBrand: unique symbol;
@@ -65,17 +87,23 @@ declare const adminBrand: unique symbol;
 /**
  * Proof of a valid admin session. Only requireAdmin() creates one, and every
  * admin service requires it, so calling one without checking the session is a
- * compile error (BR-10).
+ * compile error (BR-10). `label` is the admin's name, for the activity log.
  */
-export type AdminSession = { readonly label: string; readonly [adminBrand]: true };
+export type AdminSession = { readonly label: string; readonly adminId: string; readonly weddingId: string; readonly [adminBrand]: true };
 
-/** E24: changing ADMIN_PASSWORD_HASH ends every existing admin session. */
-export async function requireAdmin(sessionToken: string | undefined | null): Promise<AdminSession> {
+/**
+ * E24: changing ADMIN_PASSWORD_HASH ends every admin session. D26: so does removing
+ * that admin or resetting their authenticator.
+ */
+export async function requireAdmin(db: Db, sessionToken: string | undefined | null): Promise<AdminSession> {
   const payload = sessionToken ? await verifyJwt(sessionToken, "admin") : null;
-  if (!payload || payload.pf !== fingerprint(config.adminPasswordHash())) {
-    throw new AppError("UNAUTHORIZED", "Please sign in.");
+  if (payload && isUuid(payload.sub) && payload.pf === fingerprint(config.adminPasswordHash())) {
+    const [a] = await db.select().from(admins).where(eq(admins.id, payload.sub));
+    if (a?.totpConfirmedAt && a.weddingId === payload.w && a.sessionVersion === payload.av) {
+      return { label: a.name, adminId: a.id, weddingId: a.weddingId } as AdminSession;
+    }
   }
-  return { label: "admin" } as AdminSession;
+  throw new AppError("UNAUTHORIZED", "Please sign in.");
 }
 
 // --- ushers (A6: one shared PIN, each device named, e.g. "Gate 1") ---

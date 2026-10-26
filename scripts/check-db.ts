@@ -6,7 +6,9 @@
 
 import { randomUUID } from "node:crypto";
 import { eq, sql } from "drizzle-orm";
+import { adminSetupLink, confirmAdminSetup, createAdmin } from "../server/auth/admins";
 import { hashSecret, loginAdmin, requireAdmin, loginUsher, requireUsher, setUsherPin } from "../server/auth/sessions";
+import { codeAt, stepAt, totpSecretFor } from "../server/auth/totp";
 import { config } from "../server/config";
 import { getDb } from "../server/db/client";
 import { invitations, weddings } from "../server/db/schema";
@@ -68,7 +70,15 @@ async function main() {
     // Exercise the couple's manual approval; D24 auto-approval is covered by the tests.
     await db.update(weddings).set({ autoApprove: false }).where(eq(weddings.id, weddingId));
     process.env.ADMIN_PASSWORD_HASH = await hashSecret("smoke-test-password"); // in memory only
-    const ctx = { session: await requireAdmin(await loginAdmin("smoke-test-password")), weddingId };
+    // D26: a throwaway admin sets up an authenticator and signs in with the next code.
+    const admin = await createAdmin(db, weddingId, { name: "Smoke Test Admin", email: "smoke-test@example.com" });
+    const secret = totpSecretFor(admin.id, admin.setupVersion);
+    const now = new Date();
+    await confirmAdminSetup(db, (await adminSetupLink(admin)).split("/admin/setup/")[1], codeAt(secret, stepAt(now)), now);
+    const later = new Date(now.getTime() + 30_000);
+    const code = codeAt(secret, stepAt(later));
+    const session = await loginAdmin(db, weddingId, { email: "smoke-test@example.com", password: "smoke-test-password", code }, later);
+    const ctx = { session: await requireAdmin(db, session), weddingId };
     let invitationId = "";
     let token = "";
 

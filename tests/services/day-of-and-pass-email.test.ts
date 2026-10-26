@@ -53,7 +53,7 @@ describe("N2: happening now / next", () => {
 describe("D14: the approval email carries the QR inline", () => {
   it("attaches a PNG referenced from the HTML by cid", async () => {
     const wedding = await createWedding(db);
-    const ctx = await adminCtx(wedding.id);
+    const ctx = await adminCtx(db, wedding.id);
     const { invitation } = await createInvitation(db, wedding.id, { status: "awaiting_approval", email: "qr@example.com" });
     await approveInvitation(db, ctx, invitation.id, { now: NOW });
     const mailer = new FakeMailer();

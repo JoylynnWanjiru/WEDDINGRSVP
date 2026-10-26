@@ -26,7 +26,7 @@ describe("Tools page status", () => {
   it("shows whether a PIN is set, counts guest data, and the BR-23 purge date; after a purge the counts are zero", async () => {
     const wedding = await createWedding(db);
     await db.update(weddings).set({ weddingDate: "2026-12-19", purgeAfterDays: 30 }).where(eq(weddings.id, wedding.id));
-    const ctx = await adminCtx(wedding.id);
+    const ctx = await adminCtx(db, wedding.id);
     await createInvitation(db, wedding.id, { status: "approved" });
     expect(await getGateStatus(db, ctx)).toMatchObject({ pinSet: false, invitations: 1, autoPurgeOn: "2027-01-18", purgedAt: null });
     await changeUsherPin(db, ctx, "1234");
@@ -40,7 +40,7 @@ describe("Tools page status", () => {
 describe("E26: PIN and sign-out", () => {
   it("changing the PIN ends every scanner session and is logged without the PIN", async () => {
     const wedding = await createWedding(db);
-    const ctx = await adminCtx(wedding.id);
+    const ctx = await adminCtx(db, wedding.id);
     await changeUsherPin(db, ctx, "1111");
     const session = await loginUsher(db, wedding.id, "1111", "Gate 1");
     await changeUsherPin(db, ctx, "2222");
@@ -51,7 +51,7 @@ describe("E26: PIN and sign-out", () => {
 
   it("'sign out all ushers' keeps the PIN", async () => {
     const wedding = await createWedding(db);
-    const ctx = await adminCtx(wedding.id);
+    const ctx = await adminCtx(db, wedding.id);
     await changeUsherPin(db, ctx, "1111");
     const session = await loginUsher(db, wedding.id, "1111", "Gate 1");
     await signOutUshers(db, ctx);
@@ -63,7 +63,7 @@ describe("E26: PIN and sign-out", () => {
 describe("§7: correcting arrivals", () => {
   it("fixes the count and status, keeps the original check-in rows, and logs the reason", async () => {
     const wedding = await createWedding(db);
-    const ctx = await adminCtx(wedding.id);
+    const ctx = await adminCtx(db, wedding.id);
     const usher = await usherFor(db, wedding.id);
     const { invitation } = await createInvitation(db, wedding.id, { status: "approved", partySize: 3 });
     await admit(db, usher, { scanned: scanUrl(await passTokenFor(invitation)) }, 3, DAY); // mis-tap: only 2 came
@@ -80,7 +80,7 @@ describe("§7: correcting arrivals", () => {
 
   it("needs a reason, a count within the party, and an approved guest", async () => {
     const wedding = await createWedding(db);
-    const ctx = await adminCtx(wedding.id);
+    const ctx = await adminCtx(db, wedding.id);
     const { invitation } = await createInvitation(db, wedding.id, { status: "approved", partySize: 2 });
     await expect(correctArrivals(db, ctx, invitation.id, 1, " ")).rejects.toMatchObject({ code: "VALIDATION" });
     await expect(correctArrivals(db, ctx, invitation.id, 3, "x")).rejects.toMatchObject({ code: "VALIDATION" });

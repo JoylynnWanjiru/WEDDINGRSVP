@@ -6,6 +6,7 @@
 import { refresh } from "next/cache";
 import { getDb } from "@/server/db/client";
 import { isAppError } from "@/server/errors";
+import { addAdmin, removeAdmin, resetAdmin } from "@/server/services/admin/admins";
 import {
   deleteContact,
   deleteFaqItem,
@@ -62,6 +63,20 @@ export async function deleteItemAction(kind: ItemKind, id: string) {
 
 export async function saveDressCodeAction(values: { text: string; swatches: { name: string; hex: string }[] }) {
   return run((ctx) => setDressCode(getDb(), ctx, values));
+}
+
+// D26: who can sign in. Each returns the new one-time setup link where there is one.
+
+export async function addAdminAction(values: { name: string; email: string }) {
+  return run((ctx) => addAdmin(getDb(), ctx, values));
+}
+
+export async function resetAdminAction(id: string) {
+  return run((ctx) => resetAdmin(getDb(), ctx, id));
+}
+
+export async function removeAdminAction(id: string) {
+  return run((ctx) => removeAdmin(getDb(), ctx, id));
 }
 
 /** Paste a Google Maps link (short or long) or "lat, lng" → coordinates for the venue form. */

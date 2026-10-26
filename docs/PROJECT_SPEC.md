@@ -61,7 +61,7 @@ A personalised wedding website and guest-management system. It replaces printed 
 | QR codes (create) | **`qrcode`** | Generated server-side as SVG/PNG |
 | QR codes (scan) | **`html5-qrcode`** | Ushers scan in their phone browser; no app install |
 | Signed tokens | **`jose`** | Personal invite tokens, gate-pass tokens, admin session cookie |
-| Admin login | Single **admin password** (env var) + signed HTTP-only cookie | Add usher accounts with a separate PIN (see §9) |
+| Admin login | Named admins: own email + shared **admin password** (env var) + **authenticator-app code** (TOTP on `node:crypto`, no extra package; BLUEPRINT D26) → signed HTTP-only cookie | Add usher accounts with a separate PIN (see §9) |
 | Maps / location | **Google Maps link** (`https://www.google.com/maps/dir/?api=1&destination=LAT,LNG`) | Free; opens turn-by-turn directions on the guest's phone |
 | Images | Stored in `/public`, pre-compressed **`.webp`**, `unoptimized` where large | Stays under Vercel's free image-transformation limit |
 | Scheduled jobs | **Vercel Cron** (once per day on Hobby) | Daily reminder emails to non-responders |
@@ -325,7 +325,7 @@ The admin area is **only for the couple and planner**. Guests never see it.
 | Role | Access |
 |---|---|
 | Admin (couple) | Everything |
-| Planner | v1: same login and rights as the couple (BLUEPRINT D6). v2: separate login, everything except deleting data / changing the admin password |
+| Planner | v1: their own sign-in (BLUEPRINT D26) with the same rights as the couple (D6). v2: a role without deleting data / changing the admin password |
 | Usher | `/scan` only, with a shared PIN |
 | Vendor | `/vendor/[token]` only, their own page (BLUEPRINT D25) |
 
@@ -394,7 +394,7 @@ Storage estimate for 500 guests: well under 10 MB — far inside Neon's 1 GB fre
 
 - Invite tokens: 32 bytes, URL-safe, unguessable; only a **hash** is stored in the DB. How they are made, and why `TOKEN_SECRET` must never change once invitations go out: BLUEPRINT D1.
 - Gate pass: signed JWT, checked live; `passVersion` invalidates old passes.
-- Admin: password stored as an env var hash (scrypt, BLUEPRINT D4); session in a signed, HTTP-only, `SameSite=Lax` cookie; rate-limit login attempts. Changing the password ends every session (D5).
+- Admin: password stored as an env var hash (scrypt, BLUEPRINT D4); session in a signed, HTTP-only, `SameSite=Lax` cookie; rate-limit login attempts. Changing the password ends every session (D5). Two-step sign-in with each admin's authenticator app, managed in Settings → Who can sign in (D26).
 - Usher PIN: hashed; scanner endpoints only return name + party size. Changing the PIN, or "sign out all ushers", ends every usher session (D5).
 - **Approval gate in one place:** a single server helper (`requireApproved(token)`) used by every page, server action and API route that returns locked content (story, programme, venue, dress code, FAQ, contacts, pass, day-of). Locked data is fetched only after it passes, so it never reaches the browser of an unapproved visitor.
 - Gate-pass tokens are only issued at approval and are checked live at the gate.

@@ -93,6 +93,27 @@ export const adminSettings = pgTable("admin_settings", {
   ...timestamps,
 });
 
+// D26: the people who can sign in to the admin. Each has their own authenticator app.
+export const admins = pgTable(
+  "admins",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    weddingId: uuid("wedding_id")
+      .notNull()
+      .references(() => weddings.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    email: text("email").notNull(), // lower-case; what they type to sign in
+    // The authenticator secret is derived from TOKEN_SECRET, the id and this version; it is
+    // never stored. Resetting bumps it: a new secret, and the old setup link stops working.
+    setupVersion: integer("setup_version").notNull().default(1),
+    totpConfirmedAt: tz("totp_confirmed_at"), // null until they scan the QR code and type a code back
+    lastTotpStep: integer("last_totp_step"), // each code works once
+    sessionVersion: integer("session_version").notNull().default(1), // bumped on reset: their sessions end
+    ...timestamps,
+  },
+  (t) => [uniqueIndex("admins_wedding_email_uq").on(t.weddingId, t.email)],
+);
+
 export const venues = pgTable(
   "venues",
   {
@@ -405,6 +426,7 @@ export const rateLimits = pgTable("rate_limits", {
 });
 
 export type Wedding = typeof weddings.$inferSelect;
+export type Admin = typeof admins.$inferSelect;
 export type Invitation = typeof invitations.$inferSelect;
 export type InvitationRequest = typeof invitationRequests.$inferSelect;
 export type PartyMember = typeof partyMembers.$inferSelect;

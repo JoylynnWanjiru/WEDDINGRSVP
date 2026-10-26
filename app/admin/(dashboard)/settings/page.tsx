@@ -3,8 +3,10 @@
 import Link from "next/link";
 import { Suspense, type ReactNode } from "react";
 import { ContactsEditor, DressCodeEditor, FaqEditor, PhotosEditor, ProgrammeEditor, VenuesEditor } from "@/components/admin/settings/Editors";
+import { AdminsEditor } from "@/components/admin/settings/AdminsEditor";
 import { WeddingForm } from "@/components/admin/settings/WeddingForm";
 import { getDb } from "@/server/db/client";
+import { listAdmins } from "@/server/services/admin/admins";
 import { getSettings } from "@/server/services/admin/settings";
 import { getAdmin } from "../../_lib/auth";
 
@@ -38,7 +40,7 @@ function Panel({ id, title, hint, children, open }: { id: string; title: string;
 
 async function Settings() {
   const ctx = await getAdmin();
-  const s = await getSettings(getDb(), ctx);
+  const [s, admins] = await Promise.all([getSettings(getDb(), ctx), listAdmins(getDb(), ctx)]);
   const w = s.wedding;
   const iso = (d: Date) => d.toISOString();
 
@@ -53,6 +55,7 @@ async function Settings() {
           ["#faq", "FAQ"],
           ["#contacts", "Contacts"],
           ["#photos", "Photos"],
+          ["#admins", "Sign-in"],
         ].map(([href, label]) => (
           <a key={href} href={href} className="inline-flex min-h-11 items-center rounded-full border border-wine/15 bg-white px-4 hover:border-gold-deep">
             {label}
@@ -111,6 +114,10 @@ async function Settings() {
 
       <Panel id="photos" title="Photos" hint="For Our story">
         <PhotosEditor items={s.photos.map((p) => ({ id: p.id, section: p.section, src: p.src, alt: p.alt, sortOrder: p.sortOrder }))} />
+      </Panel>
+
+      <Panel id="admins" title="Who can sign in" hint={`${admins.length} ${admins.length === 1 ? "person" : "people"} · two-step sign-in`}>
+        <AdminsEditor admins={admins} />
       </Panel>
 
       <p className="text-sm text-wine/70">

@@ -26,7 +26,7 @@ afterAll(() => close());
 
 async function setup(values: Parameters<typeof createInvitation>[2] = {}) {
   const wedding = await createWedding(db);
-  const ctx = await adminCtx(wedding.id);
+  const ctx = await adminCtx(db, wedding.id);
   const { invitation, token } = await createInvitation(db, wedding.id, { status: "awaiting_approval", ...values });
   const reload = async () => (await db.select().from(invitations).where(eq(invitations.id, invitation.id)))[0];
   return { wedding, ctx, invitation, token, reload };
@@ -42,7 +42,7 @@ describe("approve", () => {
     const [email] = await db.select().from(emailQueue).where(eq(emailQueue.invitationId, invitation.id));
     expect(email.template).toBe("approval_pass");
     const [log] = await db.select().from(activityLog).where(eq(activityLog.invitationId, invitation.id));
-    expect(log).toMatchObject({ actor: "admin", actorLabel: "admin", action: "approve", meta: expect.objectContaining({ from: "awaiting_approval", to: "approved" }) });
+    expect(log).toMatchObject({ actor: "admin", actorLabel: "Test Admin", action: "approve", meta: expect.objectContaining({ from: "awaiting_approval", to: "approved" }) });
   });
 
   it("only from awaiting_approval (approval is never automatic, A1)", async () => {
@@ -66,7 +66,7 @@ describe("approve", () => {
   it("another wedding's guest is NOT_FOUND (scoping)", async () => {
     const { invitation } = await setup();
     const other = await createWedding(db);
-    await expect(approveInvitation(db, await adminCtx(other.id), invitation.id)).rejects.toMatchObject({ code: "NOT_FOUND" });
+    await expect(approveInvitation(db, await adminCtx(db, other.id), invitation.id)).rejects.toMatchObject({ code: "NOT_FOUND" });
   });
 });
 
@@ -114,7 +114,7 @@ describe("revoke and restore", () => {
 describe("approval queue", () => {
   it("lists awaiting guests oldest first with capacity context", async () => {
     const wedding = await createWedding(db);
-    const ctx = await adminCtx(wedding.id);
+    const ctx = await adminCtx(db, wedding.id);
     await createInvitation(db, wedding.id, { status: "awaiting_approval", fullName: "Later", respondedAt: new Date("2026-10-21T00:00:00Z") });
     await createInvitation(db, wedding.id, { status: "awaiting_approval", fullName: "Earlier", respondedAt: new Date("2026-10-20T00:00:00Z") });
     await createInvitation(db, wedding.id, { status: "approved", partySize: 4 });

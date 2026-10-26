@@ -37,7 +37,7 @@ export async function submitRsvpAction(token: string, input: unknown): Promise<R
  */
 export async function recordViewAction(token: string): Promise<void> {
   const session = (await cookies()).get(ADMIN_COOKIE)?.value;
-  const viewer = await requireAdmin(session).then(
+  const viewer = await requireAdmin(getDb(), session).then(
     () => "admin" as const,
     () => "guest" as const,
   );

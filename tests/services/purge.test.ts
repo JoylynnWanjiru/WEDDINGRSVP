@@ -28,14 +28,14 @@ async function populated() {
 describe("purge", () => {
   it("admins must type the confirmation phrase", async () => {
     const { wedding } = await populated();
-    const ctx = await adminCtx(wedding.id);
+    const ctx = await adminCtx(db, wedding.id);
     await expect(purgeGuestDataAsAdmin(db, ctx, "yes")).rejects.toMatchObject({ code: "VALIDATION" });
     expect(await db.select().from(invitations).where(eq(invitations.weddingId, wedding.id))).toHaveLength(1);
   });
 
   it("removes every guest record, keeps wedding content, and every link becomes public", async () => {
     const { wedding, invitation, token } = await populated();
-    const ctx = await adminCtx(wedding.id);
+    const ctx = await adminCtx(db, wedding.id);
     expect(await purgeGuestDataAsAdmin(db, ctx, PURGE_CONFIRMATION)).toEqual({ invitations: 1, requests: 1, vendors: 0 });
 
     expect(await db.select().from(invitations).where(eq(invitations.weddingId, wedding.id))).toHaveLength(0);

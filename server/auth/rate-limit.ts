@@ -56,6 +56,8 @@ export async function hitRateLimit(
 /** Limits used by the HTTP adapters. */
 export const LIMITS = {
   adminLogin: { limit: 5, windowSeconds: 15 * 60 },
+  adminAccount: { limit: 10, windowSeconds: 15 * 60 }, // D26: per email, so many IPs can't guess one person's codes
+  adminSetup: { limit: 10, windowSeconds: 15 * 60 },
   usherLogin: { limit: 10, windowSeconds: 15 * 60 },
   tokenLookup: { limit: 60, windowSeconds: 60 },
   publicRequest: { limit: 3, windowSeconds: 60 * 60 },

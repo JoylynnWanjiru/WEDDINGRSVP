@@ -28,7 +28,7 @@ afterAll(() => close());
 
 async function setup() {
   const wedding = await createWedding(db);
-  return { wedding, ctx: await adminCtx(wedding.id) };
+  return { wedding, ctx: await adminCtx(db, wedding.id) };
 }
 
 describe("wedding details", () => {

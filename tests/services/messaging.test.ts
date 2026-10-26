@@ -38,7 +38,7 @@ let n = 0;
 async function setup(cap?: number) {
   const wedding = await createWedding(db);
   if (cap !== undefined) await db.update(weddings).set({ dailyEmailCap: cap }).where(eq(weddings.id, wedding.id));
-  const ctx = await adminCtx(wedding.id);
+  const ctx = await adminCtx(db, wedding.id);
   const guest = (values: Parameters<typeof createInvitation>[2] = {}) =>
     createInvitation(db, wedding.id, { email: `guest${++n}@example.com`, ...values });
   const queue = () => db.select().from(emailQueue).where(eq(emailQueue.weddingId, wedding.id));

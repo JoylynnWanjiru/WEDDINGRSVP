@@ -155,6 +155,7 @@ npm test                       # runs every backend rule test; needs no database
 cp .env.example .env.local     # then fill in the values
 npm run db:migrate             # create the tables in your Neon database
 npm run db:seed                # one wedding with placeholder content
+npm run admin:add -- "Your Name" you@example.com   # first admin: prints a setup link
 npm run dev                    # http://localhost:3000
 ```
 
@@ -194,6 +195,7 @@ Never commit `.env.local`. Add the same variables in **Vercel → Project → Se
 | `npm run env:check` | Checks `.env.local` formatting; never prints values |
 | `npm run email:test -- you@example.com` | Sends one test email through Gmail |
 | `npm run secret` / `npm run hash-password` | Generate `TOKEN_SECRET`/`CRON_SECRET` / `ADMIN_PASSWORD_HASH` |
+| `npm run admin:add -- "Name" email` | Add an admin (or reset one who exists) and print their one-time setup link |
 
 Setting up Neon and Gmail step by step: [`docs/SETUP.md`](docs/SETUP.md).
 
@@ -210,6 +212,15 @@ Setting up Neon and Gmail step by step: [`docs/SETUP.md`](docs/SETUP.md).
 ### Forgot the admin password?
 
 Run `npm run hash-password`, replace `ADMIN_PASSWORD_HASH` in Vercel's environment variables, and redeploy.
+
+### Two-step sign-in (BLUEPRINT D26)
+
+Signing in to `/admin` needs three things: your email, the admin password, and the 6-digit code from an authenticator app (Google Authenticator, Microsoft Authenticator, Authy) on your phone.
+
+- **First admin:** with `DATABASE_URL` pointing at the production database, run `npm run db:migrate`, then `npm run admin:add -- "Your Name" you@example.com`. Open the printed link (it works once, for 3 days), scan the QR code and type the code back.
+- **Everyone else** (the other half of the couple, the planner): add them in **Settings → Who can sign in** and send them the setup link it shows.
+- **Lost or new phone:** another admin taps **Reset authenticator** next to their name. If nobody can sign in, run `npm run admin:add` again with the same email to get a fresh setup link.
+- `TOKEN_SECRET` also derives every authenticator, so changing it means every admin sets up again (as well as breaking guest links, D1).
 
 ### Guest list import
 

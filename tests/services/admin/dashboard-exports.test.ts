@@ -21,7 +21,7 @@ afterAll(() => close());
 /** A small wedding with one guest in each interesting state. */
 async function scenario() {
   const wedding = await createWedding(db);
-  const ctx = await adminCtx(wedding.id);
+  const ctx = await adminCtx(db, wedding.id);
   const add = (v: Parameters<typeof createInvitation>[2]) => createInvitation(db, wedding.id, v);
   const party = (invitationId: string, members: { fullName: string; isChild?: boolean; dietary?: "none" | "vegan" | "halal" }[]) =>
     db.insert(partyMembers).values(members.map((m, i) => ({ invitationId, isPrimary: i === 0, ...m })));

@@ -31,7 +31,7 @@ const PHOTOGRAPHER = { company: "Lens Studio", role: "Photographer", contactName
 
 async function setup(input: Record<string, unknown> = PHOTOGRAPHER) {
   const wedding = await createWedding(db);
-  const ctx = await adminCtx(wedding.id);
+  const ctx = await adminCtx(db, wedding.id);
   const { id } = await addVendor(db, ctx, input);
   const reload = async () => (await db.select().from(vendors).where(eq(vendors.id, id)))[0];
   const pass = async () => scanUrl(await vendorPassTokenFor(await reload()));

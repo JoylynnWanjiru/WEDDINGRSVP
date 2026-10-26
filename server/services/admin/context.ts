@@ -12,9 +12,10 @@ export type AdminCtx = { readonly session: AdminSession; readonly weddingId: str
 
 /** HTTP adapters call this with the session cookie and the configured wedding slug. */
 export async function getAdminContext(db: Db, sessionToken: string | null | undefined, weddingSlug: string): Promise<AdminCtx> {
-  const session = await requireAdmin(sessionToken);
+  const session = await requireAdmin(db, sessionToken);
   const [w] = await db.select({ id: weddings.id }).from(weddings).where(eq(weddings.slug, weddingSlug));
   if (!w) throw new AppError("NOT_FOUND", "Wedding not found.");
+  if (w.id !== session.weddingId) throw new AppError("UNAUTHORIZED", "Please sign in."); // D26: admins belong to one wedding
   return { session, weddingId: w.id };
 }
 

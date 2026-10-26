@@ -31,7 +31,7 @@ afterAll(() => close());
 
 async function setup() {
   const wedding = await createWedding(db);
-  const ctx = await adminCtx(wedding.id);
+  const ctx = await adminCtx(db, wedding.id);
   const reload = async (id: string) => (await db.select().from(invitations).where(eq(invitations.id, id)))[0];
   return { wedding, ctx, reload };
 }

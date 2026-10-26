@@ -101,6 +101,13 @@ export const invitationPatch = z.object({
 
 const isoDate = z.coerce.date({ message: "Please enter a valid date and time." });
 
+// --- admins (D26) ---
+
+export const adminInput = z.object({
+  name: z.string().trim().min(1, "Please enter their name.").max(80, "That name is too long."),
+  email: z.string().trim().toLowerCase().max(200).pipe(z.email("Please enter a valid email address.")),
+});
+
 // --- vendors (D25) ---
 
 const staffCount = z.coerce.number().int().min(1, "A team has at least 1 person.").max(50, "At most 50 people per team.");

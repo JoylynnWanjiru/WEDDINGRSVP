@@ -20,7 +20,7 @@ afterAll(() => close());
 
 async function setup(request: Partial<typeof invitationRequests.$inferInsert> = {}) {
   const wedding = await createWedding(db);
-  const ctx = await adminCtx(wedding.id);
+  const ctx = await adminCtx(db, wedding.id);
   const [r] = await db
     .insert(invitationRequests)
     .values({ weddingId: wedding.id, fullName: "Asking Guest", phone: "+254700000601", ...request })
@@ -64,7 +64,7 @@ describe("acceptRequest", () => {
   it("another wedding's request is NOT_FOUND", async () => {
     const { request } = await setup();
     const other = await createWedding(db);
-    await expect(acceptRequest(db, await adminCtx(other.id), request.id)).rejects.toMatchObject({ code: "NOT_FOUND" });
+    await expect(acceptRequest(db, await adminCtx(db, other.id), request.id)).rejects.toMatchObject({ code: "NOT_FOUND" });
   });
 });
 

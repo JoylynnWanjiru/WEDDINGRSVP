@@ -103,7 +103,7 @@ describe("day-before reminder", () => {
 describe("WhatsApp", () => {
   it("builds a wa.me link with the personal message and link", async () => {
     const { wedding, guest } = await setup();
-    const ctx = await adminCtx(wedding.id);
+    const ctx = await adminCtx(db, wedding.id);
     const { invitation, token } = await guest({ fullName: "Akinyi Otieno", phone: "+254700000951" });
     const { url, message } = await getWhatsappShare(db, ctx, invitation.id);
     expect(message).toContain("Hello Akinyi!");
@@ -114,7 +114,7 @@ describe("WhatsApp", () => {
 
   it("needs a phone; refuses revoked guests", async () => {
     const { wedding, guest } = await setup();
-    const ctx = await adminCtx(wedding.id);
+    const ctx = await adminCtx(db, wedding.id);
     await expect(getWhatsappShare(db, ctx, (await guest()).invitation.id)).rejects.toMatchObject({ code: "VALIDATION" });
     await expect(getWhatsappShare(db, ctx, (await guest({ phone: "+254700000952", status: "revoked" })).invitation.id)).rejects.toMatchObject({
       code: "CONFLICT",
@@ -123,7 +123,7 @@ describe("WhatsApp", () => {
 
   it("marking it shared moves draft → sent and records the time", async () => {
     const { wedding, guest } = await setup();
-    const ctx = await adminCtx(wedding.id);
+    const ctx = await adminCtx(db, wedding.id);
     const { invitation } = await guest({ phone: "+254700000953" });
     expect(await markWhatsappShared(db, ctx, invitation.id, NOW)).toBe("sent");
     const [inv] = await db.select().from(invitations).where(eq(invitations.id, invitation.id));
