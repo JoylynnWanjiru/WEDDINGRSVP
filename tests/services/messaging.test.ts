@@ -206,7 +206,7 @@ describe("BR-18: each email re-checks that it still applies at send time", () =>
     expect(email.subject).toMatch(/confirmed/);
     expect(email.html).toContain("Safari Gardens");
     expect(email.html).toContain("https://www.google.com/maps/dir/?api=1&amp;destination=-1.32,36.7");
-    expect(email.html).toContain("Ceremony begins");
+    expect(email.html).toContain("Wedding ceremony");
     expect(email.html).toContain(`https://wedding.test/i/${token}#pass`);
     expect((await reload(invitation.id)).passEmailedAt).toEqual(NOW);
   });
@@ -220,7 +220,7 @@ describe("BR-18: each email re-checks that it still applies at send time", () =>
     await processEmailQueue(db, wedding.id, mailer, { by: SYSTEM, now: NOW });
     const [email] = mailer.sent;
     expect(email.html).toContain("with the couple for confirmation");
-    for (const secret of ["Safari Gardens", "Karen Road", "Ceremony begins", "#pass", "/pass"]) expect(email.html + email.text).not.toContain(secret);
+    for (const secret of ["Safari Gardens", "Karen Road", "Wedding ceremony", "#pass", "/pass"]) expect(email.html + email.text).not.toContain(secret);
   });
 
   it("an approval email for a guest revoked before sending is cancelled", async () => {

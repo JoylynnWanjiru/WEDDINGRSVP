@@ -216,27 +216,22 @@ Rules:
 
 Anchored on the reference site's timings. Every item is stored in the `programme_items` table so it can be edited without code changes.
 
-| Time | Item | Detail for guests |
-|---|---|---|
-| 11:30 AM | **Gates open & arrival** | Present your gate pass QR at the gate; ushers guide seating |
-| 12:00 PM | **Welcome & seating** | Guests seated; family seated in reserved rows |
-| 12:45 PM | **Bridal party arrival** | Please be seated and silence phones |
-| 1:00 PM | **Ceremony begins** | Processional, hymns, readings, sermon |
-| 1:40 PM | **Vows & exchange of rings** | |
-| 1:55 PM | **Signing of the register** | Special music / choir |
-| 2:10 PM | **Recessional** | Couple exits; guests follow ushers' directions |
-| 2:15 PM | **Cocktails & light bites** | Guests move to cocktail area / transfer to reception venue |
-| 3:00 PM | **Photographs** | Family, bridal party, then guest groups (ushers will call each group) |
-| 4:00 PM | **Reception: guests seated** | Find your table on the seating board |
-| 4:15 PM | **Grand entrance of the couple** | |
-| 4:30 PM | **Cake cutting** | |
-| 4:45 PM | **Speeches & family introductions** | MC, parents, best man, maid of honour |
-| 5:00 PM | **Dinner** | Buffet/served by table — dietary meals marked |
-| 6:15 PM | **Gifts & well-wishes** | Gift table / M-Pesa details on the site |
-| 6:45 PM | **First dance** | Then the floor opens |
-| 7:00 PM | **Party** | |
-| 12:45 AM | **Last dance & send-off** | |
-| 1:00 AM | **Farewells** | Safe travels home |
+The guest page shows the time and name only, on a vertical timeline (no explanations).
+
+| Time | Item |
+|---|---|
+| 11:30 AM | **Arrival & seating** |
+| 12:45 PM | **Bridal party arrival** |
+| 1:00 PM | **Wedding ceremony** |
+| 2:15 PM | **Cocktails & light bites** |
+| 3:00 PM | **Photographs** |
+| 4:15 PM | **Grand entrance of the couple** |
+| 4:30 PM | **Cake cutting** |
+| 4:45 PM | **Speeches** |
+| 5:00 PM | **Dinner** |
+| 6:45 PM | **First dance** |
+| 7:00 PM | **Dance & celebrations** |
+| 12:45 AM | **Send-off** |
 
 Day-of page extras:
 - **"Happening now / next"** banner computed from the current time.

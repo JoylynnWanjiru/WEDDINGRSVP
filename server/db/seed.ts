@@ -9,25 +9,18 @@ import { adminSettings, contacts, dressCode, faqItems, programmeItems, venues, w
 const eat = (dateTime: string) => new Date(`${dateTime}+03:00`); // Africa/Nairobi, no DST
 
 const PROGRAMME: [string, string, string | null][] = [
-  ["2026-12-12T11:30", "Gates open & arrival", "Present your gate pass QR at the gate; ushers guide seating"],
-  ["2026-12-12T12:00", "Welcome & seating", "Guests seated; family seated in reserved rows"],
-  ["2026-12-12T12:45", "Bridal party arrival", "Please be seated and silence phones"],
-  ["2026-12-12T13:00", "Ceremony begins", "Processional, hymns, readings, sermon"],
-  ["2026-12-12T13:40", "Vows & exchange of rings", null],
-  ["2026-12-12T13:55", "Signing of the register", "Special music / choir"],
-  ["2026-12-12T14:10", "Recessional", "Couple exits; guests follow ushers' directions"],
-  ["2026-12-12T14:15", "Cocktails & light bites", "Guests move to the cocktail area"],
-  ["2026-12-12T15:00", "Photographs", "Family, bridal party, then guest groups"],
-  ["2026-12-12T16:00", "Reception: guests seated", "Find your table on the seating board"],
+  ["2026-12-12T11:30", "Arrival & seating", null],
+  ["2026-12-12T12:45", "Bridal party arrival", null],
+  ["2026-12-12T13:00", "Wedding ceremony", null],
+  ["2026-12-12T14:15", "Cocktails & light bites", null],
+  ["2026-12-12T15:00", "Photographs", null],
   ["2026-12-12T16:15", "Grand entrance of the couple", null],
   ["2026-12-12T16:30", "Cake cutting", null],
-  ["2026-12-12T16:45", "Speeches & family introductions", "MC, parents, best man, maid of honour"],
-  ["2026-12-12T17:00", "Dinner", "Dietary meals marked"],
-  ["2026-12-12T18:15", "Gifts & well-wishes", null],
-  ["2026-12-12T18:45", "First dance", "Then the floor opens"],
-  ["2026-12-12T19:00", "Party", null],
-  ["2026-12-13T00:45", "Last dance & send-off", null],
-  ["2026-12-13T01:00", "Farewells", "Safe travels home"],
+  ["2026-12-12T16:45", "Speeches", null],
+  ["2026-12-12T17:00", "Dinner", null],
+  ["2026-12-12T18:45", "First dance", null],
+  ["2026-12-12T19:00", "Dance & celebrations", null],
+  ["2026-12-13T00:45", "Send-off", null],
 ];
 
 export async function seedWedding(db: Db, slug = "our-wedding") {

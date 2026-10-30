@@ -42,9 +42,9 @@ describe("N2: happening now / next", () => {
     const wedding = await createWedding(db);
     const approved = await createInvitation(db, wedding.id, { status: "approved" });
     const page = await getDayOfPage(db, approved.token, { now: at("13:10") });
-    expect(page.happening.now?.title).toBe("Ceremony begins");
-    expect(page.happening.next?.title).toBe("Vows & exchange of rings");
-    expect(page.programme).toHaveLength(19);
+    expect(page.happening.now?.title).toBe("Wedding ceremony");
+    expect(page.happening.next?.title).toBe("Cocktails & light bites");
+    expect(page.programme).toHaveLength(12);
     const waiting = await createInvitation(db, wedding.id, { status: "awaiting_approval" });
     await expect(getDayOfPage(db, waiting.token)).rejects.toMatchObject({ code: "FORBIDDEN" });
   });

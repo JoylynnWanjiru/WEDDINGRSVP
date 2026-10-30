@@ -42,7 +42,7 @@ describe("purge", () => {
     expect(await db.select().from(partyMembers).where(eq(partyMembers.invitationId, invitation.id))).toHaveLength(0);
     expect(await db.select().from(invitationRequests).where(eq(invitationRequests.weddingId, wedding.id))).toHaveLength(0);
     expect((await getAccess(db, token)).level).toBe("public");
-    expect(await db.select().from(programmeItems).where(eq(programmeItems.weddingId, wedding.id))).toHaveLength(19);
+    expect(await db.select().from(programmeItems).where(eq(programmeItems.weddingId, wedding.id))).toHaveLength(12);
     const [w] = await db.select().from(weddings).where(eq(weddings.id, wedding.id));
     expect(w.purgedAt).toBeInstanceOf(Date);
 

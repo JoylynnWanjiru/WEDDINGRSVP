@@ -21,7 +21,7 @@ describe("seed", () => {
     expect(wedding.defaultSeatAllowance).toBe(0);
     expect(wedding.rsvpDeadline.toISOString()).toBe("2026-11-14T20:59:59.000Z");
     const items = await db.select().from(programmeItems).where(eq(programmeItems.weddingId, wedding.id));
-    expect(items).toHaveLength(19);
+    expect(items).toHaveLength(12);
   });
 });
 

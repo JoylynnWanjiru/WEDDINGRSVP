@@ -64,7 +64,7 @@ describe("wedding details", () => {
   it("getSettings returns everything the page needs", async () => {
     const { ctx } = await setup();
     const s = await getSettings(db, ctx);
-    expect(s.programme).toHaveLength(19);
+    expect(s.programme).toHaveLength(12);
     expect(s.venues).toHaveLength(1);
     expect(s.dressCode?.swatches.length).toBeGreaterThan(0);
     expect(s.usherPinSet).toBe(false);

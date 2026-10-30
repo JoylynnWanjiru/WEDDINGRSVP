@@ -99,7 +99,7 @@ describe("§4a: what each access level receives", () => {
       const page = await getInvitationPage(db, token, { now: NOW });
       expect(page.level).toBe("approved");
       if (page.level !== "approved") throw new Error("unreachable");
-      expect(page.content?.programme).toHaveLength(19);
+      expect(page.content?.programme).toHaveLength(12);
       expect(page.content?.venues[0].directionsUrl).toBe("https://www.google.com/maps/dir/?api=1&destination=-1.2921,36.8219");
       expect(page.content?.dressCode?.swatches.length).toBeGreaterThan(0);
     }
