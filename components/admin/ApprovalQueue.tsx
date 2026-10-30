@@ -6,6 +6,7 @@
 import Link from "next/link";
 import { useState, useTransition } from "react";
 import { approveAction, declineAction } from "@/app/admin/(dashboard)/actions";
+import { btn } from "./ui";
 
 export type QueueRow = {
   id: string;
@@ -37,7 +38,7 @@ export function ApprovalQueue({ rows }: { rows: QueueRow[] }) {
     });
   }
 
-  if (!rows.length) return <p className="rounded-sm border border-wine/10 bg-white px-4 py-6 text-center text-wine/70">Nobody is waiting for approval.</p>;
+  if (!rows.length) return <p className="a-card px-4 py-8 text-center font-display text-xl italic text-wine/70">Nobody is waiting for approval.</p>;
 
   return (
     <div className="space-y-3">
@@ -46,11 +47,11 @@ export function ApprovalQueue({ rows }: { rows: QueueRow[] }) {
           {error}
         </p>
       ) : null}
-      <ul className="divide-y divide-wine/10 overflow-hidden rounded-sm border border-wine/10 bg-white">
+      <ul className="divide-y divide-wine/10 overflow-hidden a-card">
         {rows.map((r) => {
           const extras = r.partySize - 1;
           return (
-            <li key={r.id} className="flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center">
+            <li key={r.id} className="a-row flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center">
               <div className="min-w-0 flex-1">
                 <Link href={`/admin/guests/${r.id}`} className="font-display text-xl hover:text-gold-deep">
                   {r.fullName}
@@ -67,7 +68,7 @@ export function ApprovalQueue({ rows }: { rows: QueueRow[] }) {
                   type="button"
                   disabled={pending}
                   onClick={() => run(r.id, () => approveAction(r.id))}
-                  className="label min-h-11 rounded-sm bg-wine px-4 text-[0.65rem] text-gold disabled:opacity-50"
+                  className={btn.primary}
                 >
                   {busy === r.id ? "…" : "Approve"}
                 </button>
@@ -79,7 +80,7 @@ export function ApprovalQueue({ rows }: { rows: QueueRow[] }) {
                       run(r.id, () => declineAction(r.id));
                     }
                   }}
-                  className="label min-h-11 rounded-sm border border-wine/30 px-4 text-[0.65rem] disabled:opacity-50"
+                  className={btn.outline}
                 >
                   Not approve
                 </button>

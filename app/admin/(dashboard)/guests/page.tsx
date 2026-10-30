@@ -20,7 +20,8 @@ export default function GuestsPage({ searchParams }: PageProps<"/admin/guests">)
     <div className="space-y-8">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="font-display text-4xl">Guests</h1>
+          <p className="a-eyebrow">Guest list</p>
+          <h1 className="a-title mt-2">Guests</h1>
           <p className="text-sm text-wine/70">One row per invitation (household).</p>
         </div>
         <Link href="/admin/guests/import" className={btn.outline}>
@@ -53,6 +54,7 @@ async function Guests({ searchParams }: { searchParams: PageProps<"/admin/guests
       group: group || undefined,
       notViewed: filter === "notViewed",
       noResponse: filter === "noResponse",
+      selfRsvp: filter === "selfRsvp",
     }),
     listGroups(db, ctx),
     loadWedding(db, ctx),
@@ -65,8 +67,8 @@ async function Guests({ searchParams }: { searchParams: PageProps<"/admin/guests
     <>
       <SendPanel queued={quota.queued} failed={dashboard.email.failed} sentToday={quota.sentToday} cap={quota.cap} />
 
-      <details className="rounded-sm border border-wine/10 bg-white">
-        <summary className="label min-h-12 cursor-pointer px-4 py-4 text-[0.65rem] text-gold-deep">+ Add a guest</summary>
+      <details className="a-card">
+        <summary className="label flex min-h-12 cursor-pointer items-center px-5 py-4 text-[0.62rem] text-gold-deep">+ Add a guest</summary>
         <div className="border-t border-wine/10 p-4">
           <AddGuestForm defaultSeatAllowance={wedding.defaultSeatAllowance} />
         </div>
@@ -95,6 +97,7 @@ async function Guests({ searchParams }: { searchParams: PageProps<"/admin/guests
           <option value="">Everyone</option>
           <option value="notViewed">Sent, not yet viewed</option>
           <option value="noResponse">No response yet</option>
+          <option value="selfRsvp">Self-RSVPs (public page)</option>
         </select>
         <div className="flex gap-2">
           <button type="submit" className={btn.primary}>
@@ -116,11 +119,16 @@ async function Guests({ searchParams }: { searchParams: PageProps<"/admin/guests
           email: r.email,
           group: r.group,
           status: r.status,
+          selfRsvp: r.source === "public",
           partySize: r.partySize,
           seatAllowance: r.seatAllowance,
           emailSentAt: iso(r.emailSentAt),
           whatsappSharedAt: iso(r.whatsappSharedAt),
+          linkCopiedAt: iso(r.linkCopiedAt),
           firstViewedAt: iso(r.firstViewedAt),
+          lastViewedAt: iso(r.lastViewedAt),
+          openCount: r.openCount,
+          openDevices: r.openDevices,
           emailBouncedAt: iso(r.emailBouncedAt),
           link: r.link,
           whatsappUrl: r.whatsappUrl,

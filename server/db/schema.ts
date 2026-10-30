@@ -34,7 +34,8 @@ const timestamps = {
 
 export const invitationStatus = pgEnum("invitation_status", INVITATION_STATUSES);
 export const requestStatus = pgEnum("request_status", REQUEST_STATUSES);
-export const invitationSource = pgEnum("invitation_source", ["admin", "import", "request"]);
+// D29: "public" = the guest RSVPed on the public page themselves (a self-RSVP).
+export const invitationSource = pgEnum("invitation_source", ["admin", "import", "request", "public"]);
 export const side = pgEnum("side", ["bride", "groom", "both"]);
 export const eventKind = pgEnum("event_kind", ["ceremony", "reception", "traditional"]);
 export const dietary = pgEnum("dietary", ["none", "vegetarian", "vegan", "halal", "gluten_free", "other"]);
@@ -226,6 +227,7 @@ export const invitations = pgTable(
     arrivedCount: integer("arrived_count").notNull().default(0),
     emailSentAt: tz("email_sent_at"),
     whatsappSharedAt: tz("whatsapp_shared_at"),
+    linkCopiedAt: tz("link_copied_at"), // D28: "Copy link" in the admin counts as sending
     emailOpenedAt: tz("email_opened_at"),
     emailBouncedAt: tz("email_bounced_at"), // E11: no emails until the address changes
     firstViewedAt: tz("first_viewed_at"),
@@ -246,6 +248,47 @@ export const invitations = pgTable(
     check("invitations_party_size_ck", sql`${t.partySize} >= 1`),
     check("invitations_arrived_ck", sql`${t.arrivedCount} >= 0 AND ${t.arrivedCount} <= ${t.partySize}`), // BR-14
   ],
+);
+
+// D28: every time a guest opens their link (taps the seal), grouped into visits: taps from the same
+// device less than 30 minutes apart extend one row instead of adding another. Only a coarse device
+// label is kept (e.g. "iPhone", "Windows computer"), never an IP address or the full user agent.
+export const invitationOpens = pgTable(
+  "invitation_opens",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    weddingId: uuid("wedding_id")
+      .notNull()
+      .references(() => weddings.id, { onDelete: "cascade" }),
+    invitationId: uuid("invitation_id")
+      .notNull()
+      .references(() => invitations.id, { onDelete: "cascade" }),
+    device: text("device").notNull(),
+    openedAt: tz("opened_at").notNull(),
+    lastSeenAt: tz("last_seen_at").notNull(),
+    taps: integer("taps").notNull().default(1),
+  },
+  (t) => [index("invitation_opens_invitation_idx").on(t.invitationId, t.openedAt), index("invitation_opens_wedding_idx").on(t.weddingId, t.lastSeenAt)],
+);
+
+// D29: devices that opened the public page (the "device stamp"). The device key is a random
+// first-party cookie, stored only as a hash. Visits from one device less than 30 minutes apart
+// count once. Once the device RSVPs, the row points at that guest.
+export const siteVisits = pgTable(
+  "site_visits",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    weddingId: uuid("wedding_id")
+      .notNull()
+      .references(() => weddings.id, { onDelete: "cascade" }),
+    deviceHash: text("device_hash").notNull(),
+    device: text("device").notNull(),
+    invitationId: uuid("invitation_id").references(() => invitations.id, { onDelete: "set null" }),
+    firstSeenAt: tz("first_seen_at").notNull(),
+    lastSeenAt: tz("last_seen_at").notNull(),
+    visits: integer("visits").notNull().default(1),
+  },
+  (t) => [uniqueIndex("site_visits_wedding_device_uq").on(t.weddingId, t.deviceHash), index("site_visits_wedding_seen_idx").on(t.weddingId, t.lastSeenAt)],
 );
 
 // Public "request an invitation" submissions. Untrusted input stays out of

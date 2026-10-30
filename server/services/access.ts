@@ -1,6 +1,7 @@
-// THE approval gate (BLUEPRINT BR-1 to BR-4, §13). Every page, action, route and
-// email that returns locked content calls requireApproved() BEFORE fetching it.
-// Access is computed from the database on every call; nothing is cached (BR-3).
+// THE access gates (BLUEPRINT BR-1 to BR-4, §13, D29). The wedding content (story, programme,
+// venues, dress code, FAQ, contacts) is public since D29: getPublicAccess() proves the wedding
+// exists and isn't purged. The gate pass stays locked: anything returning a pass calls
+// requireApproved() first. Access is computed from the database on every call; nothing is cached (BR-3).
 
 import { eq } from "drizzle-orm";
 import { hashToken, looksLikeInviteToken } from "../auth/tokens";
@@ -63,6 +64,24 @@ export async function requireApproved(db: Db, token: string | null | undefined):
   const proof = approvedFrom(await getAccess(db, token));
   if (!proof) throw new AppError("FORBIDDEN", "This content is available once your attendance is confirmed.");
   return proof;
+}
+
+// --- public content (D29) ---
+
+declare const publicProof: unique symbol;
+
+/** Proof that the wedding exists and isn't purged. Since D29 its content is shown to anyone. */
+export type PublicAccess = { readonly wedding: Wedding; readonly [publicProof]: true };
+
+export async function getPublicAccess(db: Db, slug: string): Promise<PublicAccess> {
+  const [wedding] = await db.select().from(weddings).where(eq(weddings.slug, slug));
+  if (!wedding || wedding.purgedAt) throw new AppError("NOT_FOUND", "Wedding not found.");
+  return { wedding } as PublicAccess;
+}
+
+/** D29: an invited (not revoked, not "not approved") guest's link also shows the wedding content. */
+export function publicFrom(access: Access): PublicAccess | null {
+  return access.level === "invited" || access.level === "declined" || access.level === "approved" ? ({ wedding: access.wedding } as PublicAccess) : null;
 }
 
 // --- vendors (D25) ---

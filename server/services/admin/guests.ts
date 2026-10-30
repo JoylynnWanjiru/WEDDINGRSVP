@@ -1,10 +1,10 @@
 // The guest list (U1, U3, BR-7, BR-12, BR-20, BR-21, E21, E27).
 
 import { randomUUID } from "node:crypto";
-import { and, asc, desc, eq, ilike, ne, or, type SQL } from "drizzle-orm";
+import { and, asc, count, desc, eq, ilike, ne, or, sql, type SQL } from "drizzle-orm";
 import { hashToken, inviteLink, inviteTokenFor } from "../../auth/tokens";
 import type { Db } from "../../db/client";
-import { activityLog, invitations, partyMembers, rsvpEvents, type Invitation } from "../../db/schema";
+import { activityLog, invitationOpens, invitations, partyMembers, rsvpEvents, type Invitation } from "../../db/schema";
 import { normalizePhone } from "../../domain/phone";
 import { assertAllowanceCoversParty } from "../../domain/rules";
 import type { InvitationStatus } from "../../domain/status";
@@ -202,6 +202,8 @@ export type GuestFilter = {
   search?: string;
   notViewed?: boolean;
   noResponse?: boolean;
+  /** D29: only guests who RSVPed on the public page themselves. */
+  selfRsvp?: boolean;
 };
 
 export async function listInvitations(db: Db, ctx: AdminCtx, filter: GuestFilter = {}) {
@@ -210,21 +212,31 @@ export async function listInvitations(db: Db, ctx: AdminCtx, filter: GuestFilter
   if (statuses.length) where.push(or(...statuses.map((s) => eq(invitations.status, s))));
   if (filter.group) where.push(eq(invitations.group, filter.group));
   if (filter.side) where.push(eq(invitations.side, filter.side));
+  if (filter.selfRsvp) where.push(eq(invitations.source, "public"));
   if (filter.search?.trim()) {
     const q = `%${filter.search.trim().replace(/[%_\\]/g, (c) => "\\" + c)}%`;
     const phoneQ = normalizePhone(filter.search);
     where.push(or(ilike(invitations.fullName, q), ilike(invitations.email, q), phoneQ ? eq(invitations.phone, phoneQ) : ilike(invitations.phone, q)));
   }
 
-  const [rows, wedding] = await Promise.all([
+  const [rows, wedding, opens] = await Promise.all([
     db.select().from(invitations).where(and(...where)).orderBy(asc(invitations.fullName)),
     loadWedding(db, ctx),
+    // D28: visits per guest, for "opened 3×" in the list.
+    db
+      .select({ invitationId: invitationOpens.invitationId, visits: count(), devices: sql<number>`count(distinct ${invitationOpens.device})::int` })
+      .from(invitationOpens)
+      .where(eq(invitationOpens.weddingId, ctx.weddingId))
+      .groupBy(invitationOpens.invitationId),
   ]);
+  const opensBy = new Map(opens.map((o) => [o.invitationId, o]));
   return rows
     .filter((r) => !filter.notViewed || (!r.firstViewedAt && r.status !== "draft" && r.status !== "revoked"))
     .filter((r) => !filter.noResponse || (!r.respondedAt && r.status !== "revoked"))
     .map((r) => ({
       ...listRow(r),
+      openCount: opensBy.get(r.id)?.visits ?? 0,
+      openDevices: opensBy.get(r.id)?.devices ?? 0,
       // Ready-to-use links for the Copy and WhatsApp buttons in the list (admin only).
       link: inviteLink(r.id, r.inviteTokenVersion),
       whatsappUrl: buildWhatsappShare(r, wedding)?.url ?? null,
@@ -244,6 +256,7 @@ const listRow = (r: Invitation) => ({
   email: r.email,
   group: r.group,
   side: r.side,
+  source: r.source,
   status: r.status,
   seatAllowance: r.seatAllowance,
   partySize: r.partySize,
@@ -251,7 +264,9 @@ const listRow = (r: Invitation) => ({
   emailSentAt: r.emailSentAt,
   emailBouncedAt: r.emailBouncedAt,
   whatsappSharedAt: r.whatsappSharedAt,
+  linkCopiedAt: r.linkCopiedAt,
   firstViewedAt: r.firstViewedAt,
+  lastViewedAt: r.lastViewedAt,
   respondedAt: r.respondedAt,
   passEmailedAt: r.passEmailedAt,
   updatedAt: r.updatedAt,
@@ -264,7 +279,7 @@ export async function getInvitationDetail(db: Db, ctx: AdminCtx, invitationId: s
     .from(invitations)
     .where(and(eq(invitations.id, invitationId), eq(invitations.weddingId, ctx.weddingId)));
   if (!inv) throw new AppError("NOT_FOUND", "Guest not found.");
-  const [party, events, timeline, wedding] = await Promise.all([
+  const [party, events, timeline, wedding, opens] = await Promise.all([
     db.select().from(partyMembers).where(eq(partyMembers.invitationId, inv.id)).orderBy(asc(partyMembers.sortOrder)),
     db.select().from(rsvpEvents).where(eq(rsvpEvents.invitationId, inv.id)),
     db
@@ -273,6 +288,12 @@ export async function getInvitationDetail(db: Db, ctx: AdminCtx, invitationId: s
       .where(eq(activityLog.invitationId, inv.id))
       .orderBy(desc(activityLog.at)),
     loadWedding(db, ctx),
+    // D28: every visit, newest first.
+    db
+      .select({ device: invitationOpens.device, openedAt: invitationOpens.openedAt, lastSeenAt: invitationOpens.lastSeenAt, taps: invitationOpens.taps })
+      .from(invitationOpens)
+      .where(eq(invitationOpens.invitationId, inv.id))
+      .orderBy(desc(invitationOpens.openedAt)),
   ]);
   return {
     ...listRow(inv),
@@ -280,8 +301,8 @@ export async function getInvitationDetail(db: Db, ctx: AdminCtx, invitationId: s
     source: inv.source,
     responseMessage: inv.responseMessage,
     emailOpenedAt: inv.emailOpenedAt, // a hint only (E12)
-    lastViewedAt: inv.lastViewedAt,
     viewCount: inv.viewCount,
+    opens,
     approvedAt: inv.approvedAt,
     revokedAt: inv.revokedAt,
     link: inviteLink(inv.id, inv.inviteTokenVersion),
@@ -312,4 +333,22 @@ export async function recordRsvpForGuest(db: Db, ctx: AdminCtx, invitationId: st
     .where(and(eq(invitations.id, invitationId), eq(invitations.weddingId, ctx.weddingId)));
   if (!inv) throw new AppError("NOT_FOUND", "Guest not found.");
   return applyRsvp(db, inv.id, input, { actor: "admin", actorLabel: ctx.session.label, now: opts.now ?? new Date() });
+}
+
+/** D28: the latest visits across the guest list, for the dashboard's "Recently opened". */
+export async function listRecentOpens(db: Db, ctx: AdminCtx, limit = 8) {
+  return db
+    .select({
+      invitationId: invitations.id,
+      fullName: invitations.fullName,
+      device: invitationOpens.device,
+      openedAt: invitationOpens.openedAt,
+      lastSeenAt: invitationOpens.lastSeenAt,
+      taps: invitationOpens.taps,
+    })
+    .from(invitationOpens)
+    .innerJoin(invitations, eq(invitationOpens.invitationId, invitations.id))
+    .where(eq(invitationOpens.weddingId, ctx.weddingId))
+    .orderBy(desc(invitationOpens.lastSeenAt))
+    .limit(limit);
 }

@@ -4,12 +4,13 @@
 // every check (token, status, deadline, seat allowance) happens in the services.
 
 import { refresh } from "next/cache";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { ADMIN_COOKIE, requireAdmin } from "@/server/auth/sessions";
 import { getDb } from "@/server/db/client";
 import { isAppError } from "@/server/errors";
 import { recordView } from "@/server/services/invitation-page";
 import { submitRsvp } from "@/server/services/rsvp";
+import { deviceFromUserAgent } from "@/server/utils/device";
 
 export type RsvpActionResult =
   | { ok: true; status: string; awaitingApproval: boolean }
@@ -37,12 +38,13 @@ export async function submitRsvpAction(token: string, input: unknown): Promise<R
  */
 export async function recordViewAction(token: string): Promise<void> {
   const session = (await cookies()).get(ADMIN_COOKIE)?.value;
+  const device = deviceFromUserAgent((await headers()).get("user-agent")); // D28: a coarse label only
   const viewer = await requireAdmin(getDb(), session).then(
     () => "admin" as const,
     () => "guest" as const,
   );
   try {
-    await recordView(getDb(), token, { viewer });
+    await recordView(getDb(), token, { viewer, device });
   } catch (err) {
     console.error(err); // never break the invitation over tracking
   }

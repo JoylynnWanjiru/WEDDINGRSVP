@@ -16,7 +16,8 @@ export default function SettingsPage() {
   return (
     <div className="space-y-6">
       <header>
-        <h1 className="font-display text-4xl">Settings</h1>
+        <p className="a-eyebrow">The wedding</p>
+        <h1 className="a-title mt-2">Settings</h1>
         <p className="text-sm text-wine/70">Changes show on the guest pages straight away. All times are East Africa Time.</p>
       </header>
       <Suspense fallback={<p className="text-wine/70">Loading settings…</p>}>
@@ -28,7 +29,7 @@ export default function SettingsPage() {
 
 function Panel({ id, title, hint, children, open }: { id: string; title: string; hint?: string; children: ReactNode; open?: boolean }) {
   return (
-    <details id={id} open={open} className="scroll-mt-16 rounded-sm border border-wine/10 bg-white">
+    <details id={id} open={open} className="scroll-mt-16 a-card">
       <summary className="flex min-h-14 cursor-pointer flex-wrap items-baseline gap-x-3 px-5 py-4">
         <span className="font-display text-2xl">{title}</span>
         {hint ? <span className="text-sm text-wine/70">{hint}</span> : null}

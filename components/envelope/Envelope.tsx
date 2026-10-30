@@ -145,13 +145,16 @@ export function EnvelopeHero({ children, monogram }: { children: ReactNode; mono
   const id = useId();
   return (
     <div className="invitation-hero">
+      <div className="hero-glow" aria-hidden="true" />
       <div className="hero-arch" aria-hidden="true" />
       <div className="hero-seal" aria-hidden="true"><DoveSeal id={id + "-hero"} monogram={monogram} className="h-full w-full" /></div>
       <div ref={card} tabIndex={-1} className="invitation-card">{children}</div>
-      <p className="hero-sentiment">A day to remember.<br /><em>A joy to share with you.</em></p>
       <div className="hero-actions">
-        <a className="label hero-continue" href="#celebration">Discover the invitation <span aria-hidden="true">↓</span></a>
-        <button type="button" className="hero-replay" onClick={replay}><span aria-hidden="true">↻</span> Open again</button>
+        <a className="label hero-continue" href="#celebration">
+          <span>Discover the invitation</span>
+          <span className="hero-cue" aria-hidden="true" />
+        </a>
+        <button type="button" className="label hero-replay" onClick={replay}><span aria-hidden="true">↻</span> Open the envelope again</button>
       </div>
     </div>
   );

@@ -14,8 +14,8 @@ export const metadata = { title: "Set up sign-in", robots: { index: false, follo
 
 export default function SetupRoute({ params }: PageProps<"/admin/setup/[token]">) {
   return (
-    <main className="flex flex-1 flex-col items-center justify-center px-4 py-16">
-      <div className="w-full max-w-sm text-center">
+    <main className="admin-auth">
+      <div className="admin-auth-card">
         <DoveSeal id="setup-seal" className="mx-auto h-16 w-16" />
         <Suspense fallback={<p className="label mt-8 text-pearl/70">Loading…</p>}>
           <Setup params={params} />
@@ -35,7 +35,7 @@ async function Setup({ params }: { params: PageProps<"/admin/setup/[token]">["pa
 
   return (
     <>
-      <h1 className="mt-4 font-display text-4xl">Hello, {setup.admin.name}</h1>
+      <h1>Hello, {setup.admin.name}</h1>
       <p className="mt-2 text-sm text-pearl/80">
         Signing in to the wedding admin needs a code from an authenticator app on your phone, such as Google Authenticator or Microsoft
         Authenticator.

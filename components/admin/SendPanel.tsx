@@ -45,7 +45,7 @@ export function SendPanel({ queued, failed, sentToday, cap }: { queued: number; 
   }
 
   return (
-    <div className="rounded-sm border border-wine/10 bg-white p-4">
+    <div className="a-card p-4">
       <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
         <p className="text-sm">
           <span className="font-display text-2xl tabular-nums">{queued}</span> waiting to send

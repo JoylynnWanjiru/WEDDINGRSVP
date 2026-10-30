@@ -24,7 +24,7 @@ import {
 import type { OutgoingEmail } from "../integrations/mailer";
 import { qrPng } from "../integrations/qr";
 import { approvedFrom } from "./access";
-import { getApprovedContent } from "./content";
+import { getWeddingContent } from "./content";
 import { passTokenFor, scanUrl } from "./gate";
 
 type QueueRow = typeof emailQueue.$inferSelect;
@@ -91,7 +91,7 @@ export async function composeEmail(db: Db, row: QueueRow, inv: Invitation, weddi
       if (row.template === "approval_pass" && row.dedupeKey && !row.dedupeKey.endsWith(`:${inv.passVersion}`)) {
         return { cancel: "Superseded by a later approval." };
       }
-      const content = await getApprovedContent(db, approved);
+      const content = await getWeddingContent(db, approved);
       // D22: one page per guest; the email buttons jump to its sections.
       const passLink = `${link}#pass`;
       if (row.template === "details_updated") return { send: { ...base, ...detailsUpdatedEmail({ couple: c, firstName, pageLink: link }) } };

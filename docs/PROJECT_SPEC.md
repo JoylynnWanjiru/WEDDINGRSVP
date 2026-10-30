@@ -374,7 +374,7 @@ Open your personal invitation and RSVP here: {personalLink}
 Kindly respond by {rsvpDeadline}.
 ```
 
-Clicking "Send on WhatsApp" marks `whatsapp_shared_at` (proof the link was sent; "viewed" still comes from the link being opened).
+Clicking "Send on WhatsApp" marks `whatsapp_shared_at` (proof the link was sent; "viewed" still comes from the link being opened). Clicking "Copy link" marks `link_copied_at` the same way, and every open of the link is logged with a device label (BLUEPRINT D28).
 
 ---
 

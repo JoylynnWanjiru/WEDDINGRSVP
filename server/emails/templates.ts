@@ -2,9 +2,9 @@
 // text, so the backend can be tested without a renderer (BLUEPRINT D14). Every
 // dynamic value is HTML-escaped: guest names are user input.
 // BR-18: only approvalPass, dayBefore and detailsUpdated carry event details, and
-// their content comes from getApprovedContent(), which needs proof of approval.
+// their content comes from getWeddingContent(); they are sent only with proof of approval (compose.ts).
 
-import type { ApprovedContent } from "../services/content";
+import type { WeddingContent } from "../services/content";
 import { formatDate, formatDateTime, formatTime } from "../utils/dates";
 
 export type Rendered = { subject: string; html: string; text: string };
@@ -76,7 +76,7 @@ export function rsvpReceivedEmail(d: {
   return { subject, html, text };
 }
 
-function detailsBlock(content: ApprovedContent): { html: string; text: string } {
+function detailsBlock(content: WeddingContent): { html: string; text: string } {
   const venues = content.venues
     .map((v) => {
       const dir = v.directionsUrl ? ` · <a href="${esc(v.directionsUrl)}" style="color:#8A5A26">Get directions</a>` : "";
@@ -112,7 +112,7 @@ export function approvalPassEmail(d: {
   passLink: string;
   pageLink: string;
   gatesOpenAt: Date;
-  content: ApprovedContent;
+  content: WeddingContent;
   qrCid?: string;
 }): Rendered {
   const subject = `Your attendance is confirmed: ${couple(d.couple)}`;
@@ -144,7 +144,7 @@ export function reminderNoResponseEmail(d: { couple: CoupleInfo; firstName: stri
   return { subject, html, text };
 }
 
-export function dayBeforeEmail(d: { couple: CoupleInfo; firstName: string; passLink: string; pageLink: string; gatesOpenAt: Date; content: ApprovedContent; qrCid?: string }): Rendered {
+export function dayBeforeEmail(d: { couple: CoupleInfo; firstName: string; passLink: string; pageLink: string; gatesOpenAt: Date; content: WeddingContent; qrCid?: string }): Rendered {
   const subject = `See you tomorrow: ${couple(d.couple)}`;
   const details = detailsBlock({ ...d.content, programme: d.content.programme.slice(0, 3) });
   const html = layout(

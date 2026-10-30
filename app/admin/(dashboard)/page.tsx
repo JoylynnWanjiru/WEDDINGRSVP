@@ -5,9 +5,12 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { ApprovalQueue } from "@/components/admin/ApprovalQueue";
 import { StatCards } from "@/components/admin/StatCards";
+import { btn } from "@/components/admin/ui";
 import { getDb } from "@/server/db/client";
 import { getApprovalQueue } from "@/server/services/admin/approvals";
 import { getDashboard } from "@/server/services/admin/dashboard";
+import { listRecentOpens } from "@/server/services/admin/guests";
+import { getSiteVisitStats } from "@/server/services/site-visits";
 import { getEmailQuota } from "@/server/services/messaging";
 import { getAdmin } from "../_lib/auth";
 
@@ -28,10 +31,18 @@ const DIETARY_LABEL: Record<string, string> = {
   other: "Allergy / other",
 };
 
+const OPENED = new Intl.DateTimeFormat("en-KE", { timeZone: "Africa/Nairobi", day: "numeric", month: "short", hour: "numeric", minute: "2-digit", hour12: true });
+
 async function Dashboard() {
   const ctx = await getAdmin();
   const db = getDb();
-  const [d, queue, quota] = await Promise.all([getDashboard(db, ctx), getApprovalQueue(db, ctx), getEmailQuota(db, ctx)]);
+  const [d, queue, quota, opens, visits] = await Promise.all([
+    getDashboard(db, ctx),
+    getApprovalQueue(db, ctx),
+    getEmailQuota(db, ctx),
+    listRecentOpens(db, ctx),
+    getSiteVisitStats(db, ctx),
+  ]);
   const h = d.headcount;
   const capacityPct = h.capacity ? Math.min(100, Math.round((h.approved / h.capacity) * 100)) : null;
 
@@ -39,16 +50,17 @@ async function Dashboard() {
     <div className="space-y-10">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="font-display text-4xl">Dashboard</h1>
+          <p className="a-eyebrow">Overview</p>
+          <h1 className="a-title mt-2">Dashboard</h1>
           <p className="text-sm text-wine/70">Live numbers from the guest list.</p>
         </div>
-        <Link href="/admin/guests" className="label inline-flex min-h-11 items-center rounded-sm bg-wine px-5 text-[0.65rem] text-gold">
+        <Link href="/admin/guests" className={btn.primary}>
           Manage guests
         </Link>
       </header>
 
       {d.email.failed > 0 ? (
-        <p role="alert" className="rounded-sm border border-[#9b1c1c]/30 bg-[#f8e1e1] px-4 py-3 text-[#7a1d1d]">
+        <p role="alert" className="a-notice bg-[#f8e1e1] text-[#7a1d1d]">
           {d.email.failed} email{d.email.failed === 1 ? "" : "s"} failed to send. Check the Gmail settings, then retry from the guest list (E10).
         </p>
       ) : null}
@@ -68,6 +80,48 @@ async function Dashboard() {
         ]}
       />
 
+      {/* D29: the public page. Self-RSVPs are approved automatically; review them here. */}
+      <section aria-labelledby="public-page">
+        <h2 id="public-page" className="font-display text-3xl">
+          Public page
+        </h2>
+        <p className="mb-4 text-sm text-wine/70">
+          Devices that opened the public invitation (one per phone or computer, counted by a cookie), and the people who RSVPed there themselves.
+        </p>
+        <StatCards
+          cards={[
+            { label: "Self-RSVPs to review", value: visits.selfRsvps, href: "/admin/guests?filter=selfRsvp", tone: visits.selfRsvps ? "gold" : undefined },
+            { label: "Devices", value: visits.devices },
+            { label: "Visits", value: visits.visits },
+            { label: "Devices that RSVPed", value: visits.rsvped },
+          ]}
+        />
+        {visits.recent.length ? (
+          <ul className="a-card mt-3 divide-y divide-wine/10 overflow-hidden">
+            {visits.recent.map((v, i) => (
+              <li key={i} className="a-row flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 px-5 py-3 text-sm">
+                <span>
+                  {v.device}
+                  {v.fullName && v.invitationId ? (
+                    <>
+                      {" · "}
+                      <Link href={`/admin/guests/${v.invitationId}`} className="font-display text-lg hover:text-gold-deep">
+                        {v.fullName}
+                      </Link>
+                    </>
+                  ) : (
+                    <span className="text-wine/70"> · hasn&rsquo;t RSVPed</span>
+                  )}
+                </span>
+                <span className="text-wine/70">
+                  {v.visits} visit{v.visits === 1 ? "" : "s"} · last <span className="tabular-nums">{OPENED.format(v.lastSeenAt)} EAT</span>
+                </span>
+              </li>
+            ))}
+          </ul>
+        ) : null}
+      </section>
+
       <section aria-labelledby="queue">
         <h2 id="queue" className="font-display text-3xl">
           Awaiting your approval <span className="text-gold-deep">({queue.queue.length})</span>
@@ -78,8 +132,32 @@ async function Dashboard() {
         />
       </section>
 
+      <section aria-labelledby="opened">
+        <h2 id="opened" className="font-display text-3xl">
+          Recently opened
+        </h2>
+        <p className="mb-4 text-sm text-wine/70">Guests who opened their personal link, newest first, however you sent it (D28).</p>
+        {opens.length ? (
+          <ul className="a-card divide-y divide-wine/10 overflow-hidden">
+            {opens.map((o, i) => (
+              <li key={i} className="a-row flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 px-5 py-3">
+                <Link href={`/admin/guests/${o.invitationId}`} className="font-display text-xl hover:text-gold-deep">
+                  {o.fullName}
+                </Link>
+                <span className="text-sm text-wine/70">
+                  {o.device}
+                  {o.taps > 1 ? ` · ${o.taps} taps` : ""} · <span className="tabular-nums">{OPENED.format(o.lastSeenAt)} EAT</span>
+                </span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="a-card px-4 py-8 text-center font-display text-xl italic text-wine/70">No one has opened their link yet.</p>
+        )}
+      </section>
+
       <div className="grid gap-6 lg:grid-cols-3">
-        <section aria-labelledby="headcount" className="rounded-sm border border-wine/10 bg-white p-5">
+        <section aria-labelledby="headcount" className="a-card p-5">
           <h2 id="headcount" className="font-display text-2xl">
             Headcount
           </h2>
@@ -91,8 +169,8 @@ async function Dashboard() {
             approved people · {h.adults} adults, {h.children} children
           </p>
           {capacityPct !== null ? (
-            <div className="mt-3 h-2 overflow-hidden rounded-full bg-wine/10" aria-hidden>
-              <div className={`h-full ${h.overCapacityBy > 0 ? "bg-[#9b1c1c]" : "bg-gold-deep"}`} style={{ width: `${capacityPct}%` }} />
+            <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-wine/10" aria-hidden>
+              <div className={`h-full rounded-full ${h.overCapacityBy > 0 ? "bg-[#9b1c1c]" : "bg-gradient-to-r from-gold-antique to-gold"}`} style={{ width: `${capacityPct}%` }} />
             </div>
           ) : null}
           {h.overCapacityBy > 0 ? <p className="mt-2 text-sm text-[#9b1c1c]">{h.overCapacityBy} over the venue capacity.</p> : null}
@@ -106,7 +184,7 @@ async function Dashboard() {
           ) : null}
         </section>
 
-        <section aria-labelledby="dietary" className="rounded-sm border border-wine/10 bg-white p-5">
+        <section aria-labelledby="dietary" className="a-card p-5">
           <h2 id="dietary" className="font-display text-2xl">
             For the caterer
           </h2>
@@ -128,7 +206,7 @@ async function Dashboard() {
           </p>
         </section>
 
-        <section aria-labelledby="email" className="rounded-sm border border-wine/10 bg-white p-5">
+        <section aria-labelledby="email" className="a-card p-5">
           <h2 id="email" className="font-display text-2xl">
             Email
           </h2>

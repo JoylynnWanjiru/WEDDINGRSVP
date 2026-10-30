@@ -4,13 +4,13 @@
 import { happeningNow } from "../../lib/happening";
 import type { Db } from "../db/client";
 import { requireApproved } from "./access";
-import { getApprovedContent } from "./content";
+import { getWeddingContent } from "./content";
 
 export { happeningNow };
 
 export async function getDayOfPage(db: Db, token: string | null | undefined, opts: { now?: Date } = {}) {
   const access = await requireApproved(db, token);
-  const content = await getApprovedContent(db, access);
+  const content = await getWeddingContent(db, access);
   const now = opts.now ?? new Date();
   return {
     guestName: access.invitation.fullName,

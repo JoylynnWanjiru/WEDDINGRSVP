@@ -62,7 +62,7 @@ function VendorCard({ vendor: v, weddingDate }: { vendor: VendorRow; weddingDate
   }
 
   return (
-    <article className={`rounded-sm border bg-white p-5 ${v.removed ? "border-wine/10 opacity-70" : "border-wine/15"}`}>
+    <article className={`a-card p-5 ${v.removed ? "border-wine/10 opacity-70" : "border-wine/15"}`}>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="label text-[0.6rem] text-gold-deep">{v.role}</p>

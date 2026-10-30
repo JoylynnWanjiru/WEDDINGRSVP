@@ -45,3 +45,15 @@ export async function markWhatsappShared(db: Db, ctx: AdminCtx, invitationId: st
     return applyTransition(tx, inv, { type: "send" }, adminActor(ctx), { set: { whatsappSharedAt: now }, meta: { channel: "whatsapp" } });
   });
 }
+
+/**
+ * D28: "Copy link" in the admin counts as sending, because the couple pastes it into WhatsApp
+ * (or anywhere) by hand. Records link_copied_at and moves a draft to SENT, like the WhatsApp button.
+ */
+export async function markLinkCopied(db: Db, ctx: AdminCtx, invitationId: string, now: Date = new Date()) {
+  return db.transaction(async (tx) => {
+    const inv = await lockInvitation(tx, ctx.weddingId, invitationId);
+    if (inv.status === "revoked") throw new AppError("CONFLICT", "This invitation is revoked.");
+    return applyTransition(tx, inv, { type: "send" }, adminActor(ctx), { set: { linkCopiedAt: now }, meta: { channel: "copy" } });
+  });
+}

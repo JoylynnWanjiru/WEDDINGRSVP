@@ -20,7 +20,7 @@ export function SetupForm({ token }: { token: string }) {
   return (
     <form action={action} className="space-y-4">
       <label className="block text-left">
-        <span className="label text-pearl/80">Code from your app</span>
+        <span className="label text-[0.6rem] text-pearl/75">Code from your app</span>
         <input
           name="code"
           inputMode="numeric"
@@ -28,7 +28,7 @@ export function SetupForm({ token }: { token: string }) {
           pattern="[0-9 ]{6,7}"
           maxLength={7}
           required
-          className="mt-2 w-full rounded-sm border border-gold/30 bg-wine-night/50 px-4 py-3 tracking-[0.3em] text-white focus:border-gold focus:outline-none"
+          className="admin-auth-input tracking-[0.3em]"
         />
       </label>
       {state.error ? (

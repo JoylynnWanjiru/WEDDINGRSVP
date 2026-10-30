@@ -287,7 +287,7 @@ export function DressCodeEditor({ value }: { value: { text: string; swatches: { 
         <textarea name="text" rows={3} defaultValue={value?.text ?? ""} required className={adminInput} />
       </Field>
       <div>
-        <p className="label mb-2 text-[0.6rem] text-wine/70">Colours (guests can tap to copy the code)</p>
+        <p className="a-label mb-2 block">Colours (guests can tap to copy the code)</p>
         <ul className="space-y-2">
           {swatches.map((s, i) => (
             <li key={i} className="flex items-center gap-2">

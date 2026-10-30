@@ -15,7 +15,8 @@ export default function VendorsPage() {
   return (
     <div className="space-y-8">
       <header>
-        <h1 className="font-display text-4xl">Vendors</h1>
+        <p className="a-eyebrow">Suppliers</p>
+        <h1 className="a-title mt-2">Vendors</h1>
         <p className="max-w-2xl text-sm text-wine/70">
           Photographers, caterers, decor, DJ… Each team gets a link with their arrival time, the programme, directions, your contacts and a gate pass for the
           whole team. They never see guests, and they don&rsquo;t count in the guest numbers.
@@ -44,14 +45,14 @@ async function Vendors() {
           ["Meals", sum("mealCount")],
           ["Arrived", sum("arrivedCount")],
         ].map(([label, value]) => (
-          <div key={label} className="rounded-sm border border-wine/10 bg-white px-4 py-3">
-            <dt className="label text-[0.6rem] text-wine/70">{label}</dt>
+          <div key={label} className="a-card px-4 py-3">
+            <dt className="a-label">{label}</dt>
             <dd className="font-display text-3xl tabular-nums">{value}</dd>
           </div>
         ))}
       </dl>
 
-      <details className="rounded-sm border border-wine/10 bg-white p-5" open={!vendors.length}>
+      <details className="a-card p-5" open={!vendors.length}>
         <summary className="label min-h-11 cursor-pointer content-center text-[0.65rem] text-wine">+ Add a vendor</summary>
         <div className="mt-4">
           <VendorForm weddingDate={wedding.weddingDate} />

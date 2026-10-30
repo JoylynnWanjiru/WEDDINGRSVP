@@ -11,7 +11,7 @@ import { createGmailMailer } from "@/server/integrations/mailer";
 import { reopenAttendance, restoreInvitation, revokeInvitation } from "@/server/services/admin/approvals";
 import { addInvitation, importInvitations, rotateInviteLink, updateInvitation, type ImportResult } from "@/server/services/admin/guests";
 import { markEmailBounced, queueInvitationEmails, retryFailedEmails, sendNow, type ProcessSummary } from "@/server/services/messaging";
-import { markWhatsappShared } from "@/server/services/whatsapp";
+import { markLinkCopied, markWhatsappShared } from "@/server/services/whatsapp";
 import { getAdmin } from "../../_lib/auth";
 
 export type Result<T = undefined> = { ok: true; data?: T } | { ok: false; message: string; fields?: Record<string, string>; existingId?: string };
@@ -79,6 +79,11 @@ export async function retryFailedAction() {
 
 export async function markWhatsappSharedAction(id: string) {
   return admin((ctx) => markWhatsappShared(getDb(), ctx, id));
+}
+
+/** D28: copying a guest's link counts as sending it. */
+export async function markLinkCopiedAction(id: string) {
+  return admin((ctx) => markLinkCopied(getDb(), ctx, id));
 }
 
 export async function markBouncedAction(id: string) {

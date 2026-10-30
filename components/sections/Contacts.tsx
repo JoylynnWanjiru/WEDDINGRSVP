@@ -6,19 +6,17 @@ export function Contacts({ contacts }: { contacts: { role: string; name: string;
   if (!contacts.length) return null;
   return (
     <Section id="contacts" eyebrow="Need help?" title="Contacts">
-      <ul className="mx-auto grid max-w-md gap-4">
+      <ul className="contact-grid">
         {contacts.map((c, i) => (
-          <li key={i} className="flex items-center justify-between gap-4 rounded-sm border border-wine/15 bg-white px-4 py-3">
-            <div>
-              <p className="label text-[0.6rem] text-gold-deep">{c.role}</p>
-              <p className="font-display text-xl">{c.name}</p>
-            </div>
+          <li key={i} className="contact-card">
+            <p className="label">{c.role}</p>
+            <p className="font-display contact-name">{c.name}</p>
             {c.phone ? (
-              <div className="flex shrink-0 gap-2">
-                <a href={`tel:${c.phone}`} className="label inline-flex min-h-11 items-center rounded-sm bg-wine px-3 text-[0.6rem] text-gold">
+              <div className="contact-actions">
+                <a href={`tel:${c.phone}`} className="label">
                   Call
                 </a>
-                <a href={`https://wa.me/${c.phone.replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer" className="label inline-flex min-h-11 items-center rounded-sm border border-wine/40 px-3 text-[0.6rem]">
+                <a href={`https://wa.me/${c.phone.replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer" className="label">
                   WhatsApp
                 </a>
               </div>

@@ -27,8 +27,8 @@ export async function queueReminders(db: Db, wedding: Wedding, now: Date = new D
           withEmail,
           inArray(invitations.status, ["sent", "viewed"]),
           isNull(invitations.respondedAt),
-          // sent long enough ago, on either channel
-          or(lte(invitations.emailSentAt, cutoff), lte(invitations.whatsappSharedAt, cutoff)),
+          // sent long enough ago, on any channel (D28: a copied link counts as sent)
+          or(lte(invitations.emailSentAt, cutoff), lte(invitations.whatsappSharedAt, cutoff), lte(invitations.linkCopiedAt, cutoff)),
           // BR-19: at most once per interval
           or(isNull(invitations.lastReminderAt), lte(invitations.lastReminderAt, cutoff)),
         ),

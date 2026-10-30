@@ -1,11 +1,12 @@
-// Approved-only wedding content (BR-1). Every exported function here takes ApprovedAccess
-// or VendorAccess (D25), which only the access gate can create, so locked data can't be fetched first.
+// The wedding content. Public since D29 (it was approved-only under BR-1). Every exported function
+// here takes a proof from the access gate (PublicAccess, ApprovedAccess or VendorAccess, D25), so a
+// purged wedding's content can't be fetched by mistake.
 
 import { asc, eq } from "drizzle-orm";
 import type { Db } from "../db/client";
 import { contacts, dressCode, faqItems, photos, programmeItems, venues } from "../db/schema";
 import { directionsUrl, openInMapsUrl } from "../utils/maps";
-import type { ApprovedAccess, VendorAccess } from "./access";
+import type { ApprovedAccess, PublicAccess, VendorAccess } from "./access";
 
 /** Venues, programme and contacts: shared by guests (BR-1) and vendors (D25). Not exported: callers prove access first. */
 async function loadSchedule(db: Db, weddingId: string) {
@@ -39,7 +40,7 @@ async function loadSchedule(db: Db, weddingId: string) {
   };
 }
 
-export async function getApprovedContent(db: Db, access: ApprovedAccess) {
+export async function getWeddingContent(db: Db, access: PublicAccess | ApprovedAccess) {
   const { wedding } = access;
   const w = wedding.id;
 
@@ -64,7 +65,7 @@ export async function getApprovedContent(db: Db, access: ApprovedAccess) {
   };
 }
 
-export type ApprovedContent = Awaited<ReturnType<typeof getApprovedContent>>;
+export type WeddingContent = Awaited<ReturnType<typeof getWeddingContent>>;
 
 /** D25: a vendor's working subset. No story, photos, FAQ, dress code or contribution details. */
 export async function getVendorContent(db: Db, access: VendorAccess) {

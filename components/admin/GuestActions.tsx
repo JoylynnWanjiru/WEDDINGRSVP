@@ -7,6 +7,7 @@ import { useState, useTransition } from "react";
 import { approveAction, declineAction } from "@/app/admin/(dashboard)/actions";
 import {
   markBouncedAction,
+  markLinkCopiedAction,
   markWhatsappSharedAction,
   queueEmailsAction,
   reopenAction,
@@ -53,6 +54,8 @@ export function GuestActions({ id, fullName, status, link, whatsappUrl, email, e
     } catch {
       window.prompt("Copy this link:", link);
     }
+    // D28: copying counts as sending (a draft becomes Sent). A revoked link is never "sent".
+    if (status !== "revoked") run(() => markLinkCopiedAction(id));
   }
 
   function emailNow() {
@@ -85,7 +88,7 @@ export function GuestActions({ id, fullName, status, link, whatsappUrl, email, e
       {notice ? <Notice tone={notice.tone}>{notice.text}</Notice> : null}
 
       <section aria-label="Share the invitation">
-        <p className="label mb-2 text-[0.6rem] text-wine/70">Share the personal link</p>
+        <p className="a-label mb-2 block">Share the personal link</p>
         <div className="flex flex-wrap gap-2">
           <button type="button" className={btn.outline} onClick={copy}>
             {copied ? "Copied" : "Copy link"}
@@ -116,7 +119,7 @@ export function GuestActions({ id, fullName, status, link, whatsappUrl, email, e
       </section>
 
       <section aria-label="Decisions">
-        <p className="label mb-2 text-[0.6rem] text-wine/70">Decisions</p>
+        <p className="a-label mb-2 block">Decisions</p>
         <div className="flex flex-wrap gap-2">
           {status === "awaiting_approval" ? (
             <>
@@ -160,7 +163,7 @@ export function GuestActions({ id, fullName, status, link, whatsappUrl, email, e
       </section>
 
       <section aria-label="Fixes">
-        <p className="label mb-2 text-[0.6rem] text-wine/70">Fixes</p>
+        <p className="a-label mb-2 block">Fixes</p>
         <div className="flex flex-wrap gap-2">
           <button
             type="button"
@@ -189,7 +192,7 @@ export function GuestActions({ id, fullName, status, link, whatsappUrl, email, e
       {/* D20, §7: fix a mis-tapped count at the gate. The original check-ins stay in the log. */}
       {status === "partially_arrived" || status === "arrived" ? (
         <section aria-label="Correct arrivals">
-          <p className="label mb-2 text-[0.6rem] text-wine/70">Correct arrivals</p>
+          <p className="a-label mb-2 block">Correct arrivals</p>
           <form action={correct} className="flex flex-wrap items-end gap-2">
             <label className="flex items-center gap-2 text-sm">
               Arrived

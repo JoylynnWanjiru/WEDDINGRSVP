@@ -6,7 +6,7 @@
 
 import Link from "next/link";
 import { useState, useTransition } from "react";
-import { markWhatsappSharedAction, queueEmailsAction } from "@/app/admin/(dashboard)/guests/actions";
+import { markLinkCopiedAction, markWhatsappSharedAction, queueEmailsAction } from "@/app/admin/(dashboard)/guests/actions";
 import { StatusBadge } from "./StatusBadge";
 import { btn, Notice } from "./ui";
 
@@ -17,15 +17,26 @@ export type GuestRow = {
   email: string | null;
   group: string | null;
   status: string;
+  /** D29: RSVPed on the public page themselves; the planner reviews these. */
+  selfRsvp: boolean;
   partySize: number;
   seatAllowance: number;
   emailSentAt: string | null;
   whatsappSharedAt: string | null;
+  linkCopiedAt: string | null;
   firstViewedAt: string | null;
+  lastViewedAt: string | null;
+  openCount: number;
+  openDevices: number;
   emailBouncedAt: string | null;
   link: string;
   whatsappUrl: string | null;
 };
+
+const whenTime = (iso: string | null) =>
+  iso
+    ? new Intl.DateTimeFormat("en-KE", { timeZone: "Africa/Nairobi", day: "numeric", month: "short", hour: "numeric", minute: "2-digit", hour12: true }).format(new Date(iso)) + " EAT"
+    : "";
 
 const when = (iso: string | null) =>
   iso ? new Intl.DateTimeFormat("en-KE", { timeZone: "Africa/Nairobi", day: "numeric", month: "short" }).format(new Date(iso)) : null;
@@ -53,6 +64,12 @@ export function GuestTable({ rows }: { rows: GuestRow[] }) {
     } catch {
       window.prompt("Copy this link:", row.link);
     }
+    if (row.status === "revoked") return;
+    // D28: copying counts as sending (a draft becomes Sent), so the list shows who has their link.
+    startTransition(async () => {
+      const res = await markLinkCopiedAction(row.id);
+      if (!res.ok) setNotice({ tone: "error", text: res.message });
+    });
   }
 
   function whatsapp(row: GuestRow) {
@@ -76,7 +93,7 @@ export function GuestTable({ rows }: { rows: GuestRow[] }) {
     });
   }
 
-  if (!rows.length) return <p className="rounded-sm border border-wine/10 bg-white px-4 py-8 text-center text-wine/70">No guests match.</p>;
+  if (!rows.length) return <p className="a-card px-4 py-8 text-center text-wine/70">No guests match.</p>;
 
   return (
     <div className="space-y-3">
@@ -91,9 +108,9 @@ export function GuestTable({ rows }: { rows: GuestRow[] }) {
       </div>
       {notice ? <Notice tone={notice.tone}>{notice.text}</Notice> : null}
 
-      <ul className="divide-y divide-wine/10 overflow-hidden rounded-sm border border-wine/10 bg-white">
+      <ul className="divide-y divide-wine/10 overflow-hidden a-card">
         {rows.map((r) => (
-          <li key={r.id} className="flex flex-col gap-3 px-3 py-3 sm:flex-row sm:items-center">
+          <li key={r.id} className="a-row flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center">
             <div className="flex min-w-0 flex-1 items-start gap-3">
               <label className="-my-1 -ml-2 flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center">
                 <input type="checkbox" checked={selected.has(r.id)} onChange={() => toggle(r.id)} className="h-4 w-4 accent-[#3D0F19]" aria-label={`Select ${r.fullName}`} />
@@ -104,6 +121,7 @@ export function GuestTable({ rows }: { rows: GuestRow[] }) {
                     {r.fullName}
                   </Link>
                   <StatusBadge status={r.status} />
+                  {r.selfRsvp ? <span className="a-badge bg-[#efe6f6] text-[#4b2a6b]">Self-RSVP</span> : null}
                 </div>
                 <p className="text-xs text-wine/70">
                   {[
@@ -111,7 +129,9 @@ export function GuestTable({ rows }: { rows: GuestRow[] }) {
                     `party ${r.partySize}${r.seatAllowance ? ` (up to ${r.seatAllowance + 1})` : ""}`,
                     r.whatsappSharedAt ? `WhatsApp ${when(r.whatsappSharedAt)}` : null,
                     r.emailSentAt ? `email ${when(r.emailSentAt)}` : null,
-                    r.firstViewedAt ? `viewed ${when(r.firstViewedAt)}` : null,
+                    r.linkCopiedAt ? `link copied ${when(r.linkCopiedAt)}` : null,
+                    r.openCount ? `opened ${r.openCount}× · last ${whenTime(r.lastViewedAt)}` : r.firstViewedAt ? `viewed ${when(r.firstViewedAt)}` : null,
+                    r.openDevices > 1 ? `${r.openDevices} devices` : null,
                     r.emailBouncedAt ? "email bounced" : null,
                     !r.phone && !r.email ? "no phone or email" : null,
                   ]

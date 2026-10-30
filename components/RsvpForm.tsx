@@ -2,9 +2,11 @@
 
 // RSVP form (spec §7, BLUEPRINT BR-5 to BR-8). The browser helps (it won't add more guests
 // than the allowance), but every rule is enforced again on the server.
+// Used on the personal link and, since D29, on the public page (`publicMode`: phone required,
+// a name for a "No", and the E19 honeypot).
 
 import { useState, useTransition } from "react";
-import { submitRsvpAction } from "@/app/i/[token]/actions";
+import type { RsvpActionResult } from "@/app/i/[token]/actions";
 import { Button } from "./ui/Button";
 
 const DIETARY: { value: string; label: string }[] = [
@@ -21,7 +23,9 @@ const EVENT_LABEL: Record<string, string> = { ceremony: "Ceremony", reception: "
 type Member = { fullName: string; isChild: boolean; dietary: string; dietaryNotes: string };
 
 export type RsvpFormProps = {
-  token: string;
+  /** The server action that saves the answer (personal link: bound to the token; public page: D29). */
+  action: (payload: unknown) => Promise<RsvpActionResult>;
+  publicMode?: boolean;
   seatAllowance: number;
   weddingEvents: string[];
   hasEmail: boolean;
@@ -35,11 +39,11 @@ export type RsvpFormProps = {
   };
 };
 
-const input =
-  "w-full rounded-sm border border-wine/25 bg-white px-3 py-2.5 text-wine placeholder:text-wine/60 focus:border-gold-deep focus:outline-none";
-const label = "label text-[0.65rem] text-wine/70";
+// Underlined fields on the paper card, like filling in a printed reply card.
+const input = "rsvp-input";
+const label = "label rsvp-label";
 
-export function RsvpForm({ token, seatAllowance, weddingEvents, hasEmail, hasPhone, initial }: RsvpFormProps) {
+export function RsvpForm({ action, publicMode, seatAllowance, weddingEvents, hasEmail, hasPhone, initial }: RsvpFormProps) {
   const [attending, setAttending] = useState<boolean | null>(initial.attending);
   const [primary, setPrimary] = useState<Member>(initial.primary);
   const [extras, setExtras] = useState<Member[]>(initial.extras);
@@ -47,6 +51,7 @@ export function RsvpForm({ token, seatAllowance, weddingEvents, hasEmail, hasPho
   const [message, setMessage] = useState(initial.message);
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
+  const [website, setWebsite] = useState(""); // E19 honeypot (public page only)
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -67,9 +72,9 @@ export function RsvpForm({ token, seatAllowance, weddingEvents, hasEmail, hasPho
           email,
           message,
         }
-      : { attending: false, phone, email, message };
+      : { attending: false, phone, email, message, ...(publicMode ? { fullName: primary.fullName } : {}) };
     startTransition(async () => {
-      const res = await submitRsvpAction(token, payload);
+      const res = await action(publicMode ? { ...payload, website } : payload);
       if (res.ok) {
         setErrors({});
         setFormError(null);
@@ -81,20 +86,18 @@ export function RsvpForm({ token, seatAllowance, weddingEvents, hasEmail, hasPho
   }
 
   return (
-    <form onSubmit={submit} className="space-y-6 text-left" noValidate>
+    <form onSubmit={submit} className="rsvp-form text-left" noValidate>
       <fieldset>
-        <legend className="font-display text-2xl text-wine">Will you be joining us?</legend>
-        <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <legend className="rsvp-legend font-display">Will you be joining us?</legend>
+        <div className="rsvp-choices">
           {[
             [true, "Joyfully accepts"],
             [false, "Regretfully declines"],
           ].map(([value, text]) => (
-            <label
-              key={String(value)}
-              className={`flex min-h-12 cursor-pointer items-center gap-3 rounded-sm border px-4 py-3 ${attending === value ? "border-gold-deep bg-gold/15" : "border-wine/20 bg-white"}`}
-            >
-              <input type="radio" name="attending" checked={attending === value} onChange={() => setAttending(value as boolean)} className="accent-[#8A5A26]" />
-              <span className="text-wine">{text as string}</span>
+            <label key={String(value)} className="rsvp-choice" data-checked={attending === value}>
+              <input type="radio" name="attending" checked={attending === value} onChange={() => setAttending(value as boolean)} className="sr-only" />
+              <span className="rsvp-choice-mark" aria-hidden />
+              <span className="font-display">{text as string}</span>
             </label>
           ))}
         </div>
@@ -105,33 +108,33 @@ export function RsvpForm({ token, seatAllowance, weddingEvents, hasEmail, hasPho
           <MemberFields title="You" member={primary} onChange={(p) => setPrimary({ ...primary, ...p })} errors={errors} prefix="primary" hideChild />
 
           <fieldset className="space-y-4">
-            <legend className="font-display text-xl text-wine">Your guests</legend>
-            <p className="text-sm text-wine/70">
+            <legend className="rsvp-legend font-display">Your guests</legend>
+            <p className="rsvp-help">
               {seatAllowance === 0
                 ? "This invitation is for you only."
                 : `Your invitation includes up to ${seatAllowance} extra ${seatAllowance === 1 ? "guest" : "guests"}. Please name each person.`}
             </p>
             {extras.map((m, i) => (
-              <div key={i} className="rounded-sm border border-wine/15 bg-white/60 p-4">
+              <div key={i} className="rsvp-guest">
                 <MemberFields title={`Guest ${i + 1}`} member={m} onChange={(p) => updateExtra(i, p)} errors={errors} prefix={`extras.${i}`} />
-                <button type="button" onClick={() => setExtras((xs) => xs.filter((_, j) => j !== i))} className="label mt-1 inline-flex min-h-11 items-center text-[0.65rem] text-gold-deep underline">
+                <button type="button" onClick={() => setExtras((xs) => xs.filter((_, j) => j !== i))} className="label rsvp-link mt-1">
                   Remove
                 </button>
               </div>
             ))}
             {extras.length < seatAllowance ? (
-              <Button type="button" variant="outline" className="!border-gold-deep !text-gold-deep" onClick={() => setExtras((xs) => [...xs, { fullName: "", isChild: false, dietary: "none", dietaryNotes: "" }])}>
+              <button type="button" className="label rsvp-add" onClick={() => setExtras((xs) => [...xs, { fullName: "", isChild: false, dietary: "none", dietaryNotes: "" }])}>
                 + Add a guest
-              </Button>
+              </button>
             ) : null}
           </fieldset>
 
           {weddingEvents.length > 1 ? (
             <fieldset>
-              <legend className="font-display text-xl text-wine">You&rsquo;ll attend</legend>
-              <div className="mt-2 flex flex-wrap gap-3">
+              <legend className="rsvp-legend font-display">You&rsquo;ll attend</legend>
+              <div className="mt-3 flex flex-wrap gap-3">
                 {weddingEvents.map((ev) => (
-                  <label key={ev} className="flex min-h-11 items-center gap-2 rounded-sm border border-wine/20 bg-white px-3">
+                  <label key={ev} className="rsvp-check">
                     <input
                       type="checkbox"
                       checked={events.includes(ev)}
@@ -149,10 +152,17 @@ export function RsvpForm({ token, seatAllowance, weddingEvents, hasEmail, hasPho
 
       {attending !== null ? (
         <fieldset className="space-y-4">
-          <legend className="font-display text-xl text-wine">Contact details</legend>
+          <legend className="rsvp-legend font-display">Contact details</legend>
+          {publicMode && !attending ? (
+            <label className="block">
+              <span className={label}>Your full name</span>
+              <input value={primary.fullName} onChange={(e) => setPrimary({ ...primary, fullName: e.target.value })} autoComplete="name" required className={`${input} mt-1.5`} aria-invalid={!!errors.fullName} />
+              {errors.fullName ? <Err text={errors.fullName} /> : null}
+            </label>
+          ) : null}
           <label className="block">
-            <span className={label}>Phone (WhatsApp){hasPhone ? " · leave blank to keep the one we have" : ""}</span>
-            <input type="tel" inputMode="tel" autoComplete="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="0712 345 678" className={`${input} mt-1.5`} aria-invalid={!!errors.phone} />
+            <span className={label}>Phone (WhatsApp){publicMode ? " · required" : hasPhone ? " · leave blank to keep the one we have" : ""}</span>
+            <input type="tel" inputMode="tel" autoComplete="tel" required={publicMode} value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="0712 345 678" className={`${input} mt-1.5`} aria-invalid={!!errors.phone} />
             {errors.phone ? <Err text={errors.phone} /> : null}
           </label>
           <label className="block">
@@ -167,14 +177,23 @@ export function RsvpForm({ token, seatAllowance, weddingEvents, hasEmail, hasPho
         </fieldset>
       ) : null}
 
+      {publicMode ? (
+        // E19 honeypot: hidden from people and screen readers; bots fill it in.
+        <div aria-hidden className="absolute -left-[10000px] h-px w-px overflow-hidden">
+          <label>
+            Website <input value={website} onChange={(e) => setWebsite(e.target.value)} tabIndex={-1} autoComplete="off" />
+          </label>
+        </div>
+      ) : null}
+
       {formError ? (
-        <p role="alert" className="rounded-sm bg-[#f8e1e1] px-4 py-3 text-sm text-[#7a1d1d]">
+        <p role="alert" className="border-l-2 border-[#9b1c1c] bg-[#f8e1e1] px-4 py-3 text-sm text-[#7a1d1d]">
           {formError}
         </p>
       ) : null}
 
-      <p className="text-xs text-wine/70">Your details are used only for this wedding and deleted afterwards.</p>
-      <Button type="submit" disabled={pending || attending === null} className="w-full !bg-wine !text-gold hover:!bg-burgundy">
+      <p className="rsvp-help text-xs">Your details are used only for this wedding and deleted afterwards.</p>
+      <Button type="submit" variant="wine" disabled={pending || attending === null} className="w-full">
         {pending ? "Sending…" : "Send my response"}
       </Button>
     </form>
@@ -198,7 +217,7 @@ function MemberFields({
 }) {
   return (
     <div className="space-y-3">
-      <p className="label text-[0.65rem] text-gold-deep">{title}</p>
+      <p className="label rsvp-member-title">{title}</p>
       <label className="block">
         <span className={label}>Full name</span>
         <input value={member.fullName} onChange={(e) => onChange({ fullName: e.target.value })} autoComplete={hideChild ? "name" : "off"} className={`${input} mt-1.5`} aria-invalid={!!errors[`${prefix}.fullName`]} />

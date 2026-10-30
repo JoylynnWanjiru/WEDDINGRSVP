@@ -35,19 +35,34 @@ const contact = {
   message: optionalText(1000),
 };
 
-export const rsvpInput = z.discriminatedUnion("attending", [
-  z.object({
-    attending: z.literal(true),
-    primary: partyMember.omit({ isChild: true }),
-    extras: z.array(partyMember).max(20).default([]),
-    /** Events the party will attend. Omitted = all of the wedding's events. */
-    events: z.array(z.enum(EVENT_KINDS)).max(EVENT_KINDS.length).optional(),
-    ...contact,
-  }),
-  z.object({ attending: z.literal(false), ...contact }),
-]);
+const rsvpYes = z.object({
+  attending: z.literal(true),
+  primary: partyMember.omit({ isChild: true }),
+  extras: z.array(partyMember).max(20).default([]),
+  /** Events the party will attend. Omitted = all of the wedding's events. */
+  events: z.array(z.enum(EVENT_KINDS)).max(EVENT_KINDS.length).optional(),
+  ...contact,
+});
+const rsvpNo = z.object({ attending: z.literal(false), ...contact });
+
+export const rsvpInput = z.discriminatedUnion("attending", [rsvpYes, rsvpNo]);
 
 export type RsvpInput = z.infer<typeof rsvpInput>;
+
+/**
+ * D29: an RSVP on the public page. Same answer as a personal RSVP, but the phone is required:
+ * one phone = one invitation (BR-21), so nobody can answer twice and the couple can reach them.
+ */
+const publicExtra = {
+  phone: z.string().trim().min(1, "Please enter your phone number.").max(30),
+  /** Honeypot (E19): hidden from people, filled in by bots. */
+  website: z.string().optional(),
+};
+export const publicRsvpInput = z.discriminatedUnion("attending", [
+  rsvpYes.extend(publicExtra),
+  /** A "No" names the guest here (a "Yes" names them in `primary`). */
+  rsvpNo.extend({ ...publicExtra, fullName }),
+]);
 
 export const requestInput = z
   .object({

@@ -63,7 +63,7 @@ export function ImportForm() {
       {error ? <Notice tone="error">{error}</Notice> : null}
 
       {preview ? (
-        <div className="space-y-4 rounded-sm border border-wine/10 bg-white p-5">
+        <div className="space-y-4 a-card p-5">
           <p className="font-display text-2xl">
             {preview.created} guest{preview.created === 1 ? "" : "s"} will be added
             {preview.skipped.length ? `, ${preview.skipped.length} skipped` : ""}

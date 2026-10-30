@@ -5,6 +5,7 @@
 
 import { useState, useTransition } from "react";
 import { addVendorAction, updateVendorAction } from "@/app/admin/(dashboard)/vendors/actions";
+import { Combobox } from "./Combobox";
 import { fromEat, toEat } from "./settings/eat";
 import { adminInput, btn, Field, Notice, TextInput } from "./ui";
 
@@ -88,13 +89,8 @@ export function VendorForm({ weddingDate, vendor, onDone }: { weddingDate: strin
         <TextInput name="company" required defaultValue={vendor?.company} autoComplete="off" error={f.company} />
       </Field>
       <Field label="Role" error={f.role} hint="Pick one or type your own">
-        <TextInput name="role" required list="vendor-roles" defaultValue={vendor?.role} autoComplete="off" error={f.role} />
+        <Combobox name="role" required options={ROLES} defaultValue={vendor?.role} placeholder="e.g. Photographer" error={f.role} />
       </Field>
-      <datalist id="vendor-roles">
-        {ROLES.map((r) => (
-          <option key={r} value={r} />
-        ))}
-      </datalist>
       <Field label="Contact person" error={f.contactName}>
         <TextInput name="contactName" defaultValue={vendor?.contactName ?? ""} error={f.contactName} />
       </Field>

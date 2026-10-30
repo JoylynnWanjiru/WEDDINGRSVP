@@ -17,5 +17,5 @@ export const statusLabel = (s: string) => LABEL[s]?.[0] ?? s;
 
 export function StatusBadge({ status }: { status: string }) {
   const [label, cls] = LABEL[status] ?? [status, "bg-wine/5"];
-  return <span className={`label inline-flex whitespace-nowrap rounded-full px-2.5 py-1 text-[0.55rem] ${cls}`}>{label}</span>;
+  return <span className={`a-badge ${cls}`}>{label}</span>;
 }

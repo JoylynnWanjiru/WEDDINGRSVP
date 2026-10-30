@@ -1,15 +1,15 @@
-// Data for the guest pages (PROJECT_SPEC §4a): the public teaser, and the personal
-// invitation at each access level. Locked content is only fetched for approved guests.
+// Data for the guest pages (PROJECT_SPEC §4a): the public page, and the personal invitation at
+// each access level. D29: the wedding content is public; only the gate pass stays approved-only.
 
-import { asc, eq, sql } from "drizzle-orm";
+import { and, asc, desc, eq, sql } from "drizzle-orm";
 import type { Db } from "../db/client";
-import { invitations, partyMembers, rsvpEvents, venues, weddings, type Invitation, type Wedding } from "../db/schema";
+import { invitationOpens, invitations, partyMembers, rsvpEvents, venues, weddings, type Invitation, type Wedding } from "../db/schema";
 import { isRsvpOpen } from "../domain/rules";
 import { isUnlocked, nextStatus } from "../domain/status";
 import { AppError } from "../errors";
-import { approvedFrom, getAccess } from "./access";
+import { getAccess, getPublicAccess, publicFrom } from "./access";
 import { logActivity } from "./activity";
-import { getApprovedContent, type ApprovedContent } from "./content";
+import { getWeddingContent, type WeddingContent } from "./content";
 
 /** Names, date and countdown target only: never venue or programme (§4a). */
 function teaserOf(w: Wedding) {
@@ -41,8 +41,8 @@ export type InvitationPage =
       teaser: Teaser;
       guest: GuestView;
       rsvp: RsvpView;
-      /** Only present for approved guests (BR-1). */
-      content?: ApprovedContent;
+      /** D29: the wedding content, for every guest who can still respond or is approved. */
+      content: WeddingContent;
     };
 
 type GuestView = {
@@ -117,18 +117,47 @@ export async function getInvitationPage(
     },
   };
 
-  const approved = approvedFrom(access);
-  return approved ? { ...page, content: await getApprovedContent(db, approved) } : page;
+  const proof = publicFrom(access)!; // invited, declined or approved here
+  return { ...page, content: await getWeddingContent(db, proof) };
 }
+
+/**
+ * D29: the public page. Everything except the gate pass: the content, plus what the public
+ * RSVP form needs (deadline, events, how many extra guests a self-RSVP may bring).
+ */
+export async function getPublicPage(db: Db, slug: string, opts: { now?: Date } = {}) {
+  const access = await getPublicAccess(db, slug);
+  const { wedding } = access;
+  const [content, venueKinds] = await Promise.all([
+    getWeddingContent(db, access),
+    db.select({ kind: venues.kind }).from(venues).where(eq(venues.weddingId, wedding.id)).orderBy(asc(venues.sortOrder)),
+  ]);
+  return {
+    teaser: teaserOf(wedding),
+    content,
+    rsvp: {
+      deadline: wedding.rsvpDeadline,
+      open: isRsvpOpen(wedding.rsvpDeadline, opts.now),
+      weddingEvents: [...new Set(venueKinds.map((v) => v.kind))],
+      seatAllowance: wedding.defaultSeatAllowance,
+    },
+  };
+}
+
+export type PublicPage = Awaited<ReturnType<typeof getPublicPage>>;
+
+/** D28: taps from the same device closer together than this are one visit in the open log. */
+export const OPEN_VISIT_GAP_MS = 30 * 60 * 1000;
 
 /**
  * Records that the guest opened their personal link: the proof of receipt (U3).
  * E27: opens by a signed-in admin are not counted.
+ * D28: every open also goes into the open log, grouped into visits per device.
  */
 export async function recordView(
   db: Db,
   token: string | null | undefined,
-  opts: { viewer: "guest" | "admin"; now?: Date },
+  opts: { viewer: "guest" | "admin"; device?: string; now?: Date },
 ): Promise<void> {
   if (opts.viewer === "admin") return;
   const access = await getAccess(db, token);
@@ -153,6 +182,23 @@ export async function recordView(
     // Log the first view only: later opens just update the count.
     if (!inv.firstViewedAt) {
       await logActivity(tx, { weddingId: inv.weddingId, actor: "guest", invitationId: inv.id, action: "viewed", meta: { from: inv.status, to } });
+    }
+
+    // D28: the open log. Same device within the visit gap extends the last visit.
+    const device = opts.device ?? "Unknown device";
+    const [last] = await tx
+      .select()
+      .from(invitationOpens)
+      .where(and(eq(invitationOpens.invitationId, inv.id), eq(invitationOpens.device, device)))
+      .orderBy(desc(invitationOpens.lastSeenAt))
+      .limit(1);
+    if (last && now.getTime() - last.lastSeenAt.getTime() < OPEN_VISIT_GAP_MS) {
+      await tx
+        .update(invitationOpens)
+        .set({ lastSeenAt: now, taps: sql`${invitationOpens.taps} + 1` })
+        .where(eq(invitationOpens.id, last.id));
+    } else {
+      await tx.insert(invitationOpens).values({ weddingId: inv.weddingId, invitationId: inv.id, device, openedAt: now, lastSeenAt: now });
     }
   });
 }

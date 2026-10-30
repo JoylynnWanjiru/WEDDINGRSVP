@@ -1,0 +1,1536 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Wedding RSVP Build Guide</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500;1,600&family=Jost:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a fixed contents rail on the left, a reading column on the right; each chapter
+   opens with a burgundy band. One deliberate light look: white paper, burgundy ink, gold
+   seal, and bright role colours (one per kind of user) carried through every diagram. */
+:root {
+  --paper: #FFFFFF;
+  --paper-2: #FBF5F6;          /* blush white for panels */
+  --ink: #2A0A12;              /* burgundy-black text */
+  --ink-soft: #6B4650;
+  --wine: #3D0F19;             /* the project's own wine */
+  --burgundy: #8C1C3A;         /* bright burgundy accent */
+  --burgundy-2: #B42552;
+  --gold: #C9AB66;             /* decoration only on white */
+  --gold-deep: #8A5A26;        /* gold for text */
+  --line: #EBD9DE;
+  /* role colours: one per kind of user, used in every diagram */
+  --guest: #E0457B;  --guest-bg: #FDE8F0;
+  --admin: #8C1C3A;  --admin-bg: #F8E3E9;
+  --usher: #0E9384;  --usher-bg: #DDF5F1;
+  --vendor: #2563EB; --vendor-bg: #E2ECFE;
+  --system: #D97706; --system-bg: #FEF0D9;
+  --public: #64748B; --public-bg: #EEF1F5;
+  --ok: #15803D; --ok-bg: #E3F6E9;
+  --stop: #B91C1C; --stop-bg: #FDE6E6;
+  --f-display: "Cormorant Garamond", Georgia, "Times New Roman", serif;
+  --f-body: "Jost", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+img, svg { max-width: 100%; }
+[hidden] { display: none !important; }
+html { scroll-behavior: smooth; scroll-padding-top: 16px; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } * { transition: none !important; animation: none !important; } }
+body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--f-body); font-size: 16px; line-height: 1.6; }
+h1, h2, h3, h4 { font-family: var(--f-display); text-wrap: balance; margin: 0; line-height: 1.12; }
+p { margin: 0; }
+code, .mono { font-family: var(--f-mono); font-size: .86em; }
+code { background: var(--paper-2); border: 1px solid var(--line); border-radius: 4px; padding: .05em .35em; color: var(--burgundy); }
+a { color: var(--burgundy); }
+a:focus-visible, summary:focus-visible, button:focus-visible { outline: 3px solid var(--guest); outline-offset: 2px; border-radius: 4px; }
+.label { font-size: .7rem; letter-spacing: .18em; text-transform: uppercase; font-weight: 600; }
+
+/* ---------- shell ---------- */
+.shell { display: grid; grid-template-columns: 290px minmax(0, 1fr); min-height: 100vh; }
+.rail { position: sticky; top: 0; height: 100vh; overflow-y: auto; background: var(--wine); color: #F4E9EC; padding: 28px 20px 40px; padding-left: max(20px, env(safe-area-inset-left, 0px)); }
+.rail .seal { width: 54px; height: 54px; }
+.rail h1 { font-size: 1.7rem; color: #fff; margin-top: 10px; }
+.rail .sub { color: var(--gold); font-size: .8rem; margin-top: 4px; }
+.toc { list-style: none; padding: 0; margin: 22px 0 0; display: grid; gap: 2px; counter-reset: ch; }
+.toc a { display: flex; gap: 10px; align-items: baseline; padding: 7px 10px; border-radius: 6px; color: #EBDDE1; text-decoration: none; font-size: .92rem; line-height: 1.3; }
+.toc a:hover { background: rgba(255,255,255,.08); color: #fff; }
+.toc a.on { background: var(--burgundy-2); color: #fff; }
+.toc .n { font-family: var(--f-mono); font-size: .72rem; color: var(--gold); min-width: 1.6em; }
+.toc a.on .n { color: #FFE7A8; }
+.toc .grp { margin: 14px 10px 4px; color: var(--gold); font-size: .62rem; letter-spacing: .2em; text-transform: uppercase; font-weight: 600; }
+
+main { min-width: 0; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.wrap { max-width: 980px; margin: 0 auto; padding-block: 0 80px; }
+
+@media (max-width: 900px) {
+  .shell { grid-template-columns: minmax(0, 1fr); }
+  .rail { position: static; height: auto; padding: 20px max(16px, env(safe-area-inset-right, 0px)) 16px max(16px, env(safe-area-inset-left, 0px)); }
+  .toc { display: flex; flex-wrap: nowrap; overflow-x: auto; gap: 6px; padding-bottom: 6px; }
+  .toc li { flex: 0 0 auto; }
+  .toc .grp { display: none; }
+  .toc a { background: rgba(255,255,255,.08); white-space: nowrap; }
+}
+
+/* ---------- hero ---------- */
+.hero { position: relative; margin: 28px 0 10px; border-radius: 18px; overflow: hidden; background: radial-gradient(120% 140% at 85% 0%, #B42552 0%, #8C1C3A 35%, #3D0F19 80%); color: #fff; padding: 44px 40px 36px; }
+.hero::after { content: ""; position: absolute; inset: 10px; border: 1.5px solid rgba(201,171,102,.55); border-radius: 12px; pointer-events: none; }
+.hero .eyebrow { color: var(--gold); }
+.hero h2 { font-size: clamp(2.2rem, 5vw, 3.6rem); font-style: italic; color: #fff; margin-top: 8px; max-width: 22ch; }
+.hero p.lead { margin-top: 14px; max-width: 58ch; color: #F6E8EC; font-size: 1.05rem; }
+.hero .seal-big { position: absolute; right: 34px; top: 30px; width: 120px; height: 120px; opacity: .95; }
+@media (max-width: 640px) { .hero { padding: 32px 22px 26px; } .hero .seal-big { width: 70px; height: 70px; right: 18px; top: 18px; } .hero h2 { max-width: 12ch; } }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-top: 26px; position: relative; z-index: 1; }
+.stat { background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.18); border-radius: 10px; padding: 12px 14px; }
+.stat b { display: block; font-family: var(--f-display); font-size: 2.1rem; line-height: 1; color: #FFE7A8; font-variant-numeric: lining-nums tabular-nums; }
+.stat span { font-size: .8rem; color: #F6E8EC; }
+
+/* ---------- chapters ---------- */
+section.ch { padding-top: 56px; }
+.ch-head { display: flex; gap: 16px; align-items: flex-end; border-bottom: 2px solid var(--line); padding-bottom: 12px; margin-bottom: 22px; }
+.ch-num { font-variant-numeric: lining-nums; font-family: var(--f-display); font-size: 3.4rem; line-height: .8; color: var(--burgundy); font-style: italic; }
+.ch-head h2 { font-size: clamp(1.8rem, 3.6vw, 2.5rem); color: var(--wine); }
+.ch-head .label { color: var(--gold-deep); display: block; margin-bottom: 4px; }
+.intro { font-size: 1.08rem; max-width: 68ch; color: var(--ink); }
+.intro + * { margin-top: 22px; }
+h3.sub { font-size: 1.55rem; color: var(--wine); margin: 34px 0 12px; }
+.muted { color: var(--ink-soft); }
+.stack { display: grid; gap: 18px; }
+
+/* reusable blocks */
+.grid { display: grid; gap: 14px; }
+.g2 { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+.g3 { grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); }
+.card { background: var(--paper); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; min-width: 0; }
+.card h4 { font-size: 1.3rem; color: var(--wine); }
+.card p { margin-top: 6px; font-size: .95rem; }
+.pill { display: inline-block; font-size: .72rem; font-weight: 600; padding: 3px 9px; border-radius: 999px; letter-spacing: .04em; }
+
+/* real-world analogy box */
+.irl { display: grid; grid-template-columns: auto minmax(0,1fr); gap: 16px; align-items: start; background: linear-gradient(135deg, #FFF8E8, #FDEFF3); border: 1.5px dashed var(--gold); border-radius: 14px; padding: 18px 20px; }
+.irl .ic { width: 48px; height: 48px; border-radius: 50%; background: var(--wine); display: grid; place-items: center; }
+.irl .ic svg { width: 26px; height: 26px; }
+.irl .label { color: var(--gold-deep); }
+.irl h4 { font-size: 1.35rem; color: var(--wine); margin: 2px 0 6px; }
+
+/* why / instead */
+.why { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+.tool { border-radius: 12px; border: 1px solid var(--line); overflow: hidden; background: #fff; display: flex; flex-direction: column; }
+.tool .top { padding: 12px 16px; background: var(--paper-2); border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+.tool .top b { font-family: var(--f-display); font-size: 1.4rem; color: var(--wine); }
+.tool .top .job { font-size: .72rem; color: var(--burgundy); font-weight: 600; letter-spacing: .08em; text-transform: uppercase; }
+.tool .body { padding: 12px 16px 14px; font-size: .93rem; display: grid; gap: 8px; }
+.tool .no { color: var(--ink-soft); font-size: .85rem; border-top: 1px dashed var(--line); padding-top: 8px; }
+.tool .no b { color: var(--stop); font-weight: 600; }
+
+/* architecture diagram */
+.arch { background: var(--paper-2); border: 1px solid var(--line); border-radius: 16px; padding: 22px; display: grid; gap: 16px; }
+.arch .row { display: grid; gap: 10px; }
+.arch .users { grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); }
+.who { border-radius: 10px; padding: 10px 12px; font-size: .85rem; border: 2px solid; background: #fff; }
+.who b { display: block; font-family: var(--f-display); font-size: 1.15rem; }
+.who.guest { border-color: var(--guest); } .who.guest b { color: var(--guest); }
+.who.admin { border-color: var(--admin); } .who.admin b { color: var(--admin); }
+.who.usher { border-color: var(--usher); } .who.usher b { color: var(--usher); }
+.who.vendor { border-color: var(--vendor); } .who.vendor b { color: var(--vendor); }
+.who.public { border-color: var(--public); } .who.public b { color: var(--public); }
+.who.system { border-color: var(--system); } .who.system b { color: var(--system); }
+.arrowdown { text-align: center; color: var(--burgundy); font-size: .8rem; font-weight: 600; letter-spacing: .1em; }
+.arrowdown::before { content: "▼"; display: block; font-size: 1.1rem; line-height: 1; }
+.vercel { border: 2px solid var(--wine); border-radius: 14px; padding: 14px; background: #fff; display: grid; gap: 10px; }
+.vercel > .label { color: var(--wine); }
+.layer { border-radius: 10px; padding: 10px 14px; display: grid; grid-template-columns: 150px minmax(0,1fr); gap: 12px; align-items: center; }
+.layer b { font-family: var(--f-mono); font-size: .85rem; }
+.layer span { font-size: .9rem; }
+.l1 { background: #FDE8F0; } .l1 b { color: #B0275C; }
+.l2 { background: #F8E3E9; } .l2 b { color: var(--admin); }
+.l3 { background: #FEF0D9; } .l3 b { color: #A35A04; }
+.l4 { background: #DDF5F1; } .l4 b { color: #0B6E63; }
+@media (max-width: 560px) { .layer { grid-template-columns: minmax(0,1fr); gap: 2px; } }
+.outside { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+.svc { border-radius: 10px; padding: 10px 12px; background: #fff; border: 1.5px solid var(--line); font-size: .85rem; }
+.svc b { display: block; color: var(--wine); }
+.svc.db { border-color: var(--usher); background: var(--usher-bg); }
+
+/* mermaid frames */
+.diagram { background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 14px; overflow-x: auto; }
+.diagram pre.mermaid { margin: 0; background: transparent; text-align: center; font-family: var(--f-body); }
+.caption { font-size: .85rem; color: var(--ink-soft); margin-top: 8px; }
+
+/* story strip */
+.story { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 0; border-radius: 14px; overflow: hidden; border: 1px solid var(--line); }
+.beat { padding: 14px 14px 16px; position: relative; background: #fff; border-right: 1px solid var(--line); }
+.beat:last-child { border-right: 0; }
+.beat .t { font-family: var(--f-mono); font-size: .72rem; color: var(--burgundy); }
+.beat h5 { font-family: var(--f-display); font-size: 1.15rem; margin: 4px 0; color: var(--wine); }
+.beat p { font-size: .86rem; }
+.beat .st { margin-top: 8px; }
+.beat:nth-child(odd) { background: var(--paper-2); }
+
+/* status chips */
+.chip { display: inline-block; font-family: var(--f-mono); font-size: .72rem; padding: 2px 8px; border-radius: 6px; font-weight: 500; }
+.c-draft { background: #EEF1F5; color: #475569; }
+.c-sent { background: #E2ECFE; color: #1D4ED8; }
+.c-viewed { background: #E0F2FE; color: #0369A1; }
+.c-await { background: #FEF0D9; color: #A35A04; }
+.c-approved { background: var(--ok-bg); color: var(--ok); }
+.c-arrived { background: #DCFCE7; color: #166534; }
+.c-declined { background: #F3E8FF; color: #7E22CE; }
+.c-revoked { background: var(--stop-bg); color: var(--stop); }
+
+/* rule cards */
+.rules { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 12px; }
+.rule { border-left: 5px solid var(--burgundy); background: #fff; border-radius: 0 10px 10px 0; padding: 12px 14px; box-shadow: 0 1px 0 var(--line); border-top: 1px solid var(--line); border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.rule .id { font-family: var(--f-mono); font-size: .75rem; color: var(--burgundy); font-weight: 500; }
+.rule p { font-size: .92rem; margin-top: 4px; }
+.rule.g { border-left-color: var(--guest); } .rule.g .id { color: var(--guest); }
+.rule.u { border-left-color: var(--usher); } .rule.u .id { color: var(--usher); }
+.rule.s { border-left-color: var(--system); } .rule.s .id { color: #A35A04; }
+.rule.d { border-left-color: var(--vendor); } .rule.d .id { color: var(--vendor); }
+
+/* what-if cards (details) */
+.whatif { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+details.wi { background: #fff; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+details.wi summary { cursor: pointer; list-style: none; padding: 14px 16px; display: flex; gap: 12px; align-items: flex-start; }
+details.wi summary::-webkit-details-marker { display: none; }
+details.wi summary .q { font-weight: 500; }
+details.wi summary .e { font-family: var(--f-mono); font-size: .72rem; color: #fff; background: var(--burgundy); border-radius: 5px; padding: 2px 6px; flex: 0 0 auto; margin-top: 3px; }
+details.wi summary::after { content: "+"; margin-left: auto; color: var(--burgundy); font-size: 1.3rem; line-height: 1; }
+details.wi[open] summary::after { content: "–"; }
+details.wi .a { padding: 0 16px 14px 16px; font-size: .92rem; border-top: 1px dashed var(--line); padding-top: 10px; background: var(--paper-2); }
+
+/* quiz */
+.quiz { margin-top: 26px; border-radius: 14px; background: var(--wine); color: #F6E8EC; padding: 18px 20px; }
+.quiz .label { color: var(--gold); }
+.quiz details { border-top: 1px solid rgba(255,255,255,.14); padding: 10px 0; }
+.quiz details:first-of-type { border-top: 0; }
+.quiz summary { cursor: pointer; font-weight: 500; color: #fff; list-style: none; display: flex; gap: 10px; }
+.quiz summary::-webkit-details-marker { display: none; }
+.quiz summary::before { content: "?"; flex: 0 0 22px; height: 22px; border-radius: 50%; background: var(--gold); color: var(--wine); display: grid; place-items: center; font-weight: 700; font-size: .8rem; margin-top: 2px; }
+.quiz details[open] summary::before { content: "✓"; background: #7DD3A8; }
+.quiz .ans { margin: 8px 0 0 32px; color: #F6E8EC; font-size: .94rem; }
+.quiz code { background: rgba(255,255,255,.1); border-color: rgba(255,255,255,.2); color: #FFE7A8; }
+
+/* key/lock security visual */
+.locks { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+.lock { border-radius: 14px; padding: 16px; color: #fff; display: grid; gap: 6px; align-content: start; }
+.lock .k { font-family: var(--f-mono); font-size: .75rem; opacity: .9; }
+.lock h4 { font-size: 1.35rem; color: #fff; }
+.lock p { font-size: .9rem; color: rgba(255,255,255,.92); }
+.lk1 { background: linear-gradient(140deg, #E0457B, #A3174C); }
+.lk2 { background: linear-gradient(140deg, #8C1C3A, #3D0F19); }
+.lk3 { background: linear-gradient(140deg, #0E9384, #075E55); }
+.lk4 { background: linear-gradient(140deg, #2563EB, #1E3A8A); }
+.lk5 { background: linear-gradient(140deg, #D97706, #92400E); }
+.lk6 { background: linear-gradient(140deg, #64748B, #334155); }
+
+/* access matrix */
+.matrix { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; }
+.matrix table { border-collapse: collapse; width: 100%; min-width: 640px; font-size: .88rem; }
+.matrix th, .matrix td { padding: 9px 10px; text-align: center; border-bottom: 1px solid var(--line); }
+.matrix th { background: var(--wine); color: #fff; font-weight: 500; font-size: .78rem; letter-spacing: .04em; }
+.matrix th:first-child, .matrix td:first-child { text-align: left; }
+.matrix tr:nth-child(even) td { background: var(--paper-2); }
+.y { color: var(--ok); font-weight: 700; } .n { color: var(--stop); font-weight: 700; } .p { color: #A35A04; font-weight: 600; }
+
+/* principle tiles */
+.princ { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; }
+.pr { background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; display: grid; gap: 8px; align-content: start; }
+.pr .tag { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.pr h4 { font-size: 1.35rem; color: var(--wine); }
+.pr .here { font-size: .88rem; background: var(--paper-2); border-radius: 8px; padding: 8px 10px; border-left: 3px solid var(--gold); }
+.pr .here b { color: var(--gold-deep); font-weight: 600; }
+
+/* palette */
+.swatches { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; }
+.sw { border-radius: 12px; overflow: hidden; border: 1px solid var(--line); background: #fff; }
+.sw .c { height: 70px; display: flex; align-items: flex-end; padding: 8px; font-family: var(--f-display); font-size: 1.3rem; }
+.sw .i { padding: 8px 10px; font-size: .78rem; }
+.sw .i b { display: block; font-size: .85rem; }
+
+/* pipeline */
+.pipe { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; counter-reset: s; }
+.step { position: relative; background: #fff; border: 1.5px solid var(--line); border-radius: 12px; padding: 14px 14px 14px; }
+.step::before { counter-increment: s; content: counter(s); position: absolute; top: -12px; left: 12px; width: 26px; height: 26px; border-radius: 50%; background: var(--burgundy); color: #fff; font-weight: 600; font-size: .8rem; display: grid; place-items: center; }
+.step h5 { font-family: var(--f-display); font-size: 1.15rem; color: var(--wine); margin: 6px 0 4px; }
+.step p { font-size: .85rem; }
+.step.hot { border-color: var(--stop); background: var(--stop-bg); }
+.step.ok { border-color: var(--ok); background: var(--ok-bg); }
+
+/* timeline */
+.tl { position: relative; display: grid; gap: 14px; padding-left: 26px; }
+.tl::before { content: ""; position: absolute; left: 8px; top: 6px; bottom: 6px; width: 3px; background: linear-gradient(var(--guest), var(--burgundy), var(--usher), var(--vendor)); border-radius: 3px; }
+.ev { position: relative; background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 12px 16px; }
+.ev::before { content: ""; position: absolute; left: -24px; top: 16px; width: 13px; height: 13px; border-radius: 50%; background: #fff; border: 3px solid var(--burgundy); }
+.ev .d { font-family: var(--f-mono); font-size: .75rem; color: var(--burgundy); }
+.ev h5 { font-family: var(--f-display); font-size: 1.25rem; color: var(--wine); margin: 2px 0 4px; }
+.ev ul { margin: 4px 0 0; padding-left: 18px; font-size: .9rem; }
+
+/* folder tree */
+.tree { font-family: var(--f-mono); font-size: .82rem; line-height: 1.75; background: var(--wine); color: #F4E9EC; border-radius: 14px; padding: 16px 18px; overflow-x: auto; white-space: pre; }
+.tree .c { color: #9FE3D6; } .tree .k { color: #FFE7A8; } .tree .m { color: #F7A8C4; }
+
+/* lessons */
+.lesson { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); border-radius: 14px; overflow: hidden; border: 1px solid var(--line); }
+.lesson > div { padding: 14px 16px; }
+.lesson .bad { background: var(--stop-bg); }
+.lesson .good { background: var(--ok-bg); }
+.lesson .label { display: block; margin-bottom: 4px; }
+.lesson .bad .label { color: var(--stop); } .lesson .good .label { color: var(--ok); }
+@media (max-width: 640px) { .lesson { grid-template-columns: minmax(0,1fr); } }
+
+.gloss { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px; }
+.gl { border-radius: 10px; padding: 12px 14px; background: var(--paper-2); border: 1px solid var(--line); }
+.gl b { font-family: var(--f-display); font-size: 1.2rem; color: var(--wine); display: block; }
+.gl span { font-size: .88rem; }
+
+.foot { margin-top: 60px; padding: 24px; border-radius: 14px; background: var(--paper-2); text-align: center; color: var(--ink-soft); font-size: .9rem; }
+.foot b { font-family: var(--f-display); font-size: 1.4rem; color: var(--wine); display: block; font-style: italic; }
+
+/* ---------- interactive labs ---------- */
+.lab { margin-top: 22px; border: 2px solid var(--burgundy); border-radius: 16px; overflow: hidden; background: #fff; }
+.lab-head { background: var(--burgundy); color: #fff; padding: 10px 16px; display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+.lab-head b { font-family: var(--f-display); font-size: 1.35rem; font-weight: 600; }
+.lab-head .label { color: #FFE7A8; }
+.lab-body { padding: 16px; display: grid; gap: 14px; }
+.lab-cols { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 16px; }
+@media (max-width: 760px) { .lab-cols { grid-template-columns: minmax(0, 1fr); } }
+.btns { display: flex; flex-wrap: wrap; gap: 8px; }
+.btn { font: 500 .88rem var(--f-body); border: 1.5px solid var(--burgundy); background: #fff; color: var(--burgundy); border-radius: 999px; padding: 8px 14px; min-height: 40px; cursor: pointer; }
+.btn:hover:not(:disabled) { background: var(--admin-bg); }
+.btn:disabled { opacity: .35; cursor: not-allowed; }
+.btn.solid { background: var(--burgundy); color: #fff; }
+.btn.solid:hover:not(:disabled) { background: var(--burgundy-2); }
+.btn.g { border-color: var(--guest); color: #B0275C; } .btn.g:hover:not(:disabled) { background: var(--guest-bg); }
+.btn.a { border-color: var(--admin); color: var(--admin); }
+.btn.u { border-color: var(--usher); color: #0B6E63; } .btn.u:hover:not(:disabled) { background: var(--usher-bg); }
+.btn.v { border-color: var(--vendor); color: var(--vendor); } .btn.v:hover:not(:disabled) { background: var(--vendor-bg); }
+.btn.on { background: var(--wine); color: #fff; border-color: var(--wine); }
+.btn-group-label { font-size: .7rem; letter-spacing: .14em; text-transform: uppercase; font-weight: 600; color: var(--ink-soft); width: 100%; margin-top: 4px; }
+.now { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.now .big { font-family: var(--f-mono); font-size: 1.05rem; padding: 6px 12px; border-radius: 8px; }
+.log { list-style: none; margin: 0; padding: 10px 12px; background: var(--paper-2); border-radius: 10px; max-height: 220px; overflow-y: auto; font-size: .84rem; display: grid; gap: 4px; }
+.log li { display: grid; grid-template-columns: auto minmax(0,1fr); gap: 8px; }
+.log .who-tag { font-family: var(--f-mono); font-size: .7rem; padding: 1px 6px; border-radius: 4px; color: #fff; align-self: start; margin-top: 2px; }
+.toggle { display: inline-flex; align-items: center; gap: 8px; font-size: .88rem; cursor: pointer; user-select: none; }
+.toggle input { width: 18px; height: 18px; accent-color: var(--burgundy); }
+
+/* phone mock */
+.phone { width: 100%; max-width: 280px; margin: 0 auto; border: 10px solid var(--wine); border-radius: 30px; background: var(--paper-2); padding: 14px 12px; display: grid; gap: 8px; box-shadow: 0 14px 30px -18px rgba(61,15,25,.6); }
+.phone .bar { height: 5px; width: 70px; background: var(--wine); border-radius: 4px; margin: -6px auto 4px; opacity: .5; }
+.sect { border-radius: 8px; padding: 9px 11px; font-size: .86rem; display: flex; justify-content: space-between; align-items: center; gap: 8px; transition: all .25s; }
+.sect.open { background: #fff; border: 1.5px solid var(--ok); color: var(--ink); }
+.sect.shut { background: repeating-linear-gradient(-45deg, #F1E4E8, #F1E4E8 6px, #F8EEF1 6px, #F8EEF1 12px); border: 1.5px dashed #D9BFC7; color: #A08690; }
+.sect .st { font-size: .75rem; font-weight: 600; }
+.sect.open .st { color: var(--ok); }
+.phone-note { font-size: .82rem; text-align: center; color: var(--ink-soft); }
+
+/* gate simulator */
+.result { border-radius: 12px; padding: 16px; color: #fff; text-align: center; display: grid; gap: 4px; min-height: 120px; align-content: center; transition: background .2s; }
+.result .icon { font-size: 2.2rem; line-height: 1; }
+.result h5 { font-family: var(--f-display); font-size: 1.6rem; margin: 0; }
+.result.idle { background: #EEF1F5; color: var(--ink-soft); }
+.result.green { background: #14532d; } .result.blue { background: #1e3a8a; } .result.red { background: #7f1d1d; }
+.meter { height: 14px; border-radius: 99px; background: var(--paper-2); border: 1px solid var(--line); overflow: hidden; }
+.meter i { display: block; height: 100%; background: linear-gradient(90deg, var(--usher), #34D399); transition: width .3s; }
+.kv { display: flex; justify-content: space-between; font-size: .88rem; }
+.kv b { font-variant-numeric: tabular-nums; }
+.stepper { display: inline-flex; align-items: center; gap: 8px; }
+.stepper output { min-width: 2ch; text-align: center; font-family: var(--f-display); font-size: 1.6rem; }
+
+/* email calculator */
+.range { width: 100%; accent-color: var(--burgundy); }
+.days { display: flex; flex-wrap: wrap; gap: 6px; }
+.day { flex: 1 1 90px; border-radius: 10px; padding: 8px 10px; background: var(--system-bg); border: 1px solid #F3C98B; font-size: .8rem; }
+.day b { display: block; font-family: var(--f-display); font-size: 1.4rem; color: #92400E; }
+.day .fill { height: 6px; border-radius: 4px; background: #F3C98B; margin-top: 4px; overflow: hidden; }
+.day .fill i { display: block; height: 100%; background: var(--system); }
+
+/* progress */
+.progress { margin-top: 18px; background: rgba(255,255,255,.08); border-radius: 10px; padding: 10px 12px; }
+.progress .label { color: var(--gold); }
+.progress .track { height: 8px; background: rgba(255,255,255,.15); border-radius: 99px; overflow: hidden; margin-top: 6px; }
+.progress .track i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--gold), #FFE7A8); transition: width .3s; }
+.progress p { font-size: .8rem; color: #EBDDE1; margin-top: 6px; }
+.toc a .ok { margin-left: auto; color: #7DD3A8; font-size: .8rem; visibility: hidden; }
+.toc a.done .ok { visibility: visible; }
+.got { margin-top: 26px; display: flex; justify-content: flex-end; }
+.got label { display: inline-flex; gap: 10px; align-items: center; padding: 10px 16px; border-radius: 999px; border: 1.5px solid var(--ok); color: var(--ok); font-weight: 500; cursor: pointer; background: #fff; }
+.got input { width: 18px; height: 18px; accent-color: var(--ok); }
+.got label:has(input:checked) { background: var(--ok-bg); }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <radialGradient id="wax" cx="38%" cy="32%" r="75%"><stop offset="0%" stop-color="#E9D49A"/><stop offset="45%" stop-color="#C9AB66"/><stop offset="100%" stop-color="#9C6934"/></radialGradient>
+    <radialGradient id="wax2" cx="40%" cy="35%" r="70%"><stop offset="0%" stop-color="#D8BE7E"/><stop offset="100%" stop-color="#A9783F"/></radialGradient>
+    <symbol id="seal" viewBox="0 0 100 100">
+      <polygon fill="url(#wax)" stroke="#8A5A26" stroke-width=".6" points="98,50 95.2,57.5 94.6,65.6 89.3,71.7 86.1,79.2 78.9,82.9 73,88.5 65,89.7 57.4,93.3 49.5,92.5 42.4,93.3 34.6,89.9 26.6,88.8 20.8,83.2 13.7,79.6 10.6,72.1 5.5,65.9 5,57.8 2,50 5,42.2 5.5,34.1 10.6,27.9 13.7,20.4 20.8,16.8 26.6,11.2 34.6,10.1 42.4,6.7 49.5,7.5 57.4,6.7 65,10.3 73,11.5 78.9,17.1 86.1,20.8 89.3,28.3 94.6,34.4 95.2,42.5"/>
+      <circle cx="50" cy="50" r="36" fill="url(#wax2)" stroke="#8A5A26" stroke-opacity=".6" stroke-width=".8"/>
+      <circle cx="50" cy="50" r="32.5" fill="none" stroke="#F2E3B8" stroke-opacity=".55" stroke-width=".6" stroke-dasharray="1.2 1.6"/>
+      <g fill="#FFFFFF" stroke="#E2D7D1" stroke-width=".4" stroke-linejoin="round">
+        <path d="M33 54 C39 52 44 50 49 50 C53 50 57 51 61 53 C65 55 68 56 71 55 C68 58 64 60 59 60 C54 60 50 59 46 60 C42 61 37 59 33 54 Z"/>
+        <path d="M47 51 C45 44 46 37 51 31 C53 37 55 43 55 50 Z"/>
+        <path d="M52 51 C55 43 61 38 69 36 C66 42 62 47 57 52 Z"/>
+        <path d="M33 54 C30 53 27 51 25 48 C29 49 31 49 34 51 Z"/>
+        <circle cx="68.5" cy="54.2" r="2.6"/>
+      </g>
+      <path d="M71 55 L74.5 55.4 L71.2 56.6 Z" fill="#C9AB66"/>
+      <circle cx="69.3" cy="53.6" r=".55" fill="#3D0F19"/>
+    </symbol>
+    <symbol id="i-bulb" viewBox="0 0 24 24"><path fill="none" stroke="#FFE7A8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.6 10.8c.6.5 1 1.2 1.1 2V16h5v-.2c.1-.8.5-1.5 1.1-2A6 6 0 0 0 12 3z"/></symbol>
+  </defs>
+</svg>
+
+<div class="shell">
+  <nav class="rail" aria-label="Contents">
+    <svg class="seal" role="img" aria-label="Gold dove seal"><use href="#seal"/></svg>
+    <h1>Behind the Invitation</h1>
+    <p class="sub">How the wedding RSVP system was built, and why</p>
+    <div class="progress"><span class="label">Your progress</span><div class="track"><i id="prog-bar"></i></div><p id="prog-text">Tick "I understand this" at the end of each chapter.</p></div>
+    <ol class="toc">
+      <li class="grp">The idea</li>
+      <li><a href="#start"><span class="n">00</span>The project at a glance<span class="ok" aria-hidden="true">✓</span></a></li>
+      <li><a href="#problem"><span class="n">01</span>The problem we solved<span class="ok" aria-hidden="true">✓</span></a></li>
+      <li><a href="#people"><span class="n">02</span>Who uses it<span class="ok" aria-hidden="true">✓</span></a></li>
+      <li class="grp">The design</li>
+      <li><a href="#architecture"><span class="n">03</span>System architecture<span class="ok" aria-hidden="true">✓</span></a></li>
+      <li><a href="#stack"><span class="n">04</span>The stack, and why<span class="ok" aria-hidden="true">✓</span></a></li>
+      <li><a href="#structure"><span class="n">05</span>How the code is organised<span class="ok" aria-hidden="true">✓</span></a></li>
+      <li><a href="#data"><span class="n">06</span>The data model<span class="ok" aria-hidden="true">✓</span></a></li>
+      <li><a href="#lifecycle"><span class="n">07</span>An invitation's life<span class="ok" aria-hidden="true">✓</span></a></li>
+      <li class="grp">The rules</li>
+      <li><a href="#rules"><span class="n">08</span>Business rules &amp; what-ifs<span class="ok" aria-hidden="true">✓</span></a></li>
+      <li><a href="#security"><span class="n">09</span>Security &amp; privacy<span class="ok" aria-hidden="true">✓</span></a></li>
+      <li><a href="#gate"><span class="n">10</span>Wedding day at the gate<span class="ok" aria-hidden="true">✓</span></a></li>
+      <li><a href="#messaging"><span class="n">11</span>Emails, WhatsApp &amp; cron<span class="ok" aria-hidden="true">✓</span></a></li>
+      <li><a href="#vendors"><span class="n">12</span>Vendors<span class="ok" aria-hidden="true">✓</span></a></li>
+      <li class="grp">The craft</li>
+      <li><a href="#principles"><span class="n">13</span>Engineering principles<span class="ok" aria-hidden="true">✓</span></a></li>
+      <li><a href="#visual"><span class="n">14</span>Visual design rules<span class="ok" aria-hidden="true">✓</span></a></li>
+      <li><a href="#testing"><span class="n">15</span>Testing &amp; quality<span class="ok" aria-hidden="true">✓</span></a></li>
+      <li><a href="#deploy"><span class="n">16</span>From laptop to live<span class="ok" aria-hidden="true">✓</span></a></li>
+      <li><a href="#journey"><span class="n">17</span>The build, day by day<span class="ok" aria-hidden="true">✓</span></a></li>
+      <li><a href="#glossary"><span class="n">18</span>Glossary<span class="ok" aria-hidden="true">✓</span></a></li>
+    </ol>
+  </nav>
+
+  <main>
+  <div class="wrap">
+
+  <!-- 00 -->
+  <section id="start" class="hero" aria-labelledby="start-title">
+    <svg class="seal-big" aria-hidden="true"><use href="#seal"/></svg>
+    <span class="label eyebrow">Wedding RSVP &amp; guest management · Mary &amp; Joseph · 19 Dec 2026</span>
+    <h2 id="start-title">From a paper card to a living invitation</h2>
+    <p class="lead">You built one website that sends every guest a private invitation, collects their RSVP, unlocks the venue only for approved guests, and checks everyone in at the gate with a QR code. Here's how each part works and why it was built that way.</p>
+    <div class="stats">
+      <div class="stat"><b>3</b><span>days of building, 19–21 Oct</span></div>
+      <div class="stat"><b>28</b><span>commits to GitHub</span></div>
+      <div class="stat"><b>304</b><span>automatic tests</span></div>
+      <div class="stat"><b>25</b><span>recorded design decisions</span></div>
+      <div class="stat"><b>KSh 0</b><span>monthly running cost</span></div>
+    </div>
+  </section>
+
+  <div class="irl" style="margin-top:16px">
+    <div class="ic"><svg><use href="#i-bulb"/></svg></div>
+    <div>
+      <span class="label">How to read this guide</span>
+      <h4>Every chapter has three layers</h4>
+      <p>A <b>diagram</b> to see it, a <b>real-world comparison</b> (gold dashed boxes like this one) to feel it, and a <b>"check yourself"</b> panel to test it. Codes like <code>BR-13</code>, <code>E5</code> and <code>D24</code> point to the rule, edge case or decision in <code>docs/BLUEPRINT.md</code>, so you can look up the details there.</p>
+    </div>
+  </div>
+
+  <!-- 01 -->
+  <section id="problem" class="ch" aria-labelledby="problem-title">
+    <div class="ch-head"><span class="ch-num">01</span><div><span class="label">The idea</span><h2 id="problem-title">The problem we solved</h2></div></div>
+    <p class="intro">Printed cards can't be tracked, can't be taken back, and can't tell an usher who belongs at the gate. The system swaps each card for a private link that knows who it belongs to.</p>
+
+    <div class="lesson">
+      <div class="bad"><span class="label">With paper cards</span>
+        <ul style="margin:0;padding-left:18px;font-size:.93rem">
+          <li>"I never got one": no proof either way</li>
+          <li>A photographed card brings extra people</li>
+          <li>Headcount for the caterer is a guess</li>
+          <li>Venue and timings repeated over 50 phone calls</li>
+          <li>At the gate, anyone confident walks in</li>
+          <li>Printing and delivery cost money</li>
+        </ul>
+      </div>
+      <div class="good"><span class="label">With personal links</span>
+        <ul style="margin:0;padding-left:18px;font-size:.93rem">
+          <li>The dashboard shows sent, opened and viewed</li>
+          <li>The couple can revoke a link, and it stops working everywhere</li>
+          <li>Each guest names the people coming, within a set limit</li>
+          <li>Venue, map and programme live on one page</li>
+          <li>Each approved guest gets a QR gate pass, checked live</li>
+          <li>Running cost: KSh 0</li>
+        </ul>
+      </div>
+    </div>
+
+    <h3 class="sub">The whole system in one sentence</h3>
+    <div class="card" style="border-left:5px solid var(--burgundy);border-radius:0 12px 12px 0">
+      <p style="font-family:var(--f-display);font-size:1.35rem;line-height:1.4;color:var(--wine)">The couple sends each guest a <b style="color:var(--guest)">personal link</b> → the guest <b style="color:var(--guest)">responds</b> with their named party → the couple (or the system, within the allowance) <b style="color:var(--admin)">approves</b> → the guest unlocks the venue and a <b style="color:var(--usher)">gate pass</b> that ushers scan on the day.</p>
+      <p class="muted" style="margin-top:8px">And one guarantee above everything: <b>nobody sees event details or gets through the gate without an approved invitation, and approval can be withdrawn at any moment.</b></p>
+    </div>
+
+    <h3 class="sub">What kind of app is this?</h3>
+    <div class="grid g3">
+      <div class="card" style="border-top:4px solid var(--burgundy)"><span class="pill" style="background:var(--admin-bg);color:var(--admin)">Main</span><h4 style="margin-top:6px">Workflow app</h4><p>One central object, the <b>invitation</b>, moves through stages, and what you can see depends on its stage.</p></div>
+      <div class="card" style="border-top:4px solid var(--guest)"><span class="pill" style="background:var(--guest-bg);color:var(--guest)">Second</span><h4 style="margin-top:6px">Content app</h4><p>The couple edits the programme, venues, FAQ and story without touching code.</p></div>
+      <div class="card" style="border-top:4px solid var(--usher)"><span class="pill" style="background:var(--usher-bg);color:var(--usher)">Small but critical</span><h4 style="margin-top:6px">Real-time slice</h4><p>Gate check-in on the day, where speed and patchy signal matter.</p></div>
+    </div>
+    <p class="caption">Naming the type early tells you where to spend effort: here, the lifecycle and the access rules matter most.</p>
+      <div class="got"><label><input type="checkbox" data-done="problem"> I understand this chapter</label></div>
+  </section>
+
+  <!-- 02 -->
+  <section id="people" class="ch" aria-labelledby="people-title">
+    <div class="ch-head"><span class="ch-num">02</span><div><span class="label">The idea</span><h2 id="people-title">Who uses it: the actors</h2></div></div>
+    <p class="intro">One website, six kinds of visitor. Each comes in through a different door and sees only their own room. The colours here are used for each actor in every diagram that follows.</p>
+    <div class="arch" style="background:#fff">
+      <div class="row users" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))">
+        <div class="who guest"><b>Guest</b>Door: personal link <span class="mono">/i/…</span><br><span class="muted">Sees own card, RSVP; once approved, venue and pass</span></div>
+        <div class="who admin"><b>Couple / planner</b>Door: <span class="mono">/admin</span> + password<br><span class="muted">Sees and controls everything</span></div>
+        <div class="who usher"><b>Usher</b>Door: <span class="mono">/scan</span> + gate PIN<br><span class="muted">Sees a name and party size only</span></div>
+        <div class="who vendor"><b>Vendor</b>Door: <span class="mono">/vendor/…</span> link<br><span class="muted">Sees arrival time, schedule, team pass</span></div>
+        <div class="who public"><b>Public</b>Door: the home page<br><span class="muted">Sees names, date, countdown. Nothing else</span></div>
+        <div class="who system"><b>Scheduler</b>Door: cron + secret<br><span class="muted">Sends queued emails and reminders daily</span></div>
+      </div>
+    </div>
+
+    <div class="irl" style="margin-top:16px">
+      <div class="ic"><svg><use href="#i-bulb"/></svg></div>
+      <div><span class="label">Real world</span><h4>A hotel with key cards</h4>
+      <p>A guest's key card opens their own room, never someone else's. Housekeeping (the usher) has a card that opens a service corridor, not the safe. The manager (the couple) has the master key. The lobby (the home page) is open to anyone, but there's nothing private in it. The <b>capability</b> is the key; what each person actually does with it is written in the <b>activity log</b>, like the hotel's door-entry records.</p></div>
+    </div>
+
+    <div class="quiz"><span class="label">Check yourself</span>
+      <details><summary>An usher scans a pass. Can they see the guest's phone number?</summary><p class="ans">No. Ushers see the name and party size only. Phone numbers and emails never appear on usher screens, in QR codes, or in URLs (§13 sensitive data).</p></details>
+      <details><summary>Why do the couple and the planner share one login in v1?</summary><p class="ans">Decision D6 / A5: it's simpler, and a shared login can't tell them apart anyway, so a "planner can't delete" rule couldn't be enforced. Deletion is guarded by a typed confirmation phrase instead.</p></details>
+    </div>
+      <div class="got"><label><input type="checkbox" data-done="people"> I understand this chapter</label></div>
+  </section>
+
+  <!-- 03 -->
+  <section id="architecture" class="ch" aria-labelledby="arch-title">
+    <div class="ch-head"><span class="ch-num">03</span><div><span class="label">The design</span><h2 id="arch-title">System architecture: the big picture</h2></div></div>
+    <p class="intro">Everyone's phone talks to one Next.js app on Vercel. Inside it, requests pass down four layers, each with one job. Below the app sits a single database, plus a few free outside services.</p>
+
+    <div class="arch">
+      <div class="row users">
+        <div class="who guest"><b>Guest phone</b>browser</div>
+        <div class="who admin"><b>Couple laptop</b>browser</div>
+        <div class="who usher"><b>Usher phone</b>camera + browser</div>
+        <div class="who vendor"><b>Vendor phone</b>browser</div>
+        <div class="who system"><b>Vercel Cron</b>daily at 4–10 am EAT</div>
+      </div>
+      <div class="arrowdown">HTTPS requests</div>
+      <div class="vercel">
+        <span class="label">Vercel · London region (lhr1) · one Next.js 16 app</span>
+        <div class="layer l1"><b>app/</b><span><b>Thin doors.</b> Pages, server actions and API routes: read the request, call a service, turn the answer into a page or a JSON reply.</span></div>
+        <div class="layer l2"><b>server/services/</b><span><b>The kitchen.</b> All the work: RSVP, approvals, gate, emails. Checks access first, then talks to the database.</span></div>
+        <div class="layer l3"><b>server/domain/</b><span><b>The recipe book.</b> Pure rules with no database: the lifecycle, seat allowance, deadline, phone format.</span></div>
+        <div class="layer l4"><b>server/db/</b><span><b>The pantry door.</b> Drizzle tables and migrations: the only way into Postgres.</span></div>
+      </div>
+      <div class="arrowdown">SQL over the network · email · links</div>
+      <div class="row outside">
+        <div class="svc db"><b>Neon Postgres</b>London (eu-west-2). The one source of truth.</div>
+        <div class="svc"><b>Gmail SMTP</b>Sends invitation, approval and reminder emails (≤ 400/day).</div>
+        <div class="svc"><b>WhatsApp wa.me</b>Opens the couple's WhatsApp with the message filled in.</div>
+        <div class="svc"><b>Google Maps links</b>Turn-by-turn directions to the venue.</div>
+        <div class="svc"><b>GitHub</b>Holds the code; every push triggers CI and a deploy.</div>
+      </div>
+    </div>
+    <p class="caption">The app and the database both live in London, so each database call is a short hop, which keeps the gate fast.</p>
+
+    <div class="irl" style="margin-top:16px">
+      <div class="ic"><svg><use href="#i-bulb"/></svg></div>
+      <div><span class="label">Real world</span><h4>A restaurant</h4>
+      <p><b>Waiters</b> (<code>app/</code>) take orders and bring plates, but never cook. The <b>kitchen</b> (<code>services/</code>) does the cooking and checks the booking before serving the private dining room. The <b>recipe book</b> (<code>domain/</code>) says how every dish must be made, and doesn't care who ordered it. The <b>pantry</b> (<code>db/</code>) is where the ingredients live, and there's only one door into it. Because the waiters never cook, you can test the kitchen without any waiters at all. That's what the 304 tests do.</p></div>
+    </div>
+
+    <h3 class="sub">A request's journey: Wanjiru opens her link</h3>
+    <div class="diagram">
+<pre class="mermaid">
+%%{init: {"theme":"base","themeVariables":{"fontFamily":"Jost, sans-serif","primaryColor":"#FDE8F0","primaryTextColor":"#2A0A12","primaryBorderColor":"#E0457B","lineColor":"#8C1C3A","actorBkg":"#FFFFFF","actorBorder":"#8C1C3A","actorTextColor":"#3D0F19","signalColor":"#8C1C3A","signalTextColor":"#2A0A12","noteBkgColor":"#FEF0D9","noteBorderColor":"#D97706","noteTextColor":"#2A0A12","activationBkgColor":"#F8E3E9","activationBorderColor":"#8C1C3A"}}}%%
+sequenceDiagram
+  autonumber
+  participant P as Wanjiru's phone
+  participant A as app/i/[token]/page.tsx
+  participant S as services/invitation-page.ts
+  participant G as services/access.ts
+  participant D as Neon database
+  P->>A: GET /i/abc…43 characters
+  A->>S: getInvitationPage(token)
+  S->>G: getAccess(token)
+  G->>G: hash the token (SHA-256)
+  G->>D: find invitation by hash
+  D-->>G: invitation, status approved
+  G-->>S: level approved + proof
+  S->>D: load programme, venues, contacts
+  S-->>A: page data for her level
+  A-->>P: HTML with her name, details and pass
+  Note over G: No proof, no locked content. The compiler enforces it.
+</pre>
+    </div>
+
+    <div class="quiz"><span class="label">Check yourself</span>
+      <details><summary>Why don't pages in <code>app/</code> contain business logic?</summary><p class="ans">So the logic can be tested without a browser, reused by pages, API routes and emails alike, and changed in one place. Pages "parse input, call a service, map the error" and nothing more.</p></details>
+      <details><summary>Why is the database in London and not Nairobi?</summary><p class="ans">Neon's free tier offers set regions, and Vercel's function region was set to the same city (<code>"regions": ["lhr1"]</code> in <code>vercel.json</code>). Keeping the app beside its database matters more than distance to the user, because one page can make several database calls.</p></details>
+    </div>
+      <div class="got"><label><input type="checkbox" data-done="architecture"> I understand this chapter</label></div>
+  </section>
+
+  <!-- 04 -->
+  <section id="stack" class="ch" aria-labelledby="stack-title">
+    <div class="ch-head"><span class="ch-num">04</span><div><span class="label">The design</span><h2 id="stack-title">The stack, and why each piece</h2></div></div>
+    <p class="intro">Three filters picked every tool: <b>free to run</b> (KSh 0 budget), <b>one language everywhere</b> (TypeScript), and <b>no extra accounts</b> where a plain link would do. Each card also shows what was rejected and why.</p>
+    <div class="why">
+      <div class="tool"><div class="top"><b>TypeScript</b><span class="job">Language</span></div><div class="body"><p>One language for pages, server and scripts. Types catch mistakes before they run, like passing a guest where a vendor is expected.</p><p class="no"><b>Not</b> separate front-end and back-end languages: twice the context-switching for one developer.</p></div></div>
+      <div class="tool"><div class="top"><b>Next.js 16</b><span class="job">Framework</span></div><div class="body"><p>Pages, server actions and API routes in one project. Server components keep secrets on the server; partial prerendering serves a static shell instantly.</p><p class="no"><b>Not</b> a separate React app + Express API: two deployments, two sets of bugs.</p></div></div>
+      <div class="tool"><div class="top"><b>Vercel Hobby</b><span class="job">Hosting</span></div><div class="body"><p>Push to GitHub → live in about a minute. Free HTTPS, daily cron jobs, London region.</p><p class="no"><b>Limit:</b> personal, non-commercial use only. Selling it to other couples later means moving to Pro.</p></div></div>
+      <div class="tool"><div class="top"><b>Neon Postgres</b><span class="job">Database</span></div><div class="body"><p>A real relational database, free for 1 GB. It sleeps when idle and wakes in about a second.</p><p class="no"><b>Not</b> Supabase free: it pauses after a week idle and needs a manual restart. Bad news three weeks before a wedding.</p></div></div>
+      <div class="tool"><div class="top"><b>Drizzle ORM</b><span class="job">Database code</span></div><div class="body"><p>Tables written in TypeScript, typed queries, and generated migration files committed to git.</p><p class="no"><b>Not</b> raw SQL strings: a typo in a column name would only fail at runtime.</p></div></div>
+      <div class="tool"><div class="top"><b>Zod</b><span class="job">Validation</span></div><div class="body"><p>Every form and API body is checked on the server, with friendly messages. The browser's checks are a convenience; the server's are the law.</p></div></div>
+      <div class="tool"><div class="top"><b>jose</b><span class="job">Signed tokens</span></div><div class="body"><p>Signs gate passes and login sessions (JWT, HS256), so they can't be forged or edited.</p></div></div>
+      <div class="tool"><div class="top"><b>Gmail + Nodemailer</b><span class="job">Email</span></div><div class="body"><p>Free, about 500 recipients a day, sent from the couple's real address.</p><p class="no"><b>Not</b> Resend or Postmark: they need a paid domain, and Resend's free tier caps at 100 a day.</p></div></div>
+      <div class="tool"><div class="top"><b>wa.me links</b><span class="job">WhatsApp</span></div><div class="body"><p>One tap opens WhatsApp with the message ready; the couple presses send from their own phone.</p><p class="no"><b>Not</b> the WhatsApp Cloud API: it charges per message.</p></div></div>
+      <div class="tool"><div class="top"><b>qrcode + html5-qrcode</b><span class="job">QR codes</span></div><div class="body"><p>The server draws each pass QR as SVG; ushers scan in the phone browser, no app to install.</p></div></div>
+      <div class="tool"><div class="top"><b>Tailwind CSS 4</b><span class="job">Styling</span></div><div class="body"><p>Theme colours as CSS variables in <code>globals.css</code>, so every page uses the same burgundy and gold.</p></div></div>
+      <div class="tool"><div class="top"><b>Vitest + PGlite</b><span class="job">Testing</span></div><div class="body"><p>PGlite is real Postgres running in memory: tests run the true migrations with no network and no account.</p><p class="no"><b>Not</b> mocked databases: they pass while the real SQL fails.</p></div></div>
+    </div>
+
+    <div class="irl" style="margin-top:16px">
+      <div class="ic"><svg><use href="#i-bulb"/></svg></div>
+      <div><span class="label">Real world</span><h4>Choosing a venue on a budget</h4>
+      <p>You don't hire a stadium for 300 guests, and you don't pick the cheapest hall if it locks its doors when nobody visits for a week (that's Supabase free). You pick a place that fits the guest count, opens on demand (Neon wakes in a second), and costs nothing until you grow (Vercel Hobby → Pro). The plan already notes when to upgrade: when other couples start paying.</p></div>
+    </div>
+      <div class="got"><label><input type="checkbox" data-done="stack"> I understand this chapter</label></div>
+  </section>
+
+  <!-- 05 -->
+  <section id="structure" class="ch" aria-labelledby="structure-title">
+    <div class="ch-head"><span class="ch-num">05</span><div><span class="label">The design</span><h2 id="structure-title">How the code is organised</h2></div></div>
+    <p class="intro">You chose <b>backend first</b>: every rule was built and tested in <code>server/</code> before a single page existed. The folders mirror the four layers from chapter 03.</p>
+<div class="tree" role="img" aria-label="Project folder tree">.
+├─ <span class="k">app/</span>                      <span class="c"># thin doors: pages, actions, API routes</span>
+│  ├─ (public)/page.tsx       <span class="c"># /  the public teaser</span>
+│  ├─ i/[token]/             <span class="c"># ONE page per guest: card, RSVP, details, pass (D22)</span>
+│  ├─ vendor/[token]/        <span class="c"># a vendor's working page (D25)</span>
+│  ├─ admin/(dashboard)/     <span class="c"># dashboard, guests, vendors, settings, tools</span>
+│  ├─ scan/                  <span class="c"># usher scanner + the URL inside each QR</span>
+│  ├─ api/scan|export|cron|track/
+│  └─ opengraph-image.tsx    <span class="c"># the WhatsApp link-preview picture</span>
+├─ <span class="k">components/</span>               <span class="c"># Envelope, DoveSeal, RsvpForm, GatePass, Scanner…</span>
+├─ <span class="k">server/</span>                   <span class="c"># THE BACKEND: plain TypeScript, no React</span>
+│  ├─ domain/<span class="m">status.ts</span>       <span class="c"># ⚠ the lifecycle: every status change asks this</span>
+│  ├─ services/<span class="m">access.ts</span>     <span class="c"># ⚠ the approval gate: requireApproved()</span>
+│  ├─ services/…             <span class="c"># rsvp, gate, messaging, purge, vendors…</span>
+│  ├─ auth/                  <span class="c"># tokens, sessions, rate limits</span>
+│  ├─ db/schema.ts           <span class="c"># tables · migrations/ committed to git</span>
+│  └─ validation/schemas.ts  <span class="c"># every Zod schema</span>
+├─ <span class="k">lib/</span>gate-offline.ts         <span class="c"># offline scanner rules, shared by phone and server</span>
+├─ <span class="k">tests/</span>                    <span class="c"># 304 tests: every BR and E rule</span>
+├─ <span class="k">docs/</span>BLUEPRINT.md · PROJECT_SPEC.md
+├─ .github/workflows/ci.yml  <span class="c"># secret scan, lint, types, tests on every push</span>
+└─ vercel.json               <span class="c"># region + 3 daily cron jobs</span></div>
+
+    <h3 class="sub">Two documents, two jobs</h3>
+    <div class="grid g2">
+      <div class="card" style="border-top:4px solid var(--burgundy)"><h4>PROJECT_SPEC.md</h4><p><b>What to build with:</b> stack, colours, pages, routes, free-tier limits, build phases.</p></div>
+      <div class="card" style="border-top:4px solid var(--guest)"><h4>BLUEPRINT.md</h4><p><b>How it must behave:</b> actors, lifecycle, rules BR-1–23, edge cases E1–27, decisions D1–25. Where the two disagree on behaviour, the blueprint wins.</p></div>
+    </div>
+    <p class="caption">Each fact lives in one document only, and the other links to it. Two copies of a fact eventually disagree.</p>
+
+    <div class="quiz"><span class="label">Check yourself</span>
+      <details><summary>Why does <code>lib/gate-offline.ts</code> live outside <code>server/</code>?</summary><p class="ans">Because the usher's phone runs it too. It checks passes offline in the browser, so it can't import anything server-only, like the database or the secret. The server reuses the same <code>tokenFromScan()</code>, so phone and server read QR codes identically.</p></details>
+      <details><summary>What does "backend first" buy you?</summary><p class="ans">Every rule had a passing test before any page used it. When the pages came, they only had to call services that already worked, so bugs were UI bugs, not rule bugs.</p></details>
+    </div>
+      <div class="got"><label><input type="checkbox" data-done="structure"> I understand this chapter</label></div>
+  </section>
+
+  <!-- 06 -->
+  <section id="data" class="ch" aria-labelledby="data-title">
+    <div class="ch-head"><span class="ch-num">06</span><div><span class="label">The design</span><h2 id="data-title">The data model</h2></div></div>
+    <p class="intro">Everything hangs off one <b>wedding</b> row, so the same code could serve many couples later. The invitation (one per household) is the star; people, answers and arrivals hang off it.</p>
+    <div class="diagram">
+<pre class="mermaid">
+%%{init: {"theme":"base","themeVariables":{"fontFamily":"Jost, sans-serif","primaryColor":"#FFFFFF","primaryTextColor":"#2A0A12","primaryBorderColor":"#8C1C3A","lineColor":"#8C1C3A","tertiaryColor":"#FBF5F6"}}}%%
+erDiagram
+  WEDDINGS ||--o{ INVITATIONS : has
+  WEDDINGS ||--o{ VENDORS : hires
+  WEDDINGS ||--o{ VENUES : "held at"
+  WEDDINGS ||--o{ PROGRAMME_ITEMS : schedules
+  WEDDINGS ||--o{ EMAIL_QUEUE : sends
+  WEDDINGS ||--o{ ACTIVITY_LOG : records
+  INVITATIONS ||--|{ PARTY_MEMBERS : "names people"
+  INVITATIONS ||--o{ RSVP_EVENTS : "answers per event"
+  INVITATIONS ||--o{ CHECK_INS : "arrives in batches"
+  VENDORS ||--o{ VENDOR_CHECK_INS : "arrives in batches"
+  INVITATIONS {
+    uuid id
+    enum status
+    text invite_token_hash
+    int pass_version
+    int seat_allowance
+    int party_size
+    int arrived_count
+  }
+  VENDORS {
+    uuid id
+    text company
+    int staff_count
+    int meal_count
+    int pass_version
+    timestamp removed_at
+  }
+</pre>
+    </div>
+
+    <h3 class="sub">Rules the database itself enforces</h3>
+    <div class="rules">
+      <div class="rule"><span class="id">CHECK arrived_count ≤ party_size</span><p>Even if code had a bug, Postgres refuses to let more people in than the party holds (BR-14 backstop).</p></div>
+      <div class="rule g"><span class="id">UNIQUE (wedding_id, phone)</span><p>Two invitations can't share a phone number, so nobody gets invited twice by accident (BR-21).</p></div>
+      <div class="rule u"><span class="id">UNIQUE client_ref</span><p>An offline check-in uploaded twice is only counted once.</p></div>
+      <div class="rule s"><span class="id">One primary per party</span><p>A partial unique index: each party has exactly one main guest.</p></div>
+    </div>
+
+    <div class="irl" style="margin-top:16px">
+      <div class="ic"><svg><use href="#i-bulb"/></svg></div>
+      <div><span class="label">Real world</span><h4>Timestamps vs statuses (D2)</h4>
+      <p>Think of a parcel. Its <b>status</b> is where it is in the process: <i>packed, shipped, delivered</i>. The <b>tracking events</b> are facts with times: <i>scanned at Nairobi hub 09:12</i>. The first design had a status called PASS_ISSUED that only arrived once the pass email went out, so a guest whose email failed would have been turned away at the gate. Fix: a status says <b>where the guest is</b> (approved); delivery facts like <code>pass_emailed_at</code> are <b>timestamps</b> beside it.</p></div>
+    </div>
+      <div class="got"><label><input type="checkbox" data-done="data"> I understand this chapter</label></div>
+  </section>
+
+  <!-- 07 -->
+  <section id="lifecycle" class="ch" aria-labelledby="life-title">
+    <div class="ch-head"><span class="ch-num">07</span><div><span class="label">The design</span><h2 id="life-title">An invitation's life</h2></div></div>
+    <p class="intro">This is a <b>state machine</b>: a fixed list of states and the only allowed moves between them. It lives in <code>server/domain/status.ts</code>, and no code may set a status without asking <code>nextStatus()</code> first.</p>
+    <div class="diagram">
+<pre class="mermaid">
+%%{init: {"theme":"base","themeVariables":{"fontFamily":"Jost, sans-serif","primaryColor":"#FDE8F0","primaryTextColor":"#2A0A12","primaryBorderColor":"#8C1C3A","lineColor":"#8C1C3A","tertiaryColor":"#FBF5F6","noteBkgColor":"#FEF0D9","noteTextColor":"#2A0A12"}}}%%
+stateDiagram-v2
+  direction LR
+  [*] --> DRAFT: couple adds guest
+  DRAFT --> SENT: email or WhatsApp
+  SENT --> VIEWED: guest opens link
+  DRAFT --> VIEWED
+  VIEWED --> AWAITING_APPROVAL: says Yes
+  VIEWED --> DECLINED: says No
+  DECLINED --> AWAITING_APPROVAL: changes to Yes
+  AWAITING_APPROVAL --> APPROVED: couple approves, or auto (D24)
+  AWAITING_APPROVAL --> NOT_APPROVED: couple declines
+  NOT_APPROVED --> AWAITING_APPROVAL: couple reopens
+  APPROVED --> AWAITING_APPROVAL: guest adds a person (BR-8)
+  APPROVED --> PARTIALLY_ARRIVED: usher admits some
+  APPROVED --> ARRIVED: usher admits all
+  PARTIALLY_ARRIVED --> ARRIVED: the rest arrive
+  APPROVED --> REVOKED: couple revokes
+  REVOKED --> APPROVED: restore (new pass version)
+  ARRIVED --> [*]
+</pre>
+    </div>
+    <p class="caption">Simplified: SENT and VIEWED can also answer directly, and REVOKED can be reached from any state except ARRIVED. The full table is in BLUEPRINT §5a.</p>
+
+
+    <div class="lab" id="lab-life">
+      <div class="lab-head"><b>Try it: drive Wanjiru's invitation</b><span class="label">Interactive · rules from status.ts</span></div>
+      <div class="lab-body">
+        <div class="lab-cols">
+          <div class="stack" style="gap:12px">
+            <div class="now"><span class="muted">Status now:</span><span id="life-status" class="big chip">draft</span><span class="muted">Pass version <b id="life-pv">1</b></span></div>
+            <label class="toggle"><input type="checkbox" id="life-auto" checked> Auto-approve a Yes within the allowance (D24)</label>
+            <div class="btns" id="life-btns"></div>
+            <ol class="log" id="life-log" aria-live="polite"></ol>
+          </div>
+          <div>
+            <div class="phone" aria-label="What Wanjiru's page shows">
+              <div class="bar"></div>
+              <div class="sect" data-s="card">Her card "For Wanjiru"<span class="st"></span></div>
+              <div class="sect" data-s="rsvp">RSVP form<span class="st"></span></div>
+              <div class="sect" data-s="venue">Venue &amp; map<span class="st"></span></div>
+              <div class="sect" data-s="prog">Programme<span class="st"></span></div>
+              <div class="sect" data-s="pass">Gate pass QR<span class="st"></span></div>
+              <p class="phone-note" id="life-note"></p>
+            </div>
+          </div>
+        </div>
+        <p class="caption">Greyed-out buttons are moves the lifecycle doesn't allow from the current status, the same way <code>nextStatus()</code> refuses them in the real code.</p>
+      </div>
+    </div>
+
+    <h3 class="sub">Real scenario: Wanjiru's invitation, start to finish</h3>
+    <div class="story">
+      <div class="beat"><span class="t">24 Oct · 10:02</span><h5>Added</h5><p>Joseph adds "Wanjiru Kamau", 1 extra seat.</p><div class="st"><span class="chip c-draft">draft</span></div></div>
+      <div class="beat"><span class="t">24 Oct · 10:05</span><h5>Shared</h5><p>"Send on WhatsApp" opens his phone with her link ready.</p><div class="st"><span class="chip c-sent">sent</span></div></div>
+      <div class="beat"><span class="t">24 Oct · 19:40</span><h5>Opened</h5><p>She taps the dove seal; the envelope opens. The dashboard shows "viewed".</p><div class="st"><span class="chip c-viewed">viewed</span></div></div>
+      <div class="beat"><span class="t">25 Oct · 08:15</span><h5>RSVP: Yes</h5><p>Wanjiru + Otieno (vegetarian). That fits her 1 extra seat, so auto-approved at once.</p><div class="st"><span class="chip c-approved">approved</span></div></div>
+      <div class="beat"><span class="t">2 Nov</span><h5>Adds a cousin</h5><p>That's a new person, so her old pass stops working and the change goes to the couple.</p><div class="st"><span class="chip c-await">awaiting_approval</span></div></div>
+      <div class="beat"><span class="t">19 Dec · 12:14</span><h5>Gate</h5><p>Scanned: "Welcome, Wanjiru, party of 2". Usher admits 2.</p><div class="st"><span class="chip c-arrived">arrived</span></div></div>
+    </div>
+    <p class="caption">On 2 Nov the cousin is refused anyway: Wanjiru's allowance is 1 extra, so the form rejects a third person (BR-5). To bring them, the couple would first raise her seat allowance.</p>
+
+    <div class="quiz"><span class="label">Check yourself</span>
+      <details><summary>Why does adding a person send an approved guest back to waiting, but removing one doesn't?</summary><p class="ans">BR-8: a new person is someone the couple hasn't agreed to; a smaller party is never a risk. Replacing a name counts as adding, because a different person would arrive at the gate.</p></details>
+      <details><summary>What stops a bug from setting status to "arrived" straight from "draft"?</summary><p class="ans"><code>nextStatus()</code> in <code>status.ts</code> only allows the moves in the diagram and throws INVALID_TRANSITION otherwise. Every change is also written to <code>activity_log</code> in the same database transaction.</p></details>
+    </div>
+      <div class="got"><label><input type="checkbox" data-done="lifecycle"> I understand this chapter</label></div>
+  </section>
+
+  <!-- 08 -->
+  <section id="rules" class="ch" aria-labelledby="rules-title">
+    <div class="ch-head"><span class="ch-num">08</span><div><span class="label">The rules</span><h2 id="rules-title">Business rules &amp; what-ifs</h2></div></div>
+    <p class="intro">A <b>business rule</b> is a promise the system keeps every time (BR-1 to BR-23). An <b>edge case</b> is an awkward real-life moment it must handle (E1 to E27). Each has its own test.</p>
+    <div class="rules">
+      <div class="rule"><span class="id">BR-1 · Access</span><p>Venue, programme, story and pass go <b>only</b> to approved, partially arrived or arrived guests.</p></div>
+      <div class="rule"><span class="id">BR-4 · Access</span><p>A wrong or made-up link looks exactly like no link, and never hints whether it ever existed.</p></div>
+      <div class="rule g"><span class="id">BR-5 · RSVP</span><p>Party size = 1 + named extras, and extras ≤ seat allowance.</p></div>
+      <div class="rule g"><span class="id">BR-9 · RSVP</span><p>Double-tapping Submit saves one response, not two.</p></div>
+      <div class="rule"><span class="id">BR-11 · Capacity</span><p>Going over venue capacity warns and asks twice; it doesn't hard-block.</p></div>
+      <div class="rule u"><span class="id">BR-13 · Gate</span><p>Admit only if: signature valid, current pass version, not revoked, approved, and people left.</p></div>
+      <div class="rule u"><span class="id">BR-14 · Gate</span><p>Arrived can never exceed party size, even with two ushers at the same second.</p></div>
+      <div class="rule u"><span class="id">BR-16 · Gate</span><p>Admit "2 of 3 now"; the third uses the same pass later.</p></div>
+      <div class="rule s"><span class="id">BR-17 · Email</span><p>At most 400 emails per Nairobi day; the rest wait for tomorrow.</p></div>
+      <div class="rule s"><span class="id">BR-20 · Data</span><p><code>0712…</code>, <code>712…</code>, <code>254…</code> all become <code>+254712…</code>.</p></div>
+      <div class="rule s"><span class="id">BR-23 · Data</span><p>All guest data is deleted 30 days after the wedding (Kenya Data Protection Act).</p></div>
+      <div class="rule d"><span class="id">D24 · Decision</span><p>A Yes within the seat allowance is approved automatically. The couple can switch this off.</p></div>
+    </div>
+
+    <h3 class="sub">What if…? (tap to see what the system does)</h3>
+    <div class="whatif">
+      <details class="wi"><summary><span class="e">E1</span><span class="q">A guest on slow 3G double-taps Submit</span></summary><div class="a">One response is saved. The form also remembers a fingerprint of the last answer, so an identical resubmission changes nothing.</div></details>
+      <details class="wi"><summary><span class="e">E2</span><span class="q">A guest forwards their link to a friend</span></summary><div class="a">The friend sees the original guest's name only. The party can't exceed the allowance, the couple sees every answer, and the first scan at the gate wins.</div></details>
+      <details class="wi"><summary><span class="e">E3</span><span class="q">An approved guest shares a screenshot of their pass</span></summary><div class="a">First scan wins. The second shows "Already checked in at 12:14 by Gate 1", and the usher can compare names.</div></details>
+      <details class="wi"><summary><span class="e">E5</span><span class="q">Two ushers scan the same pass at the same second</span></summary><div class="a">The admit locks the invitation's database row. One usher gets "admitted"; the other waits a moment, then sees "already admitted". See chapter 10.</div></details>
+      <details class="wi"><summary><span class="e">E16</span><span class="q">The free database is asleep on the first visit</span></summary><div class="a">Neon wakes in about a second. On the wedding morning, open the admin once before the gates open to wake it.</div></details>
+      <details class="wi"><summary><span class="e">E17</span><span class="q">No signal at the gate</span></summary><div class="a">The scanner keeps checking against the list it saved at the last sync, and uploads its check-ins when the signal returns.</div></details>
+      <details class="wi"><summary><span class="e">E22</span><span class="q">The couple revokes someone by mistake</span></summary><div class="a">Restore returns them to their previous state with a <b>new</b> pass version, so old screenshots of the pass stay dead.</div></details>
+      <details class="wi"><summary><span class="e">E26</span><span class="q">An usher's phone is stolen on the day</span></summary><div class="a">Tools → change the PIN, or "Sign out all ushers". Every scanner session ends at once, because sessions carry a version number that just moved on.</div></details>
+      <details class="wi"><summary><span class="e">E27</span><span class="q">The couple opens a guest's link to check it</span></summary><div class="a">It isn't counted as the guest viewing it: "viewed" is the proof of receipt, so admin visits are ignored.</div></details>
+    </div>
+      <div class="got"><label><input type="checkbox" data-done="rules"> I understand this chapter</label></div>
+  </section>
+
+  <!-- 09 -->
+  <section id="security" class="ch" aria-labelledby="sec-title">
+    <div class="ch-head"><span class="ch-num">09</span><div><span class="label">The rules</span><h2 id="sec-title">Security &amp; privacy</h2></div></div>
+    <p class="intro">The core promise is privacy: the venue is only for approved guests. Six locks make that promise hold, each guarding a different door.</p>
+    <div class="locks">
+      <div class="lock lk1"><span class="k">auth/tokens.ts · D1</span><h4>Personal link</h4><p>A 43-character code made by HMAC from the guest's id and a secret. The database stores only its SHA-256 fingerprint, so a leaked database reveals no links.</p></div>
+      <div class="lock lk2"><span class="k">services/access.ts · BR-1–4</span><h4>The approval gate</h4><p><code>requireApproved()</code> runs before any locked data is fetched. It returns a "proof" object that only it can create.</p></div>
+      <div class="lock lk3"><span class="k">jose JWT · D18</span><h4>Gate pass</h4><p>A signed token with the invitation id and pass version, and no personal data. Checked live at every scan.</p></div>
+      <div class="lock lk4"><span class="k">sessions.ts · D4, D5</span><h4>Admin &amp; usher</h4><p>Password and PIN hashed with scrypt. Signed, HTTP-only cookies: 7 days for the admin, 18 hours for ushers.</p></div>
+      <div class="lock lk5"><span class="k">CRON_SECRET · D17</span><h4>Scheduled jobs</h4><p>Cron routes need <code>Authorization: Bearer …</code>, so strangers can't trigger email sends or data deletion.</p></div>
+      <div class="lock lk6"><span class="k">noindex · purge · BR-23</span><h4>Leave no trace</h4><p>Personal pages tell search engines to stay away; guest data is deleted 30 days after the wedding.</p></div>
+    </div>
+
+    <div class="irl" style="margin-top:16px">
+      <div class="ic"><svg><use href="#i-bulb"/></svg></div>
+      <div><span class="label">Real world</span><h4>The wax seal (that's literally the logo)</h4>
+      <p>In old times a letter was sealed with wax pressed by the sender's ring. Anyone could read the address on the outside, but a broken or fake seal showed tampering. A gate pass is a sealed letter: the <b>contents</b> (invitation id, pass version) aren't secret, but the <b>signature</b> can only be made with <code>TOKEN_SECRET</code>, the ring nobody else has. Change one character of the pass and the seal no longer matches.</p></div>
+    </div>
+
+
+    <div class="lab" id="lab-access">
+      <div class="lab-head"><b>Try it: open the site as…</b><span class="label">Interactive · BR-1 to BR-4, D25</span></div>
+      <div class="lab-body">
+        <div class="btns" id="acc-btns" role="group" aria-label="Choose a visitor"></div>
+        <div class="lab-cols">
+          <div class="phone" aria-label="What this visitor sees">
+            <div class="bar"></div>
+            <div class="sect" data-a="teaser">Names, date, countdown<span class="st"></span></div>
+            <div class="sect" data-a="card">Personal card<span class="st"></span></div>
+            <div class="sect" data-a="rsvp">RSVP form<span class="st"></span></div>
+            <div class="sect" data-a="venue">Venue, map, programme<span class="st"></span></div>
+            <div class="sect" data-a="story">Story, photos, FAQ, dress code<span class="st"></span></div>
+            <div class="sect" data-a="pass">Gate pass<span class="st"></span></div>
+          </div>
+          <div class="card" style="align-self:start"><span class="label" style="color:var(--gold-deep)">Why</span><h4 id="acc-title">Public visitor</h4><p id="acc-why"></p><p class="caption" id="acc-code"></p></div>
+        </div>
+      </div>
+    </div>
+
+    <h3 class="sub">Who sees what (the access matrix)</h3>
+    <div class="matrix">
+      <table>
+        <thead><tr><th>Visitor</th><th>Names &amp; date</th><th>Own card</th><th>RSVP form</th><th>Venue &amp; programme</th><th>Gate pass</th></tr></thead>
+        <tbody>
+          <tr><td>Public / bad link</td><td class="y">✓</td><td class="n">✕</td><td class="n">✕</td><td class="n">✕</td><td class="n">✕</td></tr>
+          <tr><td><span class="chip c-sent">sent</span> / <span class="chip c-viewed">viewed</span></td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td><td class="n">✕</td><td class="n">✕</td></tr>
+          <tr><td><span class="chip c-await">awaiting approval</span></td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td><td class="n">✕</td><td class="n">✕</td></tr>
+          <tr><td><span class="chip c-declined">declined</span></td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td><td class="n">✕</td><td class="n">✕</td></tr>
+          <tr><td><span class="chip c-approved">approved</span> / arrived</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td></tr>
+          <tr><td><span class="chip c-revoked">revoked</span></td><td class="n">✕</td><td class="n">✕</td><td class="n">✕</td><td class="n">✕</td><td class="n">✕</td></tr>
+          <tr><td style="color:var(--vendor);font-weight:600">Vendor (active)</td><td class="y">✓</td><td class="p">own page</td><td class="n">✕</td><td class="p">working info</td><td class="y">team pass</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="caption"><code>npm run access:check</code> tests this matrix against the live site from outside, like a stranger with a forwarded link. It passed on 21 Oct 2026.</p>
+
+    <h3 class="sub">The cleverest trick: making the compiler guard the gate</h3>
+    <div class="grid g2">
+      <div class="card"><h4>The normal way</h4><p>"Remember to call <code>requireApproved()</code> before loading the programme." One forgetful afternoon and the venue leaks.</p></div>
+      <div class="card" style="border-color:var(--ok);background:var(--ok-bg)"><h4>What you built</h4><p><code>getApprovedContent(db, access: ApprovedAccess)</code> needs a proof object that only <code>access.ts</code> can create. Forget the check and the code <b>doesn't compile</b>. Vendors got their own proof type, <code>VendorAccess</code>.</p></div>
+    </div>
+
+    <div class="quiz"><span class="label">Check yourself</span>
+      <details><summary>Why must <code>TOKEN_SECRET</code> never change after invitations go out?</summary><p class="ans">Every link and every pass is computed from it. A new secret makes new links that don't match the stored fingerprints, so every guest's link and pass would break at once (D1). That's also why Vercel needed exactly the same value as your <code>.env.local</code>.</p></details>
+      <details><summary>A revoked guest's link: why show nothing, not even their name?</summary><p class="ans">Their name alone confirms the link was real and who it belonged to. The page says only "This invitation is no longer active", which confirms nothing about anyone.</p></details>
+    </div>
+      <div class="got"><label><input type="checkbox" data-done="security"> I understand this chapter</label></div>
+  </section>
+
+  <!-- 10 -->
+  <section id="gate" class="ch" aria-labelledby="gate-title">
+    <div class="ch-head"><span class="ch-num">10</span><div><span class="label">The rules</span><h2 id="gate-title">Wedding day at the gate</h2></div></div>
+    <p class="intro">The scanner is a phone web page, so there's nothing to install. Every scan is checked live against the database, so a revocation at 11:00 stops the pass at 11:01.</p>
+    <div class="grid g3">
+      <div class="card" style="background:var(--ok-bg);border-color:var(--ok)"><span class="pill" style="background:#fff;color:var(--ok)">Green</span><h4 style="margin-top:6px">Welcome, Wanjiru</h4><p>Party of 2 · counter to admit 2, or fewer now (BR-16).</p></div>
+      <div class="card" style="background:var(--vendor-bg);border-color:var(--vendor)"><span class="pill" style="background:#fff;color:var(--vendor)">Blue</span><h4 style="margin-top:6px">Vendor · Photographer</h4><p>Lens Studio · team of 3. Never mistaken for a guest party.</p></div>
+      <div class="card" style="background:var(--stop-bg);border-color:var(--stop)"><span class="pill" style="background:#fff;color:var(--stop)">Red</span><h4 style="margin-top:6px">Already checked in</h4><p>2 of 2 at 12:14 PM by Gate 1. Withdrawn, old pass and invalid are red too.</p></div>
+    </div>
+
+
+    <div class="lab" id="lab-gate">
+      <div class="lab-head"><b>Try it: run the gate</b><span class="label">Interactive · BR-13 to BR-16, E3, E5, E17</span></div>
+      <div class="lab-body">
+        <div class="btns">
+          <span class="btn-group-label">Who's at the gate</span>
+          <button type="button" class="btn g on" data-party="guest">Wanjiru's pass · party of 3</button>
+          <button type="button" class="btn v" data-party="vendor">Lens Studio · vendor team of 2</button>
+        </div>
+        <div class="lab-cols">
+          <div class="stack" style="gap:12px">
+            <div class="now"><span class="muted">Admit how many now?</span>
+              <span class="stepper"><button type="button" class="btn" id="g-minus" aria-label="One fewer">−</button><output id="g-count">1</output><button type="button" class="btn" id="g-plus" aria-label="One more">+</button></span></div>
+            <div class="btns">
+              <button type="button" class="btn u solid" id="g-scan1">Gate 1 scans &amp; admits</button>
+              <button type="button" class="btn u" id="g-scan2">Gate 2 scans &amp; admits</button>
+              <button type="button" class="btn u" id="g-race">Both at the same second</button>
+            </div>
+            <div class="btns">
+              <label class="toggle"><input type="checkbox" id="g-offline"> No signal at the gate</label>
+              <label class="toggle"><input type="checkbox" id="g-revoked"> Couple revokes / removes them</label>
+            </div>
+            <div class="btns"><button type="button" class="btn" id="g-sync" disabled>Signal is back: upload</button><button type="button" class="btn" id="g-reset">Reset the day</button></div>
+            <div><div class="kv"><span>Arrived (server)</span><b id="g-arrived">0 of 3</b></div><div class="meter"><i id="g-meter" style="width:0"></i></div><div class="kv" style="margin-top:6px"><span>Waiting to upload (Gate 1 phone)</span><b id="g-queue">0</b></div></div>
+          </div>
+          <div class="stack" style="gap:10px">
+            <div class="result idle" id="g-result" aria-live="polite"><div class="icon">⌁</div><h5>Ready to scan</h5><p>Pick an action on the left.</p></div>
+            <ol class="log" id="g-log"></ol>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <h3 class="sub">Scenario: two ushers, one screenshot, the same second (E5)</h3>
+    <div class="diagram">
+<pre class="mermaid">
+%%{init: {"theme":"base","themeVariables":{"fontFamily":"Jost, sans-serif","actorBkg":"#FFFFFF","actorBorder":"#0E9384","actorTextColor":"#0B6E63","signalColor":"#8C1C3A","signalTextColor":"#2A0A12","lineColor":"#8C1C3A","noteBkgColor":"#DDF5F1","noteBorderColor":"#0E9384","noteTextColor":"#2A0A12","activationBkgColor":"#FEF0D9","activationBorderColor":"#D97706"}}}%%
+sequenceDiagram
+  participant G1 as Gate 1
+  participant G2 as Gate 2
+  participant S as services/gate.ts
+  participant D as Database row
+  G1->>S: admit 2 (Wanjiru's pass)
+  G2->>S: admit 2 (same pass, screenshot)
+  S->>D: lock row FOR UPDATE (Gate 1)
+  activate D
+  Note over S,D: Gate 2 must wait for the lock
+  S->>D: arrived 0 to 2, write check-in, log
+  deactivate D
+  S-->>G1: green, 2 people admitted
+  S->>D: lock row (Gate 2), re-check
+  D-->>S: arrived 2 of 2, nobody left
+  S-->>G2: red, already checked in 12:14 by Gate 1
+</pre>
+    </div>
+    <p class="caption">Two safety nets: the row lock (code), and <code>CHECK arrived_count ≤ party_size</code> (database). Both would have to fail to over-admit.</p>
+
+    <h3 class="sub">No signal? Offline mode (N3, D19)</h3>
+    <div class="pipe">
+      <div class="step"><h5>Sync</h5><p>Every 60 s with signal, the phone saves the approved list: names, party sizes, pass versions.</p></div>
+      <div class="step hot"><h5>Signal drops</h5><p>The status bar turns amber: "Offline: checking against the saved list".</p></div>
+      <div class="step"><h5>Check locally</h5><p>Reads the QR's contents and matches it against the list. Admits made on this phone count, so it can't admit twice.</p></div>
+      <div class="step"><h5>Queue</h5><p>Each admit is saved with a unique <code>clientRef</code>.</p></div>
+      <div class="step ok"><h5>Upload</h5><p>Signal returns: the server re-checks every entry, applies each one once, and flags conflicts for the couple.</p></div>
+    </div>
+
+    <div class="irl" style="margin-top:16px">
+      <div class="ic"><svg><use href="#i-bulb"/></svg></div>
+      <div><span class="label">Real world</span><h4>A matatu conductor's notebook</h4>
+      <p>When the M-Pesa network is down, a good conductor writes each fare in a notebook and settles up later. The notebook can't check the balance; the reconciliation catches problems afterwards. Offline gate mode is the same: the phone can't verify the signature (the secret stays on the server), so it trusts the list from the last sync, and the server is the final judge when the signal returns.</p></div>
+    </div>
+      <div class="got"><label><input type="checkbox" data-done="gate"> I understand this chapter</label></div>
+  </section>
+
+  <!-- 11 -->
+  <section id="messaging" class="ch" aria-labelledby="msg-title">
+    <div class="ch-head"><span class="ch-num">11</span><div><span class="label">The rules</span><h2 id="msg-title">Emails, WhatsApp &amp; the scheduler</h2></div></div>
+    <p class="intro">Gmail allows about 500 emails a day, and Vercel's free cron runs once a day. The email queue makes those two limits safe.</p>
+    <div class="pipe">
+      <div class="step"><h5>Queue</h5><p>"Email invitation" adds a row to <code>email_queue</code>. Nothing is sent yet.</p></div>
+      <div class="step"><h5>Claim</h5><p>Under a lock, count today's sends (Nairobi day) and claim at most what's left of the 400.</p></div>
+      <div class="step"><h5>Re-check</h5><p>Still approved? Not bounced? Deadline not passed? If not, the email is cancelled (D16).</p></div>
+      <div class="step"><h5>Send</h5><p>Gmail accepts → only then marked "sent". Short failures retry after 5, then 30 minutes.</p></div>
+      <div class="step ok"><h5>Safety net</h5><p>"Send now" drains the queue in batches; the daily cron catches anything left (D7).</p></div>
+    </div>
+    <div class="grid g3" style="margin-top:16px">
+      <div class="card" style="border-top:4px solid var(--system)"><span class="label" style="color:#A35A04">06:00 UTC · 9 am EAT</span><h4>send-queue</h4><p>Sends whatever is still waiting.</p></div>
+      <div class="card" style="border-top:4px solid var(--system)"><span class="label" style="color:#A35A04">07:00 UTC · 10 am EAT</span><h4>reminders</h4><p>Nudges guests who haven't answered, at most every 3 days, until the deadline.</p></div>
+      <div class="card" style="border-top:4px solid var(--system)"><span class="label" style="color:#A35A04">01:00 UTC · 4 am EAT</span><h4>post-wedding</h4><p>Switches the site to "thank you" and deletes data when it's due.</p></div>
+    </div>
+
+    <div class="irl" style="margin-top:16px">
+      <div class="ic"><svg><use href="#i-bulb"/></svg></div>
+      <div><span class="label">Real world</span><h4>A boda boda stage with a daily fuel quota</h4>
+      <p>The stage has fuel for 400 trips a day. Deliveries go into a queue; each morning the stage manager hands out jobs until the quota runs out, and the rest wait for tomorrow. Before each trip, the rider checks the customer still wants the parcel: an email queued yesterday for a guest who was revoked this morning is cancelled, not delivered.</p></div>
+    </div>
+
+
+    <div class="lab" id="lab-mail">
+      <div class="lab-head"><b>Try it: how long to email everyone?</b><span class="label">Interactive · BR-17, D7</span></div>
+      <div class="lab-body">
+        <label for="m-guests" class="kv"><span>Guests to email</span><b id="m-guests-out">520</b></label>
+        <input type="range" class="range" id="m-guests" min="20" max="1500" step="10" value="520">
+        <label class="toggle"><input type="checkbox" id="m-cronly"> Only the daily cron (no "Send now" button)</label>
+        <div class="days" id="m-days"></div>
+        <p class="caption" id="m-note"></p>
+      </div>
+    </div>
+
+    <h3 class="sub">The WhatsApp link and its preview card</h3>
+    <div class="grid g2">
+      <div class="card"><h4>The message</h4><p>"Send on WhatsApp" opens <code>wa.me/2547…?text=…</code> with the template from Settings, with the guest's personal link filled in. Free, sent from the couple's own phone.</p></div>
+      <div class="card"><h4>The preview card</h4><p>Open Graph tags plus <code>opengraph-image.tsx</code> draw the seal, names and date. Never the venue, never the guest's name: a forwarded link reveals nothing.</p></div>
+    </div>
+      <div class="got"><label><input type="checkbox" data-done="messaging"> I understand this chapter</label></div>
+  </section>
+
+  <!-- 12 -->
+  <section id="vendors" class="ch" aria-labelledby="ven-title">
+    <div class="ch-head"><span class="ch-num">12</span><div><span class="label">The rules</span><h2 id="ven-title">Vendors: a feature added mid-build (D25)</h2></div></div>
+    <p class="intro">A recommendation came in to include vendors. Instead of bolting them onto guests, they got their own list, sharing the gate machinery but never the guest numbers. This is how a design adapts without breaking rules.</p>
+    <div class="grid g2">
+      <div class="card" style="border-top:4px solid var(--vendor)"><h4>Reused, not copied</h4><p>Same scanner, same lock, same expiry and the same offline sync. The pass is a JWT with a <b>different audience</b> (<code>vendor-pass</code>), so a vendor pass can never be read as a guest pass.</p></div>
+      <div class="card" style="border-top:4px solid var(--vendor)"><h4>Kept apart</h4><p>Not counted in guest totals or capacity (BR-11). Their own dashboard line, their own meal count, their own CSV for the caterer.</p></div>
+      <div class="card" style="border-top:4px solid var(--vendor)"><h4>Least privilege</h4><p>Their page shows working info only: arrival time, programme, venue, contacts and the team pass. No story, no photos, no guest list.</p></div>
+      <div class="card" style="border-top:4px solid var(--vendor)"><h4>Rule change on record</h4><p>BR-1 used to say "approved guests only". The exception is written down as D25, with the date and the reason, never edited silently.</p></div>
+    </div>
+      <div class="got"><label><input type="checkbox" data-done="vendors"> I understand this chapter</label></div>
+  </section>
+
+  <!-- 13 -->
+  <section id="principles" class="ch" aria-labelledby="pr-title">
+    <div class="ch-head"><span class="ch-num">13</span><div><span class="label">The craft</span><h2 id="pr-title">Software engineering principles you used</h2></div></div>
+    <p class="intro">These ideas come up in every serious codebase. Each tile shows where it appears in yours.</p>
+    <div class="princ">
+      <div class="pr"><div class="tag"><span class="pill" style="background:var(--admin-bg);color:var(--admin)">Structure</span></div><h4>Separation of concerns</h4><p>Each layer has one job: doors, kitchen, recipes, pantry.</p><p class="here"><b>In your code:</b> <code>app/</code> never queries the database directly; <code>domain/</code> never touches it at all.</p></div>
+      <div class="pr"><div class="tag"><span class="pill" style="background:var(--admin-bg);color:var(--admin)">Structure</span></div><h4>Single source of truth</h4><p>Every fact lives in one place, and everything else reads from it.</p><p class="here"><b>In your code:</b> one <code>status.ts</code> for the lifecycle, one <code>access.ts</code> for approval, one database for content. Couple names are never hard-coded.</p></div>
+      <div class="pr"><div class="tag"><span class="pill" style="background:var(--guest-bg);color:var(--guest)">Safety</span></div><h4>Make illegal states unrepresentable</h4><p>Design types so the wrong thing can't even be written.</p><p class="here"><b>In your code:</b> the <code>ApprovedAccess</code> proof type; the status enum; <code>CHECK</code> constraints in Postgres.</p></div>
+      <div class="pr"><div class="tag"><span class="pill" style="background:var(--guest-bg);color:var(--guest)">Safety</span></div><h4>Defence in depth</h4><p>Several independent locks, so one mistake isn't a breach.</p><p class="here"><b>In your code:</b> row lock + database check for over-admission; browser + Zod validation; noindex + private links.</p></div>
+      <div class="pr"><div class="tag"><span class="pill" style="background:var(--guest-bg);color:var(--guest)">Safety</span></div><h4>Least privilege</h4><p>Give each actor only what their job needs.</p><p class="here"><b>In your code:</b> ushers see name and party size only; vendors see working info only; the public sees names and date.</p></div>
+      <div class="pr"><div class="tag"><span class="pill" style="background:var(--usher-bg);color:#0B6E63">Reliability</span></div><h4>Idempotency</h4><p>Doing something twice has the same effect as doing it once.</p><p class="here"><b>In your code:</b> double-tap RSVP (BR-9), offline <code>clientRef</code>, email <code>dedupe_key</code>, cron jobs safe to rerun.</p></div>
+      <div class="pr"><div class="tag"><span class="pill" style="background:var(--usher-bg);color:#0B6E63">Reliability</span></div><h4>Atomic transactions</h4><p>Either every step happens, or none does.</p><p class="here"><b>In your code:</b> a status change and its activity-log entry are written together, or not at all.</p></div>
+      <div class="pr"><div class="tag"><span class="pill" style="background:var(--usher-bg);color:#0B6E63">Reliability</span></div><h4>One clock</h4><p>Time is passed in, never grabbed at random.</p><p class="here"><b>In your code:</b> services take an optional <code>now</code>; tests pass fixed dates, so they don't start failing as the calendar moves on.</p></div>
+      <div class="pr"><div class="tag"><span class="pill" style="background:var(--system-bg);color:#A35A04">Process</span></div><h4>Test the rules, then break them</h4><p>A test that has never failed might not test anything.</p><p class="here"><b>In your code:</b> every BR and E has a test; you broke rules on purpose to watch the tests catch them.</p></div>
+      <div class="pr"><div class="tag"><span class="pill" style="background:var(--system-bg);color:#A35A04">Process</span></div><h4>Decisions log (ADRs)</h4><p>Write down why, not only what.</p><p class="here"><b>In your code:</b> D1–D25 in BLUEPRINT §16, cited in code as <code>// D24</code>.</p></div>
+      <div class="pr"><div class="tag"><span class="pill" style="background:var(--system-bg);color:#A35A04">Process</span></div><h4>Build for one, shaped like a template</h4><p>Solve today's problem without blocking tomorrow's.</p><p class="here"><b>In your code:</b> every table carries <code>wedding_id</code>; v2 for many couples is a sign-up flow, not a rewrite.</p></div>
+      <div class="pr"><div class="tag"><span class="pill" style="background:var(--public-bg);color:var(--public)">Privacy</span></div><h4>Data minimisation</h4><p>Collect less, keep it shorter, show it to fewer people.</p><p class="here"><b>In your code:</b> IP addresses stored only as hashes; no personal data in QR codes or URLs; purge 30 days after the wedding.</p></div>
+    </div>
+      <div class="got"><label><input type="checkbox" data-done="principles"> I understand this chapter</label></div>
+  </section>
+
+  <!-- 14 -->
+  <section id="visual" class="ch" aria-labelledby="vis-title">
+    <div class="ch-head"><span class="ch-num">14</span><div><span class="label">The craft</span><h2 id="vis-title">Visual design rules</h2></div></div>
+    <p class="intro">Colours were sampled from the reference photo: a burgundy envelope with a gold wax seal and a white dove. Every pair was checked for contrast before it was used.</p>
+    <div class="swatches">
+      <div class="sw"><div class="c" style="background:#28030A;color:#C9AB66">Aa</div><div class="i"><b>wine-night</b>#28030A · footers</div></div>
+      <div class="sw"><div class="c" style="background:#3D0F19;color:#fff">Aa</div><div class="i"><b>wine</b>#3D0F19 · main dark</div></div>
+      <div class="sw"><div class="c" style="background:#5E1F2D;color:#C9AB66">Aa</div><div class="i"><b>burgundy</b>#5E1F2D · cards</div></div>
+      <div class="sw"><div class="c" style="background:#C9AB66;color:#3D0F19">Aa</div><div class="i"><b>gold</b>#C9AB66 · seal, buttons</div></div>
+      <div class="sw"><div class="c" style="background:#8A5A26;color:#fff">Aa</div><div class="i"><b>gold-deep</b>#8A5A26 · gold text</div></div>
+      <div class="sw"><div class="c" style="background:#FAF6F2;color:#3D0F19;border-bottom:1px solid var(--line)">Aa</div><div class="i"><b>ivory</b>#FAF6F2 · light sections</div></div>
+    </div>
+    <div class="grid g2" style="margin-top:16px">
+      <div class="card" style="border-color:var(--ok);background:var(--ok-bg)"><h4>Passes: 15.3 : 1</h4><p>Wine text on ivory. Gold-deep on ivory passes too, at 5.5 : 1.</p></div>
+      <div class="card" style="border-color:var(--stop);background:var(--stop-bg)"><h4>Fails: 2.1 : 1</h4><p>Gold <b>text</b> on ivory. That's why the rule says gold is decoration only on light backgrounds, and text uses gold-deep.</p></div>
+    </div>
+    <div class="grid g3" style="margin-top:14px">
+      <div class="card"><h4 style="font-style:italic">Cormorant Garamond</h4><p>Display: names and headings. Elegant, like a printed card.</p></div>
+      <div class="card"><h4 style="font-family:var(--f-body);font-weight:500;font-size:1.1rem;letter-spacing:.12em;text-transform:uppercase">Jost</h4><p>Labels and body: clean, letter-spaced small caps.</p></div>
+      <div class="card"><h4>Mobile first</h4><p>Built for a mid-range Android on slow 3G, with 44 px tap targets and "reduce motion" respected.</p></div>
+    </div>
+      <div class="got"><label><input type="checkbox" data-done="visual"> I understand this chapter</label></div>
+  </section>
+
+  <!-- 15 -->
+  <section id="testing" class="ch" aria-labelledby="test-title">
+    <div class="ch-head"><span class="ch-num">15</span><div><span class="label">The craft</span><h2 id="test-title">Testing &amp; quality</h2></div></div>
+    <p class="intro">Four layers of checking, from fastest to most real. Each catches things the others can't.</p>
+    <div class="pipe">
+      <div class="step"><h5>TypeScript</h5><p><code>tsc --noEmit</code>: wrong shapes and missing proofs, before anything runs.</p></div>
+      <div class="step"><h5>Unit + service tests</h5><p>304 Vitest tests on real Postgres (PGlite): every rule and edge case.</p></div>
+      <div class="step"><h5>CI on every push</h5><p>GitHub runs gitleaks (secrets), lint, type check and all tests.</p></div>
+      <div class="step ok"><h5>Live access check</h5><p><code>npm run access:check</code> pokes the real site from outside like a stranger.</p></div>
+    </div>
+    <h3 class="sub">Real scenario: the "deliberate break"</h3>
+    <div class="lesson">
+      <div class="bad"><span class="label">Step 1 · break it on purpose</span><p>Delete the line that blocks a removed vendor: <code>if (v.removedAt) return revoked</code>. Run the tests.</p></div>
+      <div class="good"><span class="label">Step 2 · watch it get caught</span><p>2 tests fail: "removed vendor's link gets nothing" and "removed reads as revoked". Put the line back: green. Now you know the tests really guard the rule.</p></div>
+    </div>
+    <div class="irl" style="margin-top:16px">
+      <div class="ic"><svg><use href="#i-bulb"/></svg></div>
+      <div><span class="label">Real world</span><h4>A fire-drill, not just a smoke alarm</h4>
+      <p>A smoke alarm that has never beeped might have a flat battery. You press the test button to hear it. Breaking a rule on purpose is pressing that button on your tests.</p></div>
+    </div>
+      <div class="got"><label><input type="checkbox" data-done="testing"> I understand this chapter</label></div>
+  </section>
+
+  <!-- 16 -->
+  <section id="deploy" class="ch" aria-labelledby="dep-title">
+    <div class="ch-head"><span class="ch-num">16</span><div><span class="label">The craft</span><h2 id="dep-title">From laptop to live</h2></div></div>
+    <p class="intro">The path from <code>git push</code> to a link guests can open, and the two mistakes we hit along the way.</p>
+    <div class="pipe">
+      <div class="step"><h5>Commit</h5><p>Review <code>git diff --cached</code> for secrets and guest data first.</p></div>
+      <div class="step"><h5>Push</h5><p>Code goes to GitHub (<code>JoylynnWamjiru/WEDDINGRSVP</code>).</p></div>
+      <div class="step"><h5>CI</h5><p>Secret scan, lint, types, tests. Red means stop.</p></div>
+      <div class="step"><h5>Build</h5><p>Vercel runs <code>next build</code> from the same commit.</p></div>
+      <div class="step"><h5>Env vars</h5><p>The 7 settings come from Vercel, not from your laptop.</p></div>
+      <div class="step ok"><h5>Live</h5><p><span class="mono">weddingrsvp-two-xi.vercel.app</span></p></div>
+    </div>
+    <div class="grid g2" style="margin-top:16px">
+      <div class="card"><h4>Database changes</h4><p>Edit <code>schema.ts</code> → <code>npm run db:generate</code> writes a migration → commit it → <code>npm run db:migrate</code> applies it to Neon. The tables changed before the code that needs them went live.</p></div>
+      <div class="card"><h4>Secrets</h4><p><code>.env.local</code> stays on your laptop and is never committed, on purpose. So Vercel needs its own copy of every value, typed into its settings.</p></div>
+    </div>
+
+    <h3 class="sub">Lessons from deployment day (21 Oct)</h3>
+    <div class="stack">
+      <div class="lesson">
+        <div class="bad"><span class="label">What happened</span><p>The first deploy showed "Please try again in a moment". The logs said <code>Missing environment variable DATABASE_URL</code>.</p></div>
+        <div class="good"><span class="label">Lesson</span><p>A successful build doesn't mean the settings are there. Settings are read when a deployment runs, so add them first, then <b>redeploy</b>.</p></div>
+      </div>
+      <div class="lesson">
+        <div class="bad"><span class="label">What happened</span><p>The home page worked but the admin login didn't: <code>Missing … TOKEN_SECRET</code>. It had been saved as <code>TOKE_URL</code>.</p></div>
+        <div class="good"><span class="label">Lesson</span><p>Names must match exactly. Each page only needs some settings, so a typo hides until a page that uses it is opened. Read the logs, then compare names letter by letter.</p></div>
+      </div>
+    </div>
+
+    <div class="quiz"><span class="label">Check yourself</span>
+      <details><summary>Why did the home page work while the admin login failed?</summary><p class="ans">Settings are read lazily (<code>server/config.ts</code>): each feature reads only the ones it needs, when it needs them. The home page needs <code>DATABASE_URL</code>; login also needs <code>TOKEN_SECRET</code> to sign the session cookie.</p></details>
+      <details><summary>Where do you look first when the live site shows the error page?</summary><p class="ans">The runtime logs in Vercel. The error message names the exact cause, like a missing setting, and which page hit it.</p></details>
+    </div>
+      <div class="got"><label><input type="checkbox" data-done="deploy"> I understand this chapter</label></div>
+  </section>
+
+  <!-- 17 -->
+  <section id="journey" class="ch" aria-labelledby="jour-title">
+    <div class="ch-head"><span class="ch-num">17</span><div><span class="label">The craft</span><h2 id="jour-title">The build, day by day</h2></div></div>
+    <div class="tl">
+      <div class="ev"><span class="d">Mon 19 Oct</span><h5>Plan, protect, then the backend</h5><ul><li>Spec and blueprint written; repo hardened against leaking secrets</li><li>Foundation: schema, lifecycle, rules, tokens, access gate</li><li>Modules 3–4: guest RSVP, requests, admin approvals and dashboard</li></ul></div>
+      <div class="ev"><span class="d">Tue 20 Oct</span><h5>Messaging, gate, then the pages</h5><ul><li>Module 5: email queue, reminders, WhatsApp, cron</li><li>Module 6: gate pass, QR, offline sync</li><li>Frontend F1–F4c: theme, envelope, invitation page, admin; real wedding details set (D21–D23)</li></ul></div>
+      <div class="ev"><span class="d">Wed 21 Oct</span><h5>Polish, scanner, vendors, launch</h5><ul><li>Guest-page redesign, auto-approval (D24), live access test, accessibility pass</li><li>Usher scanner page; vendors (D25)</li><li>Deployed to Vercel; link previews and the dove seal icon; live access check passed</li></ul></div>
+      <div class="ev"><span class="d">Next</span><h5>Before 24 Oct and the wedding</h5><ul><li>Swap the Our Story placeholder photos for the couple's own</li><li>Set the gate PIN; real-phone scanner test in the gate-day dry run</li><li>Send invitations 24 Oct – 7 Nov</li></ul></div>
+    </div>
+      <div class="got"><label><input type="checkbox" data-done="journey"> I understand this chapter</label></div>
+  </section>
+
+  <!-- 18 -->
+  <section id="glossary" class="ch" aria-labelledby="glo-title">
+    <div class="ch-head"><span class="ch-num">18</span><div><span class="label">Reference</span><h2 id="glo-title">Glossary</h2></div></div>
+    <div class="gloss">
+      <div class="gl"><b>Server action</b><span>A function the page calls on the server, like submitting the RSVP, without writing an API by hand.</span></div>
+      <div class="gl"><b>Route handler</b><span>A URL that returns data instead of a page, e.g. <code>/api/scan/verify</code>.</span></div>
+      <div class="gl"><b>Migration</b><span>A numbered SQL file that changes the database's shape, applied in order.</span></div>
+      <div class="gl"><b>ORM</b><span>Drizzle: write database queries in TypeScript instead of SQL strings.</span></div>
+      <div class="gl"><b>HMAC</b><span>A fingerprint of data plus a secret. The same inputs always give the same result; it can't be faked without the secret.</span></div>
+      <div class="gl"><b>Hash (SHA-256)</b><span>A one-way fingerprint. Easy to compute, impossible to reverse.</span></div>
+      <div class="gl"><b>JWT</b><span>A small signed note: readable by anyone, but forging or editing it breaks the signature.</span></div>
+      <div class="gl"><b>scrypt</b><span>A deliberately slow password hash, so guessing passwords costs an attacker real time.</span></div>
+      <div class="gl"><b>Row lock</b><span><code>SELECT … FOR UPDATE</code>: "I'm editing this row, everyone else wait."</span></div>
+      <div class="gl"><b>Idempotent</b><span>Safe to repeat: doing it twice has the same effect as once.</span></div>
+      <div class="gl"><b>Environment variable</b><span>A setting outside the code, like <code>DATABASE_URL</code>, so secrets never sit in git.</span></div>
+      <div class="gl"><b>CI</b><span>Continuous integration: GitHub re-checks every push automatically.</span></div>
+      <div class="gl"><b>Open Graph</b><span>Hidden page tags that tell WhatsApp which title, text and picture to show in a link preview.</span></div>
+      <div class="gl"><b>Cron</b><span>A job that runs on a schedule, like "every day at 9 am".</span></div>
+      <div class="gl"><b>PGlite</b><span>Real Postgres in memory, so tests use the real database engine without a server.</span></div>
+      <div class="gl"><b>Partial prerender</b><span>A static shell served instantly, with the personal parts streamed in after.</span></div>
+    </div>
+      <div class="got"><label><input type="checkbox" data-done="glossary"> I understand this chapter</label></div>
+  </section>
+
+  <div class="foot">
+    <svg width="46" height="46" aria-hidden="true"><use href="#seal"/></svg>
+    <b>You built all of this.</b>
+    Planned on paper first, protected before it held data, tested before it had pages, and shipped with every decision written down.
+  </div>
+
+  </div>
+  </main>
+</div>
+
+<script>
+// Highlight the chapter you're reading in the contents rail.
+(function () {
+  try {
+    var links = Array.prototype.slice.call(document.querySelectorAll(".toc a"));
+    var byId = {};
+    links.forEach(function (a) { byId[a.getAttribute("href").slice(1)] = a; });
+    var obs = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (!e.isIntersecting) return;
+        links.forEach(function (a) { a.classList.remove("on"); });
+        var a = byId[e.target.id];
+        if (a) a.classList.add("on");
+      });
+    }, { rootMargin: "-20% 0px -70% 0px" });
+    Object.keys(byId).forEach(function (id) { var el = document.getElementById(id); if (el) obs.observe(el); });
+  } catch (e) { /* the page works without it */ }
+})();
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
+<script>
+try { mermaid.initialize({ startOnLoad: true, securityLevel: "strict" }); } catch (e) { /* diagrams stay as text */ }
+</script>
+<script>
+(function () {
+  "use strict";
+  var $ = function (id) { return document.getElementById(id); };
+  var COLORS = { guest: "#E0457B", admin: "#8C1C3A", usher: "#0E9384", vendor: "#2563EB", system: "#D97706" };
+
+  function logLine(list, who, text) {
+    var li = document.createElement("li");
+    var tag = document.createElement("span");
+    tag.className = "who-tag";
+    tag.style.background = COLORS[who] || "#64748B";
+    tag.textContent = who;
+    var t = document.createElement("span");
+    t.textContent = text;
+    li.appendChild(tag);
+    li.appendChild(t);
+    list.insertBefore(li, list.firstChild);
+  }
+
+  // ---------------------------------------------------------------- progress
+  (function progress() {
+    var KEY = "rsvp-guide-done";
+    var done = {};
+    try { done = JSON.parse(localStorage.getItem(KEY) || "{}") || {}; } catch (e) { done = {}; }
+    var boxes = Array.prototype.slice.call(document.querySelectorAll("input[data-done]"));
+    function paint() {
+      var n = 0;
+      boxes.forEach(function (b) {
+        var id = b.getAttribute("data-done");
+        b.checked = !!done[id];
+        if (done[id]) n++;
+        var link = document.querySelector('.toc a[href="#' + id + '"]');
+        if (link) link.classList.toggle("done", !!done[id]);
+      });
+      $("prog-bar").style.width = Math.round((n / boxes.length) * 100) + "%";
+      $("prog-text").textContent = n === boxes.length ? "All " + n + " chapters done. You know this system end to end." : n + " of " + boxes.length + " chapters understood.";
+    }
+    boxes.forEach(function (b) {
+      b.addEventListener("change", function () {
+        done[b.getAttribute("data-done")] = b.checked;
+        try { localStorage.setItem(KEY, JSON.stringify(done)); } catch (e) { /* progress just won't be remembered */ }
+        paint();
+      });
+    });
+    paint();
+  })();
+
+  // ---------------------------------------------------------------- lifecycle (status.ts, BR-8, D24)
+  (function lifecycle() {
+    var CHIP = { draft: "c-draft", sent: "c-sent", viewed: "c-viewed", awaiting_approval: "c-await", declined: "c-declined", approved: "c-approved", not_approved: "c-revoked", partially_arrived: "c-arrived", arrived: "c-arrived", revoked: "c-revoked" };
+    var UNLOCKED = { approved: 1, partially_arrived: 1, arrived: 1 };
+    var st = { status: "draft", pv: 1, prev: null };
+    var log = $("life-log");
+
+    var ACTIONS = [
+      { id: "send", who: "admin", label: "Couple sends the link", from: ["draft"], go: function () { return "sent"; }, say: "Sent on WhatsApp. Dashboard: sent 10:05." },
+      { id: "open", who: "guest", label: "Wanjiru opens it", from: ["draft", "sent"], go: function () { return "viewed"; }, say: "She taps the seal; the envelope opens. Counted as viewed." },
+      { id: "yes", who: "guest", label: "RSVP: Yes, party of 2", from: ["draft", "sent", "viewed", "declined"], go: function () { return $("life-auto").checked ? "approved" : "awaiting_approval"; },
+        say: function () { return $("life-auto").checked ? "Yes within her 1 extra seat: approved automatically (D24). Pass ready." : "Yes received. Auto-approval is off, so it waits for the couple."; } },
+      { id: "no", who: "guest", label: "RSVP: No", from: ["draft", "sent", "viewed", "awaiting_approval", "approved"], go: function (s) { if (s === "approved") st.pv++; return "declined"; }, say: "She can't come. Extras removed (D8); any old pass stops working." },
+      { id: "add", who: "guest", label: "Adds a new person", from: ["approved"], go: function () { st.pv++; return "awaiting_approval"; }, say: "A new name after approval: back to the couple, old pass dead (BR-8)." },
+      { id: "approve", who: "admin", label: "Couple approves", from: ["awaiting_approval"], go: function () { return "approved"; }, say: "Approved. Venue, programme and pass unlock now." },
+      { id: "decline", who: "admin", label: "Couple declines", from: ["awaiting_approval"], go: function () { return "not_approved"; }, say: "Not approved. She sees a polite note with her first name only." },
+      { id: "reopen", who: "admin", label: "Couple reopens", from: ["not_approved"], go: function () { return "awaiting_approval"; }, say: "Reopened for another look." },
+      { id: "some", who: "usher", label: "Usher admits 1 of 2", from: ["approved"], go: function () { return "partially_arrived"; }, say: "Gate 1: 1 of 2 in. The other can use the same pass later (BR-16)." },
+      { id: "rest", who: "usher", label: "Usher admits the rest", from: ["approved", "partially_arrived"], go: function () { return "arrived"; }, say: "Everyone's in. A second scan now shows 'already checked in'." },
+      { id: "revoke", who: "admin", label: "Couple revokes", from: ["draft", "sent", "viewed", "awaiting_approval", "declined", "approved", "not_approved", "partially_arrived"], go: function (s) { st.prev = s; st.pv++; return "revoked"; }, say: "Revoked. Her link shows nothing; the pass fails at the gate at once." },
+      { id: "restore", who: "admin", label: "Couple restores", from: ["revoked"], go: function () { var p = st.prev || "draft"; st.prev = null; return p; }, say: "Restored to where she was. The pass version moved on at revoke, so old screenshots stay dead (E22)." }
+    ];
+
+    var holder = $("life-btns");
+    ACTIONS.forEach(function (a) {
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "btn " + (a.who === "guest" ? "g" : a.who === "usher" ? "u" : "a");
+      b.textContent = a.label;
+      b.dataset.id = a.id;
+      b.addEventListener("click", function () {
+        var before = st.status;
+        st.status = a.go(before);
+        logLine(log, a.who, before + " → " + st.status + ". " + (typeof a.say === "function" ? a.say() : a.say));
+        paint();
+      });
+      holder.appendChild(b);
+    });
+    var reset = document.createElement("button");
+    reset.type = "button"; reset.className = "btn"; reset.textContent = "Start over";
+    reset.addEventListener("click", function () { st = { status: "draft", pv: 1, prev: null }; log.innerHTML = ""; logLine(log, "admin", "Joseph adds Wanjiru Kamau with 1 extra seat. Status: draft."); paint(); });
+    holder.appendChild(reset);
+
+    function setSect(key, open, label) {
+      var el = document.querySelector('#lab-life .sect[data-s="' + key + '"]');
+      el.className = "sect " + (open ? "open" : "shut");
+      el.querySelector(".st").textContent = label || (open ? "visible" : "locked");
+    }
+    function paint() {
+      var s = st.status;
+      var chip = $("life-status");
+      chip.textContent = s;
+      chip.className = "big chip " + CHIP[s];
+      $("life-pv").textContent = st.pv;
+      Array.prototype.forEach.call(holder.querySelectorAll("button[data-id]"), function (b) {
+        var a = ACTIONS.filter(function (x) { return x.id === b.dataset.id; })[0];
+        b.disabled = a.from.indexOf(s) < 0;
+      });
+      var unlocked = !!UNLOCKED[s];
+      var revoked = s === "revoked";
+      setSect("card", !revoked && s !== "not_approved", s === "not_approved" ? "first name only" : null);
+      setSect("rsvp", ["draft", "sent", "viewed", "awaiting_approval", "declined", "approved"].indexOf(s) >= 0);
+      setSect("venue", unlocked);
+      setSect("prog", unlocked);
+      setSect("pass", unlocked, unlocked ? "version " + st.pv : null);
+      $("life-note").textContent = revoked ? "“This invitation is no longer active.” Nothing else, not even her name."
+        : unlocked ? "Approved: everything unlocks (BR-1)."
+        : s === "not_approved" ? "A neutral note. No details."
+        : "Her own card and the RSVP. The venue stays locked until approval.";
+    }
+    logLine(log, "admin", "Joseph adds Wanjiru Kamau with 1 extra seat. Status: draft.");
+    paint();
+  })();
+
+  // ---------------------------------------------------------------- access explorer (BR-1 to BR-4, D25)
+  (function access() {
+    var Y = "visible", N = "locked";
+    var V = [
+      { k: "public", name: "Public / bad link", who: "admin", s: [1, 0, 0, 0, 0, 0], why: "No link, or a link that doesn't match any invitation. Both look exactly the same, so nobody can test whether a link ever existed.", code: "BR-4 · services/access.ts returns level “public”" },
+      { k: "invited", name: "Invited (sent / viewed)", s: [1, 1, 1, 0, 0, 0], why: "Their own name on the card and the RSVP form. Saying Yes isn't enough to see the venue yet.", code: "BR-1, BR-2 · level “invited”" },
+      { k: "waiting", name: "Said Yes, waiting", s: [1, 1, 1, 0, 0, 0], why: "Waiting for the couple (an addition after approval, or over capacity). Still nothing locked.", code: "BR-8, BR-11 · status awaiting_approval" },
+      { k: "declined", name: "Declined", s: [1, 1, 1, 0, 0, 0], why: "They can still change to Yes before the deadline, so the card and form stay.", code: "status declined · canRespond() is true" },
+      { k: "approved", name: "Approved guest", s: [1, 1, 1, 1, 1, 1], why: "Approval unlocks everything: venue, programme, story, FAQ and their personal gate pass.", code: "BR-1 · requireApproved() returns ApprovedAccess" },
+      { k: "revoked", name: "Revoked", s: [0, 0, 0, 0, 0, 0], why: "Nothing, not even their name: “This invitation is no longer active.”", code: "BR-2 · E22" },
+      { k: "vendor", name: "Vendor", s: [1, 0, 0, 1, 0, 1], why: "Their own working page: arrival time, programme, venue, contacts and one pass for the team. No guest-only content.", code: "D25 · requireVendor() returns VendorAccess" }
+    ];
+    var keys = ["teaser", "card", "rsvp", "venue", "story", "pass"];
+    var wrap = $("acc-btns");
+    V.forEach(function (v, i) {
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "btn" + (v.k === "vendor" ? " v" : v.k === "public" || v.k === "revoked" ? "" : " g");
+      b.textContent = v.name;
+      b.addEventListener("click", function () { show(i); });
+      wrap.appendChild(b);
+    });
+    function show(i) {
+      var v = V[i];
+      Array.prototype.forEach.call(wrap.children, function (b, j) { b.classList.toggle("on", j === i); b.setAttribute("aria-pressed", j === i ? "true" : "false"); });
+      keys.forEach(function (k, j) {
+        var el = document.querySelector('#lab-access .sect[data-a="' + k + '"]');
+        el.className = "sect " + (v.s[j] ? "open" : "shut");
+        el.querySelector(".st").textContent = v.s[j] ? (k === "pass" && v.k === "vendor" ? "team pass" : Y) : N;
+      });
+      $("acc-title").textContent = v.name;
+      $("acc-why").textContent = v.why;
+      $("acc-code").textContent = v.code;
+    }
+    show(0);
+  })();
+
+  // ---------------------------------------------------------------- gate simulator (gate.ts, gate-offline.ts, D19)
+  (function gate() {
+    var PARTIES = {
+      guest: { name: "Wanjiru Kamau", size: 3, color: "green", kind: "guest", stop: "Invitation withdrawn" },
+      vendor: { name: "Lens Studio", role: "Photographer", size: 2, color: "blue", kind: "vendor", stop: "Vendor removed" }
+    };
+    var p, arrived, last, queue, snapshot, revoked, minute, count, refSeq;
+    var log = $("g-log");
+
+    function clock() { minute++; var h = 12 + Math.floor(minute / 60), m = minute % 60; return h + ":" + (m < 10 ? "0" : "") + m + " PM"; }
+    function result(kind, icon, title, text) {
+      var r = $("g-result");
+      r.className = "result " + kind;
+      r.innerHTML = "";
+      var i = document.createElement("div"); i.className = "icon"; i.textContent = icon;
+      var h = document.createElement("h5"); h.textContent = title;
+      var t = document.createElement("p"); t.textContent = text;
+      r.appendChild(i); r.appendChild(h); r.appendChild(t);
+    }
+    function queued() { return queue.reduce(function (n, q) { return n + q.n; }, 0); }
+    function paint() {
+      $("g-arrived").textContent = arrived + " of " + p.size;
+      $("g-meter").style.width = Math.round((arrived / p.size) * 100) + "%";
+      $("g-queue").textContent = queue.length ? queued() + " people (" + queue.length + " check-in" + (queue.length > 1 ? "s" : "") + ")" : "0";
+      $("g-count").textContent = count;
+      $("g-minus").disabled = count <= 1;
+      $("g-plus").disabled = count >= p.size;
+      $("g-sync").disabled = !queue.length || $("g-offline").checked;
+    }
+    function reset(kind) {
+      p = PARTIES[kind || (p && p.kind) || "guest"];
+      arrived = 0; last = null; queue = []; snapshot = 0; revoked = false; minute = 10; count = 1; refSeq = 0;
+      $("g-offline").checked = false; $("g-revoked").checked = false;
+      log.innerHTML = "";
+      result("idle", "⌁", "Ready to scan", p.kind === "vendor" ? "Lens Studio's team pass: 2 people." : "Wanjiru's pass: party of 3.");
+      paint();
+    }
+    function admitOnline(gate, n, quiet) {
+      var t = clock();
+      var who = "Gate " + gate;
+      if (revoked) {
+        result("red", "✕", p.stop, p.name + ": refer them to the couple's contact.");
+        logLine(log, "usher", who + " · " + t + " · refused: " + p.stop.toLowerCase() + " (checked live, BR-3).");
+        return "revoked";
+      }
+      var remaining = p.size - arrived;
+      if (remaining <= 0) {
+        result("red", "✕", "Already checked in", arrived + " of " + p.size + " at " + last.at + " by " + last.by + " (BR-15).");
+        logLine(log, "usher", who + " · " + t + " · already checked in. First scan won (E3).");
+        return "already";
+      }
+      if (n > remaining) {
+        result("red", "✕", "Only " + remaining + " left", "Only " + remaining + " of " + p.size + " left to admit. Lower the count.");
+        logLine(log, "usher", who + " · " + t + " · tried " + n + ", only " + remaining + " left (BR-14).");
+        return "too_many";
+      }
+      arrived += n;
+      last = { at: t, by: who };
+      var left = p.size - arrived;
+      result(p.color, "✓", (n === 1 ? "1 person" : n + " people") + " admitted", (p.role ? "Vendor · " + p.role + " · " : "") + p.name + (left ? ". " + left + " more can enter later." : ". Everyone's in."));
+      if (!quiet) logLine(log, "usher", who + " · " + t + " · admitted " + n + ". Row locked, count " + (arrived - n) + " → " + arrived + ", logged.");
+      return "ok";
+    }
+    function scan(gate) {
+      if (gate === 1 && $("g-offline").checked) {
+        var t = clock();
+        var cached = snapshot + queued();
+        var remaining = p.size - cached;
+        if (remaining <= 0) {
+          result("red", "✕", "Already checked in", cached + " of " + p.size + " by the saved list (from " + (last ? last.at : "12:10 PM") + ").");
+          logLine(log, "usher", "Gate 1 · " + t + " · offline: saved list says nobody left.");
+        } else if (count > remaining) {
+          result("red", "✕", "Only " + remaining + " left", "By the saved list. Lower the count.");
+        } else {
+          queue.push({ n: count, ref: "ref-" + (++refSeq) });
+          result(p.color, "✓", (count === 1 ? "1 person" : count + " people") + " admitted", "Offline: saved on this phone; it uploads when the signal is back." + (revoked ? " (The phone can't know about the revoke yet, E4.)" : ""));
+          logLine(log, "usher", "Gate 1 · " + t + " · offline admit " + count + ", queued as ref-" + refSeq + (revoked ? ". It didn't know about the revoke." : "."));
+        }
+        paint();
+        return;
+      }
+      admitOnline(gate, count);
+      paint();
+    }
+
+    Array.prototype.forEach.call(document.querySelectorAll("#lab-gate [data-party]"), function (b) {
+      b.addEventListener("click", function () {
+        Array.prototype.forEach.call(document.querySelectorAll("#lab-gate [data-party]"), function (x) { x.classList.toggle("on", x === b); });
+        reset(b.getAttribute("data-party"));
+      });
+    });
+    $("g-minus").addEventListener("click", function () { count = Math.max(1, count - 1); paint(); });
+    $("g-plus").addEventListener("click", function () { count = Math.min(p.size, count + 1); paint(); });
+    $("g-scan1").addEventListener("click", function () { scan(1); });
+    $("g-scan2").addEventListener("click", function () { if ($("g-offline").checked) logLine(log, "usher", "Gate 2 still has signal, so it checks live."); scan(2); });
+    $("g-race").addEventListener("click", function () {
+      if ($("g-offline").checked) { logLine(log, "system", "Turn signal back on to see the race: offline phones can't lock the database row."); return; }
+      logLine(log, "system", "Gate 1 and Gate 2 both press Admit " + count + " at the same second (E5).");
+      var r1 = admitOnline(1, count, false);
+      logLine(log, "system", "Gate 2 waited for Gate 1's row lock, then re-checked the live count…");
+      var r2 = admitOnline(2, count, false);
+      if (r1 === "ok" && r2 !== "ok") logLine(log, "system", "Result: only one admit counted. Arrived can never pass the party size (BR-14).");
+      paint();
+    });
+    $("g-offline").addEventListener("change", function (e) {
+      if (e.target.checked) {
+        snapshot = arrived;
+        logLine(log, "system", "Gate 1 loses signal. It keeps the list from its last sync: " + arrived + " of " + p.size + " arrived.");
+      } else {
+        logLine(log, "system", "Gate 1 has signal again. Tap upload to send its " + queue.length + " queued check-in(s).");
+      }
+      paint();
+    });
+    $("g-revoked").addEventListener("change", function (e) {
+      revoked = e.target.checked;
+      logLine(log, "admin", revoked ? "The couple " + (p.kind === "vendor" ? "removes the vendor" : "revokes the invitation") + ". Live scans fail from now." : "Restored. (In the real app the pass version moves on, so the old pass stays dead.)");
+      paint();
+    });
+    $("g-sync").addEventListener("click", function () {
+      logLine(log, "usher", "Gate 1 uploads " + queue.length + " offline check-in(s). The server re-checks each one (D19).");
+      queue.forEach(function (q) {
+        var remaining = p.size - arrived;
+        if (revoked) { logLine(log, "system", q.ref + ": rejected, revoked meanwhile. Flagged in the activity log for the couple."); return; }
+        if (q.n <= remaining) { arrived += q.n; last = { at: clock(), by: "Gate 1" }; logLine(log, "system", q.ref + ": applied, " + q.n + " admitted."); return; }
+        if (remaining > 0) { arrived += remaining; logLine(log, "system", q.ref + ": applied partially, only " + remaining + " of " + q.n + " fit. They're inside already, so it's flagged, not dropped."); return; }
+        logLine(log, "system", q.ref + ": rejected, nobody left in the party. Flagged for the couple.");
+      });
+      queue = [];
+      snapshot = arrived;
+      result("idle", "⇅", "Synced", "Server count is now " + arrived + " of " + p.size + ". Uploading the same refs again would change nothing.");
+      paint();
+    });
+    $("g-reset").addEventListener("click", function () { reset(); });
+    reset("guest");
+  })();
+
+  // ---------------------------------------------------------------- email calculator (BR-17, D7)
+  (function mail() {
+    var CAP = 400, CRON_ONLY = 50, WINDOW = 15; // 24 Oct – 7 Nov
+    function paint() {
+      var n = +$("m-guests").value;
+      var perDay = $("m-cronly").checked ? CRON_ONLY : CAP;
+      $("m-guests-out").textContent = n;
+      var days = Math.ceil(n / perDay);
+      var box = $("m-days");
+      box.innerHTML = "";
+      var shown = Math.min(days, 16);
+      for (var d = 0; d < shown; d++) {
+        var sent = Math.min(perDay, n - d * perDay);
+        var el = document.createElement("div");
+        el.className = "day";
+        var date = new Date(Date.UTC(2026, 9, 24 + d));
+        var label = date.toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "UTC" });
+        el.innerHTML = "<span>" + label + "</span><b>" + sent + "</b><div class=\"fill\"><i style=\"width:" + Math.round((sent / perDay) * 100) + "%\"></i></div>";
+        box.appendChild(el);
+      }
+      if (days > shown) {
+        var more = document.createElement("div");
+        more.className = "day";
+        more.innerHTML = "<span>…and</span><b>" + (days - shown) + "</b>more days";
+        box.appendChild(more);
+      }
+      $("m-note").textContent = (days === 1 ? "Done in 1 day" : "Done in " + days + " days") + " at " + perDay + " a day. " +
+        (days <= WINDOW ? "That fits the 24 Oct – 7 Nov sending window." : "That's past the 24 Oct – 7 Nov window. This is why D7 added “Send now” instead of relying on the daily cron.");
+    }
+    $("m-guests").addEventListener("input", paint);
+    $("m-cronly").addEventListener("change", paint);
+    paint();
+  })();
+})();
+</script>
+</body>
+</html>

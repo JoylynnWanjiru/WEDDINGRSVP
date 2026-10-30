@@ -5,7 +5,6 @@ import { eq } from "drizzle-orm";
 import type { Db } from "@/server/db/client";
 import { activityLog, invitations, venues } from "@/server/db/schema";
 import { requireApproved } from "@/server/services/access";
-import { getApprovedContent } from "@/server/services/content";
 import { getInvitationPage, getPublicTeaser, recordView } from "@/server/services/invitation-page";
 import { createInvitation, createTestDb, createWedding } from "../helpers/db";
 
@@ -18,12 +17,9 @@ beforeAll(async () => {
 afterAll(() => close());
 
 const NOW = new Date("2026-10-20T10:00:00+03:00");
-const LOCKED_KEYS = ["content", "programme", "venues", "story", "dressCode", "faq", "contacts", "photos"];
-
-/** Fails if any locked field name appears anywhere in the serialised page. */
-function expectNoLockedContent(page: unknown) {
-  const json = JSON.stringify(page);
-  for (const key of LOCKED_KEYS) expect(json).not.toContain(`"${key}"`);
+/** D29: the wedding content is public, but a page for a guest who isn't approved never carries a pass. */
+function expectNoPass(page: unknown) {
+  expect(JSON.stringify(page)).not.toMatch(/qrSvg|passVersion|"pass"/);
 }
 
 describe("public teaser", () => {
@@ -43,7 +39,7 @@ describe("public teaser", () => {
 });
 
 describe("§4a: what each access level receives", () => {
-  it("invited (including said Yes, awaiting approval) gets their card and RSVP, no locked content", async () => {
+  it("invited (including said Yes, awaiting approval) gets their card, RSVP and the content (D29), no pass", async () => {
     const wedding = await createWedding(db);
     for (const status of ["draft", "sent", "viewed", "awaiting_approval"] as const) {
       const { token } = await createInvitation(db, wedding.id, { status, fullName: "Wanjiru Kamau", seatAllowance: 2 });
@@ -52,7 +48,8 @@ describe("§4a: what each access level receives", () => {
       if (page.level !== "invited") throw new Error("unreachable");
       expect(page.guest).toMatchObject({ firstName: "Wanjiru", seatAllowance: 2, awaitingApproval: status === "awaiting_approval" });
       expect(page.rsvp.open).toBe(true);
-      expectNoLockedContent(page);
+      expect(page.content.programme.length).toBeGreaterThan(0); // D29
+      expectNoPass(page);
     }
   });
 
@@ -66,12 +63,14 @@ describe("§4a: what each access level receives", () => {
     expect(page.rsvp.weddingEvents).toEqual(["ceremony"]); // D9: from the wedding's venues
   });
 
-  it("declined gets their card and form (to change to Yes), no locked content", async () => {
+  it("declined gets their card, form (to change to Yes) and the content (D29), no pass", async () => {
     const wedding = await createWedding(db);
     const { token } = await createInvitation(db, wedding.id, { status: "declined", respondedAt: NOW });
     const page = await getInvitationPage(db, token, { now: NOW });
     expect(page.level).toBe("declined");
-    expectNoLockedContent(page);
+    if (page.level !== "declined") throw new Error("unreachable");
+    expect(page.content.venues.length).toBeGreaterThan(0); // D29
+    expectNoPass(page);
   });
 
   it("not approved gets a neutral page with their first name only", async () => {
@@ -114,10 +113,10 @@ describe("§4a: what each access level receives", () => {
     expect(await getInvitationPage(db, token)).toEqual({ level: "revoked" });
   });
 
-  it("content can only be fetched through the approval gate", async () => {
+  it("BR-1 (since D29: the gate pass): proof of approval is refused before approval", async () => {
     const wedding = await createWedding(db);
     const { token } = await createInvitation(db, wedding.id, { status: "awaiting_approval" });
-    await expect(requireApproved(db, token).then((a) => getApprovedContent(db, a))).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await expect(requireApproved(db, token)).rejects.toMatchObject({ code: "FORBIDDEN" });
   });
 });
 

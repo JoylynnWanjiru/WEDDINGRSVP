@@ -4,7 +4,7 @@
 
 import { eq, sql } from "drizzle-orm";
 import type { Db } from "../db/client";
-import { activityLog, emailQueue, invitationRequests, invitations, rateLimits, vendors, weddings } from "../db/schema";
+import { siteVisits, activityLog, emailQueue, invitationRequests, invitations, rateLimits, vendors, weddings } from "../db/schema";
 import { AppError } from "../errors";
 import { logActivity } from "./activity";
 import type { AdminCtx } from "./admin/context";
@@ -38,6 +38,7 @@ export async function purgeGuestData(
     // D25: vendor contacts are personal data too. Their check-ins cascade.
     const vendorRows = await tx.delete(vendors).where(eq(vendors.weddingId, weddingId)).returning({ id: vendors.id });
     await tx.delete(emailQueue).where(eq(emailQueue.weddingId, weddingId));
+    await tx.delete(siteVisits).where(eq(siteVisits.weddingId, weddingId)); // D29: device stamps go too
     await tx.delete(activityLog).where(eq(activityLog.weddingId, weddingId)); // metas may reference requests
     await tx.delete(rateLimits).where(sql`true`); // keyed hashes of IPs; v1 serves one wedding
     await tx.update(weddings).set({ purgedAt: now }).where(eq(weddings.id, weddingId));

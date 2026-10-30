@@ -61,4 +61,5 @@ export const LIMITS = {
   usherLogin: { limit: 10, windowSeconds: 15 * 60 },
   tokenLookup: { limit: 60, windowSeconds: 60 },
   publicRequest: { limit: 3, windowSeconds: 60 * 60 },
+  publicRsvp: { limit: 5, windowSeconds: 60 * 60 }, // D29: per IP; a family sharing wifi still fits
 } as const;

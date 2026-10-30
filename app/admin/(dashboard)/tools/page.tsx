@@ -21,7 +21,8 @@ export default function ToolsPage() {
   return (
     <div className="space-y-6">
       <header>
-        <h1 className="font-display text-4xl">Tools</h1>
+        <p className="a-eyebrow">Exports & utilities</p>
+        <h1 className="a-title mt-2">Tools</h1>
         <p className="text-sm text-wine/70">Downloads, the gate scanner, and deleting guest data after the wedding.</p>
       </header>
       <Suspense fallback={<p className="text-wine/70">Loading…</p>}>
@@ -33,7 +34,7 @@ export default function ToolsPage() {
 
 function Card({ id, title, children, tone }: { id: string; title: string; children: ReactNode; tone?: "danger" }) {
   return (
-    <section aria-labelledby={id} className={`rounded-sm border bg-white p-5 ${tone === "danger" ? "border-[#9b1c1c]/30" : "border-wine/10"}`}>
+    <section aria-labelledby={id} className={`a-card p-5 ${tone === "danger" ? "border-[#9b1c1c]/30" : "border-wine/10"}`}>
       <h2 id={id} className="mb-4 font-display text-2xl">
         {title}
       </h2>

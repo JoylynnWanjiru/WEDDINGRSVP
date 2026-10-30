@@ -77,7 +77,7 @@ function Row<T extends { id: string }>({
   }
 
   return (
-    <details className="rounded-sm border border-wine/10 bg-white" open={!item ? false : undefined}>
+    <details className="a-card" open={!item ? false : undefined}>
       <summary className="flex min-h-12 cursor-pointer items-center justify-between gap-3 px-4 py-3">
         <span className={item ? "font-medium" : "label text-[0.62rem] text-gold-deep"}>{item ? title : `+ ${title}`}</span>
         {summary ? <span className="truncate text-sm text-wine/70">{summary}</span> : null}

@@ -8,12 +8,12 @@ import { requestInvitationAction, type RequestState } from "@/app/(public)/actio
 import { Button } from "./ui/Button";
 
 const inputClass =
-  "w-full rounded-sm border border-gold/30 bg-wine-night/50 px-4 py-3 text-white placeholder:text-pearl/40 focus:border-gold focus:outline-none";
+  "w-full border-0 border-b border-gold/35 bg-transparent px-1 py-3 text-lg text-white placeholder:text-pearl/40 transition-colors focus:border-gold focus:outline-none";
 
 function Field({ label, name, error, ...props }: { label: string; name: string; error?: string } & React.InputHTMLAttributes<HTMLInputElement>) {
   return (
     <label className="block text-left">
-      <span className="label text-pearl/80">{label}</span>
+      <span className="label text-[0.62rem] text-gold">{label}</span>
       <input name={name} {...props} aria-invalid={!!error} className={`${inputClass} mt-2`} />
       {error ? <span className="mt-1 block text-sm text-[#f3b3b3]">{error}</span> : null}
     </label>
@@ -25,8 +25,8 @@ export function RequestInviteForm() {
 
   if (state.status === "success") {
     return (
-      <div className="rounded-sm border border-gold/40 bg-wine-night/40 p-6 text-center" role="status">
-        <p className="font-display text-2xl text-gold">Thank you</p>
+      <div className="border border-gold/40 p-8 text-center outline outline-1 outline-offset-4 outline-gold/20" role="status">
+        <p className="font-display text-3xl text-gold">Thank you</p>
         <p className="mt-2 text-pearl">Your request is with the couple. If they can invite you, you&rsquo;ll receive a personal link.</p>
       </div>
     );
@@ -35,12 +35,12 @@ export function RequestInviteForm() {
   const fields = state.status === "error" ? (state.fields ?? {}) : {};
 
   return (
-    <form action={action} className="space-y-4" noValidate>
+    <form action={action} className="space-y-7" noValidate>
       <Field label="Full name" name="fullName" autoComplete="name" required error={fields.fullName} />
       <Field label="Phone (WhatsApp)" name="phone" type="tel" inputMode="tel" autoComplete="tel" placeholder="0712 345 678" error={fields.phone} />
       <Field label="Email" name="email" type="email" autoComplete="email" error={fields.email} />
       <label className="block text-left">
-        <span className="label text-pearl/80">Message to the couple (optional)</span>
+        <span className="label text-[0.62rem] text-gold">Message to the couple (optional)</span>
         <textarea name="message" rows={3} className={`${inputClass} mt-2 resize-y`} />
       </label>
 
