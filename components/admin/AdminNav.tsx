@@ -1,11 +1,12 @@
 "use client";
 
 // Admin section links. A client component only to mark the current page (aria-current);
-// the links themselves are plain <Link>s, so the static layout still prerenders.
+// the links themselves are plain <Link>s, so the static layout still prerenders. The pathname
+// is runtime data, so it reads inside <Suspense>; the fallback is the same links, unmarked.
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import type { ReactNode } from "react";
+import { Suspense, type ReactNode } from "react";
 
 const icon = (d: ReactNode) => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -21,9 +22,8 @@ const NAV: { href: string; label: string; icon: ReactNode }[] = [
   { href: "/admin/tools", label: "Tools", icon: icon(<><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.6 2.6-2.4-.6-.6-2.4z" /></>) },
 ];
 
-export function AdminNav() {
-  const path = usePathname();
-  const active = (href: string) => (href === "/admin" ? path === "/admin" : path.startsWith(href));
+function Links({ path }: { path: string | null }) {
+  const active = (href: string) => path !== null && (href === "/admin" ? path === "/admin" : path.startsWith(href));
   return (
     <nav aria-label="Admin" className="admin-nav">
       {NAV.map((n) => (
@@ -33,6 +33,18 @@ export function AdminNav() {
         </Link>
       ))}
     </nav>
+  );
+}
+
+function CurrentLinks() {
+  return <Links path={usePathname()} />;
+}
+
+export function AdminNav() {
+  return (
+    <Suspense fallback={<Links path={null} />}>
+      <CurrentLinks />
+    </Suspense>
   );
 }
 
